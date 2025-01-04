@@ -1,0 +1,12 @@
+[Default Applications]
+x-scheme-handler/eclipse+command=_usr_share_dbeaver-ce_.desktop
+text/csv=code.desktop
+text/html=google-chrome.desktop
+x-scheme-handler/http=google-chrome.desktop
+x-scheme-handler/https=google-chrome.desktop
+x-scheme-handler/about=google-chrome.desktop
+x-scheme-handler/unknown=google-chrome.desktop
+x-scheme-handler/mailto=google-chrome.desktop
+
+[Added Associations]
+text/csv=code.desktop;
