@@ -1,82 +1,26 @@
-# Dependencies
-# picom
-# feh
-# rofi
-# i3status
-# i3lock
-# i3blocks
-# pactl
-# brightnessctl
+# Mod4 = Windows or Super key on keyboard
+# Mod1 = Alt key on keyboard
 
-
-# Settings
-
-set $mod Mod4
 set $refresh_i3status killall -SIGUSR1 i3status
 
-font pango:Fira Code 9
-exec --no-startup-id feh --bg-center --recursive ~/.config/backgrounds/
+########################################################
+#                      Settings                       #
+########################################################
 
-# Color Scheme
-set $bg     #000000
-set $fg     #404552
-set $hi     #fce94f
-set $ac     #4084d6
-set $tx     #2d323d
-set $ia     #9e9e9e
-set $be     #8faf9f
-set $yw     #f8f893
-set $gn     #81c181
-set $rd     #bf9b76
-set $id     #f9f8ff
-set $ce     #ceecee
-set $sl     #7f7f7f
-
-# Styles
-gaps inner 12px
-default_border pixel 1
-default_floating_border pixel 1
-
-# basic spawners
+set $mod Mod4
 bindsym $mod+Return exec urxvt
 bindsym $mod+d exec --no-startup-id rofi -show drun
-bindsym $mod+Shift+Return exec google-chrome-stable
-
-# i3 Control
 bindsym $mod+w kill
-bindsym $mod+h split h
-bindsym $mod+v split v
 bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r restart
 bindsym $mod+Shift+t exit
 
-# Focus
 floating_modifier $mod
 tiling_drag modifier titlebar
-bindsym $mod+Tab fullscreen toggle
-bindsym $mod+space focus mode_toggle
-bindsym $mod+Shift+space floating toggle
 
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
-bindsym $mod+Right focus right
-
-bindsym $mod+Shift+Left move left
-bindsym $mod+Shift+Down move down
-bindsym $mod+Shift+Up move up
-bindsym $mod+Shift+Right move right
-
-# Hotkeys
-bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
-bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
-bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
-bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
-
-bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
-bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
-
-# Workspaces
+########################################################
+#                      Workspaces                      #
+########################################################
 
 set $ws1 "1"
 set $ws2 "2"
@@ -84,11 +28,72 @@ set $ws3 "3"
 set $ws4 "4"
 set $ws5 "5"
 set $ws6 "6"
-set $ws7 "7"
-set $ws8 "8"
-set $ws9 "9"
 
-# switch to workspace
+assign [class="Cursor"]  $ws1
+assign [class="Google-chrome"]  $ws2
+assign [class="Slack"]  $ws4
+assign [class="Spotify"]  $ws5
+
+########################################################
+#                      Fonts                           #
+########################################################
+
+font pango:Hack 10
+
+########################################################
+#                      Color Scheme                   #
+########################################################
+#   class                     border     backgr.    text      indicator child_border
+    client.focused          #222222    #000000    #FFFFFF   #222222   #222222
+    client.unfocused        #111111    #000000    #888888   #111111   #111111
+    client.focused_inactive #111111    #000000    #888888   #111111   #111111
+    client.placeholder      #000000    #000000    #888888   #000000   #000000
+    client.urgent           #5f0000    #000000    #FFFFFF   #5f0000   #5f0000
+    client.background       #000000
+
+########################################################
+#                      Gaps                            #
+########################################################
+
+gaps inner 12px
+gaps top 10px
+gaps bottom 10px
+gaps left 10px
+gaps right 10px
+
+########################################################
+#                      Borders                         #
+########################################################
+
+default_border pixel 1
+default_floating_border pixel 1
+
+########################################################
+#                      Controls                        #
+########################################################
+
+# Focus container
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+
+# Move container
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+
+# Split containers
+bindsym $mod+h split h
+bindsym $mod+v split v
+
+# Fullscreen
+bindsym $mod+Tab fullscreen toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+Shift+space floating toggle
+
+# Go to workspace
 bindsym $mod+1 workspace number $ws1
 bindsym $mod+2 workspace number $ws2
 bindsym $mod+3 workspace number $ws3
@@ -96,8 +101,7 @@ bindsym $mod+4 workspace number $ws4
 bindsym $mod+5 workspace number $ws5
 bindsym $mod+6 workspace number $ws6
 
-
-# move focused container to workspace
+# Move container to workspace
 bindsym $mod+Shift+1 move container to workspace number $ws1
 bindsym $mod+Shift+2 move container to workspace number $ws2
 bindsym $mod+Shift+3 move container to workspace number $ws3
@@ -105,52 +109,207 @@ bindsym $mod+Shift+4 move container to workspace number $ws4
 bindsym $mod+Shift+5 move container to workspace number $ws5
 bindsym $mod+Shift+6 move container to workspace number $ws6
 
-# auto assign apps to workspaces
-# assign [class="Cursor"]  $ws1
-# assign [class="google-chrome"]  $ws2
-# assign [class="discord"]  $ws8
-# assign [class="Spotify"]  $ws9
+# Move workspace to other screen
+bindsym $mod+Shift+Control+Left move workspace to output left
+bindsym $mod+Shift+Control+Right move workspace to output right
+bindsym $mod+Shift+Control+Up move workspace to output up
+bindsym $mod+Shift+Control+Down move workspace to output down
+bindsym $mod+Shift+Control+n move workspace to output next
 
-# resize window (you can also use the mouse for that)
+# Resize container
 mode "resize" {
-    # Pressing down will grow the window’s height.
     bindsym j resize shrink width 5 px or 5 ppt
     bindsym k resize grow height 5 px or 5 ppt
     bindsym l resize shrink height 5 px or 5 ppt
     bindsym semicolon resize grow width 5 px or 5 ppt
     
-    # same bindings, but for the arrow keys
     bindsym Left resize shrink width 5 px or 5 ppt
     bindsym Down resize grow height 5 px or 5 ppt
     bindsym Up resize shrink height 5 px or 5 ppt
     bindsym Right resize grow width 5 px or 5 ppt
     
-    # back to normal: Enter or Escape or $mod+r
     bindsym Return mode "default"
     bindsym Escape mode "default"
     bindsym $mod+r mode "default"
 }
 bindsym $mod+r mode "resize"
 
+########################################################
+#                    Layout Management                 #
+########################################################
+#
+# # layout tabbed
+# bindsym $mod+t layout tabbed
+# # layout stacking
+# bindsym $mod+s layout stacking
+# # layout toggle split
+# bindsym $mod+e layout toggle split
 
-# Status Bar
-bar {
-    position top
-    strip_workspace_numbers yes
-    #tray_output none
-    font pango:Fira Code 11, FontAwesome 10
-    separator_symbol "⋆"
-    
-    status_command i3status --config ~/.config/i3/i3status.conf
-    
-    #   statusbar colors    border     background   text
-    colors {
-        background          $bg
-        statusline          $sl
-        separator           $tx
-        focused_workspace   $ia        $ia          $tx
-        active_workspace    $gn        $ac          $tx
-        inactive_workspace  $bg        $fg          $ia
-        urgent_workspace    $ac        $bg          $ac
-    }
-}
+########################################################
+#                       Scratchpad                     #
+########################################################
+#
+# # Move the focused window to the scratchpad
+# bindsym $mod+Shift+minus move scratchpad
+# # Show the next scratchpad window or hide the focused scratchpad window.
+# # If there are multiple scratchpad windows, this command cycles through them.
+# bindsym $mod+minus scratchpad show
+
+########################################################
+#                         Marks                        #
+########################################################
+#
+# # Mark a window
+# # bindsym $mod+Ctrl+m exec --no-startup-id i3-input -F 'mark %s' -P 'Mark window as: '
+# # Go to a marked window
+# # bindsym $mod+Ctrl+g exec --no-startup-id i3-input -F '[con_mark="%s"] focus' -P 'Go to mark: '
+#
+# # Example specific marks (can be any name)
+# # bindsym $mod+Ctrl+1 mark --add "mark1"
+# # bindsym $mod+Ctrl+Shift+1 [con_mark="mark1"] focus
+#
+# # bindsym $mod+Ctrl+2 mark --add "mark2"
+# # bindsym $mod+Ctrl+Shift+2 [con_mark="mark2"] focus
+
+########################################################
+#                         Audio                        #
+########################################################
+
+bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && $refresh_i3status
+bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ -10% && $refresh_i3status
+bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
+bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
+
+########################################################
+#                    Brightness Controls               #
+########################################################
+
+bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
+bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
+exec_always --no-startup-id gammastep -m randr
+
+
+########################################################
+#                     Booting                          #
+########################################################
+
+exec_always --no-startup-id ~/.config/polybar/launch.sh
+exec_always --no-startup-id picom &
+exec_always --no-startup-id dunst -config ~/.config/dunst/dunstrc
+exec_always --no-startup-id "killall conky; conky -c ~/.config/conky/conky.conf"
+exec_always --no-startup-id lightscreen -b
+exec_always --no-startup-id blueman-applet
+exec_always --no-startup-id /home/crystal/.config/force_lifecycle_update.sh
+exec slack
+exec cursor --force_high_performance_gpu
+exec google-chrome-stable
+
+########################################################
+#          Advanced Workspace Management               #
+########################################################
+#
+# # Rename current workspace
+# # bindsym $mod+Shift+n exec --no-startup-id i3-input -F 'rename workspace to "%s"' -P 'New name for workspace: '
+# # Rename a specific workspace (example)
+# # bindsym $mod+Ctrl+r exec --no-startup-id i3-msg 'rename workspace "old_name" to "new_name"'
+#
+# # Assign workspace to specific output (monitor)
+# # workspace <workspace_name> output <output_name>
+# # Example:
+# # workspace $ws1 output HDMI-1
+# # workspace $ws2 output DP-1
+#
+# # Focus urgent workspace
+# # bindsym $mod+u [urgent=latest] focus
+#
+# # Move workspace to next/prev output (alternative to specific directions)
+# # bindsym $mod+Ctrl+period move workspace to output next
+# # bindsym $mod+Ctrl+comma move workspace to output prev
+#
+# # Workspace back_and_forth
+# # bindsym $mod+b workspace back_and_forth
+
+########################################################
+#        Advanced Container/Window Management          #
+########################################################
+#
+# # Toggle sticky for a window (stays on all workspaces)
+# # bindsym $mod+Shift+s sticky toggle
+#
+# # Move container to a named mark
+# # bindsym $mod+m mark <mark_name>
+# # bindsym $mod+Shift+m move container to mark <mark_name>
+# # bindsym $mod+g [con_mark=<mark_name>] focus
+#
+# # Focus parent/child container
+# # bindsym $mod+a focus parent
+# # bindsym $mod+c focus child # Note: might conflict with reload, choose a different key
+#
+# # Kill focused container (alternative to $mod+w or $mod+Shift+q)
+# # bindsym $mod+x kill
+#
+# # Layout saving and restoring (experimental, might require i3-save-tree)
+# # To save a layout for a workspace:
+# # i3-save-tree --workspace <workspace_name> > ~/.config/i3/workspace_<workspace_name>.json
+# # To append a layout to the current workspace:
+# # bindsym $mod+Shift+l exec --no-startup-id i3-append-layout ~/.config/i3/workspace_1.json
+#
+# # Change split orientation for next split
+# # bindsym $mod+Control+h layout splith
+# # bindsym $mod+Control+v layout splitv
+#
+# # Toggle split orientation for current container
+# # bindsym $mod+Shift+e layout toggle split
+
+########################################################
+#                 Modes & Command Chaining             #
+########################################################
+#
+# # Define a custom mode
+# # mode "my_custom_mode" {
+# #   bindsym q mode "default"
+# #   bindsym Escape mode "default"
+# #   bindsym j focus down
+# #   bindsym k focus up
+# # }
+# # bindsym $mod+Shift+x mode "my_custom_mode"
+#
+# # Chaining commands (example: move to workspace and focus it)
+# # bindsym $mod+Ctrl+1 move container to workspace $ws1; workspace $ws1
+
+########################################################
+#               IPC & Scripting Related                #
+########################################################
+#
+# # Nop command (useful for scripts or placeholder bindings)
+# # nop <comment_string>
+# # bindsym $mod+Pause nop Ping i3
+#
+# # Execute a command (already used extensively)
+# # exec [--no-startup-id] <command>
+#
+# # For_window rules (typically placed globally, not as keybinds)
+# # for_window [class="example"] floating enable, border pixel 1
+# # for_window [title="special"] move to workspace $ws3
+#
+# # Get_tree (useful for scripting, not a direct keybind action)
+# # i3-msg -t get_tree
+# # Get_workspaces
+# # i3-msg -t get_workspaces
+# # Get_outputs
+# # i3-msg -t get_outputs
+# # Get_marks
+# # i3-msg -t get_marks
+#
+# # Subscribe to events (for scripting)
+# # i3-msg -t subscribe -m '[ "workspace", "output", "mode", "window", "barconfig_update", "binding", "shutdown", "tick" ]'
+
+########################################################
+#              Miscellaneous i3 Commands               #
+########################################################
+#
+# # Toggle debug logging
+# # debuglog toggle
+#
+# # Set shmlog size (shared memory log for debugging)
+# # shmlog_size <bytes>
