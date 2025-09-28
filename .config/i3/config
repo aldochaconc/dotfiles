@@ -8,7 +8,7 @@ set $refresh_i3status killall -SIGUSR1 i3status
 ########################################################
 
 set $mod Mod4
-bindsym $mod+Return exec urxvt
+bindsym $mod+Return exec kitty
 bindsym $mod+d exec --no-startup-id rofi -show drun
 bindsym $mod+w kill
 bindsym $mod+Shift+c reload
@@ -32,6 +32,7 @@ set $ws6 "6"
 assign [class="Cursor"]  $ws1
 assign [class="Google-chrome"]  $ws2
 assign [class="Slack"]  $ws4
+assign [class="whatsapp-nativefier-d40211"]  $ws4
 assign [class="Spotify"]  $ws5
 
 ########################################################
@@ -55,9 +56,9 @@ font pango:Hack 10
 #                      Gaps                            #
 ########################################################
 
-gaps inner 12px
-gaps top 10px
-gaps bottom 10px
+gaps inner 10px
+gaps top 5px
+gaps bottom 0px
 gaps left 10px
 gaps right 10px
 
@@ -144,6 +145,7 @@ bindsym $mod+r mode "resize"
 # bindsym $mod+s layout stacking
 # # layout toggle split
 # bindsym $mod+e layout toggle split
+# default_orientation auto
 
 ########################################################
 #                       Scratchpad                     #
@@ -189,20 +191,7 @@ bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
 exec_always --no-startup-id gammastep -m randr
 
 
-########################################################
-#                     Booting                          #
-########################################################
 
-exec_always --no-startup-id ~/.config/polybar/launch.sh
-exec_always --no-startup-id picom &
-exec_always --no-startup-id dunst -config ~/.config/dunst/dunstrc
-exec_always --no-startup-id "killall conky; conky -c ~/.config/conky/conky.conf"
-exec_always --no-startup-id lightscreen -b
-exec_always --no-startup-id blueman-applet
-exec_always --no-startup-id /home/crystal/.config/force_lifecycle_update.sh
-exec slack
-exec cursor --force_high_performance_gpu
-exec google-chrome-stable
 
 ########################################################
 #          Advanced Workspace Management               #
@@ -234,7 +223,7 @@ exec google-chrome-stable
 ########################################################
 #
 # # Toggle sticky for a window (stays on all workspaces)
-# # bindsym $mod+Shift+s sticky toggle
+# bindsym $mod+Shift+s sticky toggle
 #
 # # Move container to a named mark
 # # bindsym $mod+m mark <mark_name>
@@ -259,7 +248,7 @@ exec google-chrome-stable
 # # bindsym $mod+Control+v layout splitv
 #
 # # Toggle split orientation for current container
-# # bindsym $mod+Shift+e layout toggle split
+bindsym $mod+Shift+e layout toggle split
 
 ########################################################
 #                 Modes & Command Chaining             #
@@ -313,3 +302,21 @@ exec google-chrome-stable
 #
 # # Set shmlog size (shared memory log for debugging)
 # # shmlog_size <bytes>
+
+########################################################
+#                     Booting                          #
+########################################################
+
+exec_always --no-startup-id ~/.config/polybar/launch.sh
+exec_always --no-startup-id picom -b
+exec_always --no-startup-id dunst -config ~/.config/dunst/dunstrc
+exec_always --no-startup-id /home/crystal/.config/force_lifecycle_update.sh
+
+exec_always --no-startup-id lightscreen -b
+exec_always --no-startup-id blueman-applet
+# exec_always --no-startup-id "killall conky; conky -c ~/.config/conky/conky.conf"
+
+
+# exec slack
+# exec cursor
+# exec google-chrome-stable

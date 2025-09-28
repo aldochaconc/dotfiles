@@ -49,18 +49,12 @@ URxvt.internalBorder: 10
 URxvt.cursorBlink: true
 URxvt.cursorUnderline: false
 URxvt.saveline: 4096
-URxvt.scrollBar: true
+URxvt.scrollBar: false
 URxvt.scrollBar_right: true
 URxvt.urgentOnBell: true
 URxvt.depth: 24
 URxvt.iso14755: false
-Xcursor.size: 16
-
-
-!! urxvt*transparent: true
-!! urxvt*shading: 30
-!! urxvt*blurRadius: 5
-
+Xcursor.size: 14
 
 URxvt.keysym.Shift-Up: command:\033]720;1\007
 URxvt.keysym.Shift-Down: command:\033]721;1\007

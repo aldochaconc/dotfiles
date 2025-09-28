@@ -1,0 +1,13 @@
+[Unit]
+Description=Run lifecycle_manager.service every 15 minutes
+
+[Timer]
+# Run 2 minutes after user session starts
+OnBootSec=2min
+# Run 15 minutes after the last time the service successfully ran
+OnUnitActiveSec=15min
+# Allow system to bundle timers
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target 
