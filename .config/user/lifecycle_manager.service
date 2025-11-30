@@ -1,7 +1,0 @@
-[Unit]
-Description=Manages wallpaper, screen temp, and terminal theme based on time of day
-
-[Service]
-Type=oneshot
-ExecStart=/home/crystal/.config/lifecycle_manager.sh
-Environment="DISPLAY=:0" 
