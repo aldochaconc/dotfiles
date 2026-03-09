@@ -45,7 +45,9 @@ LINKS := \
 	"hypr/workspaces.conf|$(CONFIG)/hypr/workspaces.conf" \
 	"kitty/kitty.conf|$(CONFIG)/kitty/kitty.conf" \
 	"mimeapps.list|$(CONFIG)/mimeapps.list" \
-	"nvim|$(CONFIG)/nvim" \
+	"nvim/lua/config/keymaps.lua|$(CONFIG)/nvim/lua/config/keymaps.lua" \
+	"nvim/lua/config/options.lua|$(CONFIG)/nvim/lua/config/options.lua" \
+	"nvim/lua/config/autocmds.lua|$(CONFIG)/nvim/lua/config/autocmds.lua" \
 	"spotify-launcher.conf|$(CONFIG)/spotify-launcher.conf" \
 	"swayosd/config.toml|$(CONFIG)/swayosd/config.toml" \
 	"fontconfig/fonts.conf|$(CONFIG)/fontconfig/fonts.conf" \
