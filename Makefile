@@ -71,8 +71,12 @@ link:
 		src="$(DOTFILES)/$$(echo $(entry) | cut -d'|' -f1)"; \
 		dest="$$(echo $(entry) | cut -d'|' -f2)"; \
 		mkdir -p "$$(dirname $$dest)"; \
-		ln -sf "$$src" "$$dest"; \
-		printf "  \033[36m→\033[0m  %-40s \033[2m→\033[0m  %s\n" "$$(echo $(entry) | cut -d'|' -f1)" "$$dest"; \
+		if [ -e "$$dest" ] && [ ! -L "$$dest" ]; then \
+			printf "  \033[33m⚠\033[0m  %-40s \033[2m%s exists and is not a symlink, skipping\033[0m\n" "$$(echo $(entry) | cut -d'|' -f1)" "$$dest"; \
+		else \
+			ln -sf "$$src" "$$dest"; \
+			printf "  \033[36m→\033[0m  %-40s \033[2m→\033[0m  %s\n" "$$(echo $(entry) | cut -d'|' -f1)" "$$dest"; \
+		fi; \
 	)
 	@printf "\n  \033[32m\033[1m✓ done\033[0m\n\n"
 
