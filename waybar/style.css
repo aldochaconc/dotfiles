@@ -7,7 +7,7 @@
   border: none;
   border-radius: 0;
   min-height: 0;
-  font-family: 'JetBrainsMono Nerd Font';
+  font-family: 'Monaco';
   font-size: 12px;
 }
 
@@ -49,11 +49,7 @@
 }
 
 #network {
-  margin-right: 13px;
-}
-
-#custom-expand-icon {
-  margin-right: 18px;
+  margin: 0 7.5px;
 }
 
 tooltip {
@@ -122,4 +118,17 @@ window#waybar.bottom #disk,
 window#waybar.bottom #network,
 window#waybar.bottom #clock {
   margin: 0 14px;
+}
+
+/* Bottom bar color states */
+#cpu-bar.warning,
+#temperature.warning,
+#disk.warning {
+  color: @battery-warning;
+}
+
+#cpu-bar.critical,
+#temperature.critical,
+#disk.critical {
+  color: @battery-critical;
 }

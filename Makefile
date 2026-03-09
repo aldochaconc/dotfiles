@@ -30,6 +30,7 @@ endef
 # ─────────────────────────────────────────────
 LINKS := \
 	"chromium-flags.conf|$(CONFIG)/chromium-flags.conf" \
+	"dunst/dunstrc|$(CONFIG)/dunst/dunstrc" \
 	"cursor/settings.json|$(CONFIG)/Cursor/User/settings.json" \
 	"cursor/keybindings.json|$(CONFIG)/Cursor/User/keybindings.json" \
 	"hypr/autostart.conf|$(CONFIG)/hypr/autostart.conf" \

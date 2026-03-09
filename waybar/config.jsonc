@@ -7,7 +7,7 @@
     "height": 26,
     "modules-left": ["custom/omarchy", "hyprland/workspaces"],
     "modules-center": ["hyprland/window"],
-    "modules-right": ["group/tray-expander", "clock#date", "clock"],
+    "modules-right": ["tray", "clock#date", "clock"],
     "hyprland/workspaces": {
       "on-click": "activate",
       "format": "{icon}",
@@ -81,23 +81,7 @@
       "format": "{}",
       "separate-outputs": true
     },
-    "group/tray-expander": {
-      "orientation": "inherit",
-      "drawer": {
-        "transition-duration": 600,
-        "children-class": "tray-group-item"
-      },
-      "modules": ["custom/expand-icon", "tray"]
-    },
-    "custom/expand-icon": {
-      "format": "",
-      "tooltip": false,
-      "on-scroll-up": "",
-      "on-scroll-down": "",
-      "on-scroll-left": "",
-      "on-scroll-right": ""
-    },
-    "tray": { "icon-size": 12, "spacing": 17 }
+    "tray": { "icon-size": 14, "spacing": 12 }
   },
   {
     "reload_style_on_change": true,
@@ -106,61 +90,24 @@
     "spacing": 0,
     "height": 22,
     "name": "bottom",
-    "modules-left": [],
-    "modules-center": [
+    "modules-left": [
       "cpu#bar",
       "memory#ram",
-      "memory#swap",
       "temperature",
+      "memory#swap",
       "disk",
-      "battery",
-      "network#bottom",
-      "network#wifi",
-      "pulseaudio",
-      "bluetooth"
+      "network#bottom"
     ],
-    "modules-right": [],
-    "bluetooth": {
-      "format": "󰂯 BT",
-      "format-off": "󰂲 off",
-      "format-disabled": "󰂲 off",
-      "format-connected": "󰂱 {device_alias}",
-      "format-no-controller": "no BT",
-      "tooltip-format": "Devices connected: {num_connections}",
-      "on-click": "omarchy-launch-bluetooth"
-    },
-    "pulseaudio": {
-      "format": "{icon} {volume}%",
-      "on-click": "omarchy-launch-audio",
-      "on-click-right": "pamixer -t",
-      "tooltip-format": "Playing at {volume}%",
-      "scroll-step": 5,
-      "format-muted": "󰖁 muted",
-      "format-icons": {
-        "headphone": "󰋋",
-        "headset": "󰋎",
-        "default": ["󰕿", "󰖀", "󰕾"]
-      }
-    },
-    "network#wifi": {
-      "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
-      "format": "{icon}",
-      "format-wifi": "{icon} {essid}",
-      "format-ethernet": "󰀂 {ifname}",
-      "format-disconnected": "󰤮 Disconnected",
-      "tooltip-format-wifi": "{essid} ({frequency} GHz)\n⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
-      "tooltip-format-ethernet": "⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
-      "tooltip-format-disconnected": "Disconnected",
-      "interval": 3,
-      "on-click": "omarchy-launch-wifi"
-    },
+    "modules-center": [
+    ],
+    "modules-right": ["network#wifi", "bluetooth", "pulseaudio", "battery"],
     "cpu#bar": {
       "interval": 2,
       "format": "󰍛 CPU {usage:>3}% {icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}",
       "format-icons": ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"],
       "tooltip-format": "CPU: {usage}%  {avg_frequency:0.2f} GHz",
       "on-click": "xdg-terminal-exec btop",
-      "states": { "warning": 70, "critical": 90 }
+      "states": { "normal": 40, "warning": 70, "critical": 90 }
     },
     "memory#ram": {
       "interval": 5,
@@ -178,14 +125,16 @@
       "interval": 3,
       "format": "󰈸 TEMP {temperatureC}°C",
       "critical-threshold": 80,
+      "warning-threshold": 65,
       "format-critical": "󰈸 TEMP {temperatureC}°C",
       "tooltip-format": "CPU temp: {temperatureC}°C"
     },
     "disk": {
       "interval": 30,
-      "format": "󰋊 DISK {free}",
+      "format": "󰋊 DISK {used}/{total}",
       "path": "/",
-      "tooltip-format": "{path}: {used} / {total} ({percentage_used}%)"
+      "tooltip-format": "{path}: {used} / {total} ({percentage_used}%)",
+      "states": { "warning": 80, "critical": 90 }
     },
     "network#bottom": {
       "interval": 2,
@@ -194,21 +143,55 @@
       "tooltip-format-ethernet": "↑{bandwidthUpBytes} ↓{bandwidthDownBytes}",
       "tooltip-format-disconnected": "Disconnected"
     },
+    "network#wifi": {
+      "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
+      "format": "{icon}",
+      "format-wifi": "{icon} {essid}",
+      "format-ethernet": "󰀂",
+      "format-disconnected": "󰤮",
+      "tooltip-format-wifi": "{essid} ({frequency} GHz)\n⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
+      "tooltip-format-ethernet": "⇣{bandwidthDownBytes}  ⇡{bandwidthUpBytes}",
+      "tooltip-format-disconnected": "Disconnected",
+      "interval": 3,
+      "on-click": "omarchy-launch-wifi"
+    },
+    "bluetooth": {
+      "format": "󰂯",
+      "format-off": "󰂲",
+      "format-disabled": "󰂲",
+      "format-connected": "󰂱 {device_alias}",
+      "format-no-controller": "",
+      "tooltip-format": "Devices connected: {num_connections}",
+      "on-click": "omarchy-launch-bluetooth"
+    },
+    "pulseaudio": {
+      "format": "{icon} {volume}%",
+      "on-click": "omarchy-launch-audio",
+      "on-click-right": "pamixer -t",
+      "tooltip-format": "Playing at {volume}%",
+      "scroll-step": 5,
+      "format-muted": "󰖁",
+      "format-icons": {
+        "headphone": "󰋋",
+        "headset": "󰋎",
+        "default": ["󰕿", "󰖀", "󰕾"]
+      }
+    },
     "battery": {
-      "format": "{icon} BAT {capacity}%",
-      "format-discharging": "{icon} BAT {capacity}% · {time}",
-      "format-charging": "󰂄 CHR {capacity}%",
-      "format-plugged": "󰂄 {capacity}%",
-      "format-full": "󰂅 FULL",
+      "format": "{capacity}% {icon}",
+      "format-discharging": "{icon} {capacity}% · {time}",
+      "format-charging": "󰂄 {capacity}%",
+      "format-plugged": "",
+      "format-full": "󰂅",
       "format-icons": {
         "charging": ["󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"],
         "default": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
       },
-      "tooltip-format-discharging": "{power:>1.1f}W ↓  {capacity}% · {time} remaining",
-      "tooltip-format-charging": "{power:>1.1f}W ↑  {capacity}% · {time} to full",
-      "tooltip-format-plugged": "{power:>1.1f}W  {capacity}%",
+      "tooltip-format-discharging": "{power:>1.0f}W↓ {capacity}% · {time} remaining",
+      "tooltip-format-charging": "{power:>1.0f}W↑ {capacity}% · {time} to full",
       "interval": 5,
-      "states": { "warning": 30, "critical": 15 }
+      "on-click": "omarchy-menu power",
+      "states": { "warning": 20, "critical": 10 }
     }
   }
 ]

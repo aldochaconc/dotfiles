@@ -1,0 +1,47 @@
+[global]
+    # One-liner bar style (dmenu / waybar aesthetic)
+    layer = overlay
+    origin = bottom-left
+    offset = (0, -22)
+    width = 1920
+    height = (22, 22)
+    notification_limit = 1
+    font = Monaco 9
+    format = "<b>%s</b>  %b"
+    alignment = left
+    vertical_alignment = center
+    show_age_threshold = -1
+    indicate_hidden = false
+    padding = 0
+    horizontal_padding = 8
+    frame_width = 0
+    frame_color = "#00000000"
+    highlight = "#8BA4B0"
+    progress_bar = true
+    progress_bar_height = 2
+    progress_bar_frame_width = 0
+    progress_bar_min_width = 1920
+    progress_bar_max_width = 1920
+    separator_height = 0
+    icon_position = off
+    corner_radius = 0
+    mouse_left_click = do_action, close_current
+    mouse_right_click = close_current
+    mouse_middle_click = close_all
+    enable_posix_regex = true
+
+[urgency_low]
+    background = "#00000000"
+    foreground = "#dcd7ba"
+    timeout = 5
+
+[urgency_normal]
+    background = "#00000000"
+    foreground = "#dcd7ba"
+    timeout = 5
+
+[urgency_critical]
+    background = "#00000000"
+    foreground = "#E46876"
+    frame_color = "#E46876"
+    timeout = 0

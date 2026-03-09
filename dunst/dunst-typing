@@ -1,0 +1,23 @@
+#!/bin/bash
+# dunst-typing — typewriter effect for dunst notifications
+# Usage: dunst-typing <summary> <body> [timeout_ms]
+# Replaces the notification in-place, typing out characters left to right.
+
+SUMMARY="$1"
+BODY="$2"
+TIMEOUT="${3:-5000}"
+REPLACE_ID=99999
+CHAR_DELAY=0.015
+
+FULL_TEXT="$SUMMARY"
+[[ -n "$BODY" ]] && FULL_TEXT="$SUMMARY  $BODY"
+
+# Type out character by character
+for (( i=1; i<=${#FULL_TEXT}; i++ )); do
+    PARTIAL="${FULL_TEXT:0:$i}"
+    dunstify -r "$REPLACE_ID" -t "$TIMEOUT" "$PARTIAL" "" 2>/dev/null
+    sleep "$CHAR_DELAY"
+done
+
+# Final notification with proper formatting
+dunstify -r "$REPLACE_ID" -t "$TIMEOUT" "$SUMMARY" "$BODY" 2>/dev/null

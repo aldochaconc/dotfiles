@@ -6,13 +6,14 @@
 @import "~/.config/omarchy/current/theme/rofi.rasi"
 
 window {
-    anchor:     north west;
-    location:   north west;
-    width:      40%;
-    y-offset:   -26px;
+    anchor:     south;
+    location:   south;
+    width:      100%;
+    y-offset:   22px;
     padding:    4px 8px;
     children:   [ horibox ];
-    border:     0px 0px 1px 0px;
+    border:     0px;
+    background-color: transparent;
 }
 
 horibox {
@@ -26,14 +27,14 @@ prompt {
 
 entry {
     expand:     false;
-    width:      12em;
-    placeholder: "...";
+    width:      0px;
+    placeholder: "";
 }
 
 listview {
     layout:     horizontal;
     spacing:    8px;
-    lines:      100;
+    lines:      5;
 }
 
 element {
