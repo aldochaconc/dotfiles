@@ -3,7 +3,7 @@
  * Colors imported from omarchy theme
  */
 
-@import "~/.config/omarchy/themes/crystal/rofi.rasi"
+@import "~/.config/omarchy/current/theme/rofi.rasi"
 
 window {
     anchor:     north west;

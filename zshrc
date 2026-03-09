@@ -13,13 +13,13 @@ source $ZSH/oh-my-zsh.sh
 
 export NVM_DIR=~/.nvm
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-fastfetch
+[[ -o interactive ]] && fastfetch
 
 export AWS_PAGER=""
 export AWS_CLI_AUTO_PROMPT=off
 alias aws='aws --no-cli-pager'
 export PATH="$HOME/.local/bin:$PATH"
-export PATH="$PATH:$(go env GOPATH)/bin"
+export PATH="$PATH:$HOME/go/bin"
 
 # pnpm
 export PNPM_HOME="/home/crystal/.local/share/pnpm"
