@@ -21,6 +21,8 @@
 
 #workspaces button {
   all: initial;
+  font-family: 'Monaco', 'JetBrainsMono Nerd Font Mono';
+  font-size: 12px;
   padding: 0 6px;
   margin: 0 1.5px;
   min-width: 9px;
@@ -32,6 +34,7 @@
 #workspaces button.active {
   color: @accent;
   opacity: 1;
+  border-bottom: 2px solid @accent;
 }
 
 #workspaces button.empty {
