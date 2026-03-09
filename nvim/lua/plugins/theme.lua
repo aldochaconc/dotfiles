@@ -63,21 +63,21 @@ return {
 					-- ANSI blues
 					blue3 = c.color4,
 					blue = c.color12,
-					blue2 = "#658594",
+					blue2 = c.blue2,
 					-- Violet / pink
 					pink = c.color5,
 					violet = c.color13,
-					violet2 = "#8992a7",
+					violet2 = c.violet2,
 					-- Cyan / aqua
 					aqua = c.color6,
 					-- Orange (constants, string escapes)
-					orange = "#b6927b",
-					orange2 = "#b98d7b",
+					orange = c.orange,
+					orange2 = c.orange2,
 					-- Grays (operators, punctuation, comments, nontext)
 					gray2 = c.color8,
-					gray3 = "#909398",
-					gray4 = "#75797f",
-					gray5 = "#5C6066",
+					gray3 = c.gray3,
+					gray4 = c.gray4,
+					gray5 = c.gray5,
 				},
 			},
 		},
