@@ -1,4 +1,5 @@
 @import "../omarchy/current/theme/waybar.css";
+@define-color indicator-active #a55555;
 
 * {
   background-color: @background;
@@ -84,12 +85,12 @@ tooltip {
 }
 
 #custom-screenrecording-indicator.active {
-  color: #a55555;
+  color: @indicator-active;
 }
 
 #custom-idle-indicator.active,
 #custom-notification-silencing-indicator.active {
-  color: #a55555;
+  color: @indicator-active;
 }
 
 #custom-voxtype {
@@ -98,7 +99,7 @@ tooltip {
 }
 
 #custom-voxtype.recording {
-  color: #a55555;
+  color: @indicator-active;
 }
 
 /* Battery states */
