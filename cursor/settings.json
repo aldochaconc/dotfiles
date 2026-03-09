@@ -46,7 +46,7 @@
   // Optional: set the ESLint extension as the default formatter
   "editor.defaultFormatter": "dbaeumer.vscode-eslint",
   "editor.formatOnSave": true,
-  "claudeCode.selectedModel": "haiku",
+  "claudeCode.selectedModel": "sonnet",
   "claudeCode.useTerminal": true,
   "githubPullRequests.pullBranch": "never",
   "debug.terminal.clearBeforeReusing": true,
@@ -58,12 +58,13 @@
   "terminal.integrated.fontFamily": "'Monaco'",
   "editor.inlayHints.fontFamily": "'Monaco'",
   "python.defaultInterpreterPath": "/bin/python",
-  // Foreground overrides — values match colors.toml "foreground" (#dcd7ba)
+  // Foreground overrides — must match colors.toml "foreground"
   "workbench.colorCustomizations": {
     "editor.foreground": "#dcd7ba",
     "foreground": "#dcd7ba",
     "terminal.foreground": "#dcd7ba",
     "sideBar.foreground": "#dcd7ba",
     "panel.foreground": "#dcd7ba"
-  }
+  },
+  "editor.smoothScrolling": true
 }

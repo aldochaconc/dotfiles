@@ -111,7 +111,11 @@ window#waybar.bottom {
   color: @foreground;
 }
 
-window#waybar.bottom #cpu-bar,
+window#waybar.bottom #cpu-bar {
+  margin: 0 14px;
+  min-width: 260px;
+}
+
 window#waybar.bottom #memory,
 window#waybar.bottom #temperature,
 window#waybar.bottom #disk,
