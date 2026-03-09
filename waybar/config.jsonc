@@ -92,8 +92,8 @@
     "name": "bottom",
     "modules-left": [
       "cpu#bar",
-      "memory#ram",
       "temperature",
+      "memory#ram",
       "memory#swap",
       "disk",
       "network#bottom"
