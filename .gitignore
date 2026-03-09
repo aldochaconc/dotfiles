@@ -1,0 +1,10 @@
+# Secrets - never commit
+*.local
+uwsm/env.d/
+
+# Backup files
+*.bak
+*.bak.*
+
+# OS
+.DS_Store
