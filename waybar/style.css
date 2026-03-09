@@ -24,10 +24,18 @@
   padding: 0 6px;
   margin: 0 1.5px;
   min-width: 9px;
+  color: @foreground;
+  opacity: 0.5;
+  transition: color 0.2s ease, opacity 0.2s ease;
+}
+
+#workspaces button.active {
+  color: @accent;
+  opacity: 1;
 }
 
 #workspaces button.empty {
-  opacity: 0.5;
+  opacity: 0.3;
 }
 
 #cpu,
