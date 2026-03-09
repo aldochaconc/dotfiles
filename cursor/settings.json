@@ -1,0 +1,69 @@
+{
+  "editor.fontSize": 15,
+  "terminal.integrated.gpuAcceleration": "off",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "makefile.configureOnOpen": true,
+  "terminal.integrated.customGlyphs": false,
+  "workbench.colorTheme": "Kanso Zen",
+  "files.associations": {
+    "*.conf": "properties"
+  },
+  "explorer.confirmDelete": false,
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "explorer.confirmDragAndDrop": false,
+  "git.autofetch": true,
+  "cursor.composer.usageSummaryDisplay": "always",
+  "extensions.ignoreRecommendations": true,
+  "redhat.telemetry.enabled": true,
+  "window.titleBarStyle": "native",
+  "bashIde.explainshellEndpoint": "http://localhost:5000",
+  "[shellscript]": {
+    "editor.defaultFormatter": "mkhl.shfmt"
+  },
+  "explorer.confirmPasteNative": false,
+  "xlsxViewer.md.stickyToolbar": true,
+  "xlsxViewer.md.wordWrap": true,
+  "xlsxViewer.md.syncScroll": true,
+  "xlsxViewer.md.previewPosition": "left",
+  "window.customTitleBarVisibility": "windowed",
+  "cursor.inlineDiff.mode": "unified",
+  "diffEditor.renderSideBySide": false,
+  "window.menuBarVisibility": "toggle",
+  "workbench.navigationControl.enabled": false,
+  "workbench.layoutControl.enabled": false,
+  "workbench.editor.autoLockGroups": {
+    "mainThreadWebview-simpleBrowser.view": false
+  },
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "always",
+    "source.fixAll.eslint": "always"
+  },
+  // Optional: set the ESLint extension as the default formatter
+  "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "editor.formatOnSave": true,
+  "claudeCode.selectedModel": "haiku",
+  "claudeCode.useTerminal": true,
+  "githubPullRequests.pullBranch": "never",
+  "debug.terminal.clearBeforeReusing": true,
+  "terminal.external.linuxExec": "kitty",
+  "editor.inlineSuggest.fontFamily": "'Monaco'",
+  "editor.fontFamily": "'Monaco'",
+  "debug.console.fontFamily": "'Monaco'",
+  "scm.inputFontFamily": "'Monaco'",
+  "terminal.integrated.fontFamily": "'Monaco'",
+  "editor.inlayHints.fontFamily": "'Monaco'",
+  "python.defaultInterpreterPath": "/bin/python",
+  "workbench.colorCustomizations": {
+    "editor.foreground": "#dcd7ba",
+    "foreground": "#dcd7ba",
+    "terminal.foreground": "#dcd7ba",
+    "sideBar.foreground": "#dcd7ba",
+    "panel.foreground": "#dcd7ba"
+  }
+}

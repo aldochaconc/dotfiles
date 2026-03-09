@@ -1,0 +1,46 @@
+/**
+ * dmenu-crystal — dmenu-style rofi layout
+ * Colors imported from omarchy theme
+ */
+
+@import "~/.config/omarchy/themes/crystal/rofi.rasi"
+
+window {
+    anchor:     north west;
+    location:   north west;
+    width:      40%;
+    y-offset:   -26px;
+    padding:    4px 8px;
+    children:   [ horibox ];
+    border:     0px 0px 1px 0px;
+}
+
+horibox {
+    orientation: horizontal;
+    children:   [ prompt, entry, listview ];
+}
+
+prompt {
+    padding:    0px 8px 0px 0px;
+}
+
+entry {
+    expand:     false;
+    width:      12em;
+    placeholder: "...";
+}
+
+listview {
+    layout:     horizontal;
+    spacing:    8px;
+    lines:      100;
+}
+
+element {
+    padding: 0px 4px;
+}
+
+element-text, element-icon {
+    background-color: inherit;
+    text-color:       inherit;
+}
