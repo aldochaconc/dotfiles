@@ -1,47 +1,58 @@
 [global]
     # One-liner bar style (dmenu / waybar aesthetic)
     layer = overlay
-    origin = bottom-left
-    offset = (0, -22)
-    width = 1920
-    height = (22, 22)
-    notification_limit = 1
+    origin = top-right
+    offset = (0, 0)
+    width = (0, 500)
+    height = (0, 50)
+    notification_limit = 10
     font = Monaco 9
     format = "<b>%s</b>  %b"
-    alignment = left
+    alignment = right
     vertical_alignment = center
     show_age_threshold = -1
     indicate_hidden = false
-    padding = 0
+    padding = 4
     horizontal_padding = 8
-    frame_width = 0
-    frame_color = "#00000000"
+    frame_width = 1
+    frame_color = "#8BA4B0"
     highlight = "#8BA4B0"
     progress_bar = true
     progress_bar_height = 2
     progress_bar_frame_width = 0
-    progress_bar_min_width = 1920
-    progress_bar_max_width = 1920
+    progress_bar_min_width = 150
+    progress_bar_max_width = 500
     separator_height = 0
+    gap_size = 4
     icon_position = off
     corner_radius = 0
     mouse_left_click = do_action, close_current
     mouse_right_click = close_current
     mouse_middle_click = close_all
     enable_posix_regex = true
+    always_run_script = true
+
+[typing]
+    summary = ".*"
+    format = ""
+    script = ~/.config/dunst/dunst-typing
+
+[typed]
+    stack_tag = "typed"
+    format = "<b>%s</b>  %b"
 
 [urgency_low]
-    background = "#00000000"
-    foreground = "#dcd7ba"
+    background = "#000000"
+    foreground = "#d5d2c4"
     timeout = 5
 
 [urgency_normal]
-    background = "#00000000"
-    foreground = "#dcd7ba"
+    background = "#000000"
+    foreground = "#d5d2c4"
     timeout = 5
 
 [urgency_critical]
-    background = "#00000000"
+    background = "#000000"
     foreground = "#E46876"
     frame_color = "#E46876"
     timeout = 0

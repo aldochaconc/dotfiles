@@ -1,0 +1,6 @@
+include=~/.local/share/omarchy/default/mako/core.ini
+
+anchor=top-center
+text-color=#d5d2c4
+border-color=#8BA4B0
+background-color=#020408
