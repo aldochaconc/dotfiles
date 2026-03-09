@@ -59,14 +59,15 @@ LINKS := \
 	"waybar/style.css|$(CONFIG)/waybar/style.css" \
 	"zshrc|$(HOME_DIR)/.zshrc"
 
-.PHONY: all link unlink help
+.PHONY: all link unlink help nvidia-sleep
 
 all: link
 
 help:
 	@printf "\n  $(BOLD)crystal dotfiles$(RESET)\n\n"
-	@printf "  $(CYAN)make link$(RESET)    symlink dotfiles → ~/.config\n"
-	@printf "  $(CYAN)make unlink$(RESET)  remove symlinks  (files are NOT deleted)\n\n"
+	@printf "  $(CYAN)make link$(RESET)         symlink dotfiles → ~/.config\n"
+	@printf "  $(CYAN)make unlink$(RESET)       remove symlinks  (files are NOT deleted)\n"
+	@printf "  $(CYAN)make nvidia-sleep$(RESET)  fix NVIDIA suspend (requires sudo)\n\n"
 
 link:
 	@printf "\n  $(BOLD)$(CYAN)linking dotfiles$(RESET)\n\n"
@@ -82,6 +83,27 @@ link:
 		fi; \
 	)
 	@printf "\n  \033[32m\033[1m✓ done\033[0m\n\n"
+
+# ─────────────────────────────────────────────
+#  NVIDIA suspend fix (requires sudo)
+#  - Wires nvidia-suspend/hibernate to hybrid-sleep
+#  - Disables hybrid-sleep (zram can't hibernate)
+# ─────────────────────────────────────────────
+NVIDIA_SLEEP_WANTS := /etc/systemd/system/systemd-hybrid-sleep.service.wants
+SLEEP_CONF_DROP    := /etc/systemd/sleep.conf.d
+
+nvidia-sleep:
+	@printf "\n  $(BOLD)$(CYAN)fixing NVIDIA suspend$(RESET)  $(DIM)(requires sudo)$(RESET)\n\n"
+	@sudo mkdir -p $(NVIDIA_SLEEP_WANTS)
+	@sudo ln -sf /usr/lib/systemd/system/nvidia-suspend.service $(NVIDIA_SLEEP_WANTS)/nvidia-suspend.service
+	@printf "  \033[36m→\033[0m  nvidia-suspend.service   \033[2m→\033[0m  hybrid-sleep.service.wants/\n"
+	@sudo ln -sf /usr/lib/systemd/system/nvidia-hibernate.service $(NVIDIA_SLEEP_WANTS)/nvidia-hibernate.service
+	@printf "  \033[36m→\033[0m  nvidia-hibernate.service  \033[2m→\033[0m  hybrid-sleep.service.wants/\n"
+	@sudo mkdir -p $(SLEEP_CONF_DROP)
+	@sudo cp $(DOTFILES)/systemd/sleep.conf.d/10-no-hybrid-sleep.conf $(SLEEP_CONF_DROP)/10-no-hybrid-sleep.conf
+	@printf "  \033[36m→\033[0m  10-no-hybrid-sleep.conf  \033[2m→\033[0m  $(SLEEP_CONF_DROP)/\n"
+	@sudo systemctl daemon-reload
+	@printf "\n  \033[32m\033[1m✓ done\033[0m  — NVIDIA suspend fixed, hybrid-sleep disabled\n\n"
 
 unlink:
 	@printf "\n  $(BOLD)$(YELLOW)unlinking dotfiles$(RESET)\n\n"

@@ -3,6 +3,7 @@
     "reload_style_on_change": true,
     "layer": "top",
     "position": "top",
+    "exclusive": false,
     "spacing": 0,
     "height": 26,
     "modules-left": ["custom/omarchy", "hyprland/workspaces"],
@@ -90,6 +91,7 @@
     "reload_style_on_change": true,
     "layer": "top",
     "position": "bottom",
+    "exclusive": false,
     "spacing": 0,
     "height": 22,
     "name": "bottom",
@@ -101,8 +103,12 @@
       "disk",
       "network#bottom"
     ],
-    "modules-center": [
-    ],
+    "modules-center": ["custom/cursor"],
+    "custom/cursor": {
+      "format": "▊",
+      "on-click": "rofi -show drun -show-icons -no-config -theme dmenu-crystal -p \">\"",
+      "tooltip-format": "Command mode (Super + ;)"
+    },
     "modules-right": ["network#wifi", "bluetooth", "pulseaudio", "battery"],
     "cpu#bar": {
       "interval": 2,

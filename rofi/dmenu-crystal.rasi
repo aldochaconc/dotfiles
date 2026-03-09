@@ -1,47 +1,56 @@
 /**
- * dmenu-crystal — dmenu-style rofi layout
- * Colors imported from omarchy theme
+ * dmenu-crystal — vim command-line style rofi
+ * Sits in bottom bar center gap between left and right modules
  */
 
 @import "~/.config/omarchy/current/theme/rofi.rasi"
 
+* {
+    background-color: #00000000;
+    text-color:       #dcd7ba;
+}
+
 window {
     anchor:     south;
-    location:   south;
-    width:      100%;
-    y-offset:   22px;
-    padding:    4px 8px;
+    location:   southeast;
+    x-offset:   25;
+    y-offset:   0;
+    padding:    2;
+    font-size:  10;
     children:   [ horibox ];
-    border:     0px;
+    border:     0;
+    border-radius: 0;
     background-color: transparent;
 }
 
 horibox {
     orientation: horizontal;
-    children:   [ prompt, entry, listview ];
+    children:   [ prompt, entry ];
+    background-color: transparent;
 }
 
 prompt {
-    padding:    0px 8px 0px 0px;
-}
-
-entry {
-    expand:     false;
-    width:      0px;
-    placeholder: "";
+    background-color: transparent;
+    text-color:       #ffffff;
+    margin:           0 8px 0 0;
 }
 
 listview {
     layout:     horizontal;
-    spacing:    8px;
-    lines:      5;
+    spacing:    5px;
+    lines:      1;
+    background-color: transparent;
 }
 
 element {
-    padding: 0px 4px;
+    background-color: transparent;
+}
+
+element selected {
+    background-color: transparent;
 }
 
 element-text, element-icon {
-    background-color: inherit;
-    text-color:       inherit;
+    background-color: transparent;
+    text-color: inherit;
 }

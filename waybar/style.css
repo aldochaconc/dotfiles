@@ -22,13 +22,12 @@
 #workspaces button {
   all: initial;
   font-family: 'Monaco', 'JetBrainsMono Nerd Font Mono';
-  font-size: 12px;
+  font-size: 8px;
   padding: 0 6px;
   margin: 0 1.5px;
   min-width: 9px;
   color: @foreground;
   opacity: 0.5;
-  transition: color 0.2s ease, opacity 0.2s ease;
 }
 
 #workspaces button.active {
@@ -115,6 +114,14 @@ tooltip {
 
 #battery.critical {
   color: @battery-critical;
+}
+
+/* Bottom bar cursor blinker */
+window#waybar.bottom #custom-cursor {
+  color: @accent;
+  opacity: 0.4;
+  font-size: 10px;
+  padding: 0;
 }
 
 /* Bottom bar */
