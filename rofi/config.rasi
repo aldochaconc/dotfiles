@@ -1,5 +1,4 @@
 configuration {
-    font: "Monaco 10";
     show-icons: true;
     terminal: "kitty";
     case-sensitive: false;

@@ -1,5 +1,4 @@
 @import "../omarchy/current/theme/waybar.css";
-@define-color indicator-active #a55555;
 
 * {
   background-color: @background;
@@ -104,11 +103,11 @@ tooltip {
 
 /* Battery states */
 #battery.warning {
-  color: #e6c384;
+  color: @battery-warning;
 }
 
 #battery.critical {
-  color: #e82424;
+  color: @battery-critical;
 }
 
 /* Bottom bar */
