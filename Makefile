@@ -50,12 +50,14 @@ LINKS := \
 	"nvim/lua/config/autocmds.lua|$(CONFIG)/nvim/lua/config/autocmds.lua" \
 	"spotify-launcher.conf|$(CONFIG)/spotify-launcher.conf" \
 	"swayosd/config.toml|$(CONFIG)/swayosd/config.toml" \
+	"swayosd/style.css|$(CONFIG)/swayosd/style.css" \
 	"fontconfig/fonts.conf|$(CONFIG)/fontconfig/fonts.conf" \
 	"rofi/config.rasi|$(CONFIG)/rofi/config.rasi" \
 	"rofi/dmenu-crystal.rasi|$(CONFIG)/rofi/dmenu-crystal.rasi" \
 	"walker/config.toml|$(CONFIG)/walker/config.toml" \
 	"waybar/config.jsonc|$(CONFIG)/waybar/config.jsonc" \
 	"waybar/style.css|$(CONFIG)/waybar/style.css" \
+	"waybar/scripts/notification-listener.py|$(CONFIG)/waybar/scripts/notification-listener.py" \
 	"zshrc|$(HOME_DIR)/.zshrc"
 
 .PHONY: all link unlink help nvidia-sleep

@@ -3,24 +3,30 @@ include=~/.local/share/omarchy/default/mako/core.ini
 anchor=bottom-right
 layer=overlay
 width=930
-height=25
-outer-margin=0
-margin=10,0,10
+height=22
+outer-margin=0,0,4,0
+margin=0
 padding=0
 border-size=0
 border-radius=0
-font=Monaco 10
-format=<b>></b>  <b>%s</b>  %b
+font=Monaco 9
+format=<span foreground='#9ea1a7'><b>●</b></span>  <b>%s</b>  %b
 text-color=#dcd7ba
 background-color=#090E1366
 border-color=#8BA4B0
 default-timeout=4000
-icons=1
-max-visible=1
+icons=0
+max-visible=0
 text-alignment=left
 
+[urgency=low]
+format=<span foreground='#9ea1a7'><b>●</b></span>  <b>%s</b>  %b
+
+[urgency=normal]
+format=<span foreground='#8bae79'><b>●</b></span>  <b>%s</b>  %b
+
 [urgency=critical]
+format=<span foreground='#E46876'><b>●</b></span>  <b>%s</b>  %b
 text-color=#E46876
-border-color=#E46876
-border-size=1
+border-size=0
 default-timeout=0

@@ -11,6 +11,10 @@
   font-size: 12px;
 }
 
+#window label {
+  min-width: 0;
+}
+
 .modules-left {
   margin-left: 8px;
 }
@@ -47,6 +51,14 @@
 #custom-update {
   min-width: 12px;
   margin: 0 7.5px;
+}
+
+#custom-notification {
+  margin: 0 12px;
+}
+
+#custom-notification.critical {
+  color: #E46876;
 }
 
 #tray {

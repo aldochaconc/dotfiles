@@ -7,7 +7,7 @@
     "spacing": 0,
     "height": 26,
     "modules-left": ["custom/omarchy", "hyprland/workspaces"],
-    "modules-center": ["hyprland/window"],
+    "modules-center": ["custom/notification"],
     "modules-right": ["tray", "clock#date", "clock"],
     "hyprland/workspaces": {
       "on-click": "activate",
@@ -80,8 +80,18 @@
       "signal": 8,
       "return-type": "json"
     },
-    "hyprland/window": {
+    "custom/notification": {
+      "exec": "~/.config/waybar/scripts/notification-listener.py",
+      "return-type": "json",
       "format": "{}",
+      "markup": true,
+      "on-click": "pkill -USR1 -f notification-listener",
+      "on-click-right": "pkill -USR2 -f notification-listener",
+      "tooltip": true
+    },
+    "hyprland/window": {
+      "format": "{title}",
+      "max-length": 80,
       "separate-outputs": true
     },
     "tray": { "icon-size": 14, "spacing": 12 }
@@ -105,7 +115,7 @@
     "modules-center": ["custom/cursor"],
     "custom/cursor": {
       "format": "▊",
-      "on-click": "rofi -show drun -show-icons -no-config -theme dmenu-crystal -p \">\"",
+      "on-click": "rofi -show drun -show-icons -no-config -theme dmenu-crystal -display-drun \">\"",
       "tooltip-format": "Command mode (Super + ;)"
     },
     "modules-right": ["network#wifi", "bluetooth", "pulseaudio", "battery"],

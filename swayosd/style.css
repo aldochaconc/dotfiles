@@ -1,0 +1,43 @@
+@import "../omarchy/current/theme/swayosd.css";
+
+window#osd {
+  border-radius: 0;
+  border: none;
+  background-color: @background-color;
+}
+
+window#osd #container {
+  margin: 6px 16px;
+}
+
+window#osd image {
+  color: @image;
+  -gtk-icon-size: 16px;
+}
+
+window#osd label {
+  font-family: 'Monaco';
+  font-size: 9pt;
+  color: @label;
+}
+
+window#osd progressbar {
+  min-height: 4px;
+  border-radius: 0;
+  background: transparent;
+}
+
+window#osd trough {
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+window#osd progress {
+  border-radius: 0;
+  background-color: @progress;
+}
+
+window#osd progressbar:disabled,
+window#osd image:disabled {
+  opacity: 0.4;
+}
