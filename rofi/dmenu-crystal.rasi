@@ -8,15 +8,15 @@
 * {
     background-color: #00000000;
     text-color:       #dcd7ba;
+    font:             "Monaco 10";
 }
 
 window {
     anchor:     south;
     location:   southeast;
     x-offset:   25;
-    y-offset:   0;
-    padding:    2;
-    font-size:  10;
+    y-offset:   -4;
+    padding:    0;
     children:   [ horibox ];
     border:     0;
     border-radius: 0;
@@ -32,7 +32,12 @@ horibox {
 prompt {
     background-color: transparent;
     text-color:       #ffffff;
+    font:             "Monaco Bold 10";
     margin:           0 8px 0 0;
+}
+
+entry {
+    background-color: transparent;
 }
 
 listview {

@@ -64,7 +64,11 @@
     "foreground": "#dcd7ba",
     "terminal.foreground": "#dcd7ba",
     "sideBar.foreground": "#dcd7ba",
-    "panel.foreground": "#dcd7ba"
-  },
-  "editor.smoothScrolling": true
+    "panel.foreground": "#dcd7ba",
+    "sideBar.background": "#101218",
+    "sideBarSectionHeader.background": "#101218",
+    "editor.selectionBackground": "#2A2E3A",
+    "editor.inactiveSelectionBackground": "#252833fe",
+    "terminal.selectionBackground": "#2A2E3A"
+  }
 }
