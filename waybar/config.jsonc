@@ -6,11 +6,20 @@
     "exclusive": false,
     "spacing": 0,
     "height": 26,
-    "modules-left": ["custom/omarchy", "hyprland/workspaces"],
+    "modules-left": ["custom/omarchy", "hyprland/workspaces", "hyprland/window"],
     "modules-center": ["custom/notification"],
-    "modules-right": ["tray", "clock#date", "clock"],
+    "modules-right": [
+      "custom/media",
+      "tray",
+      "pulseaudio",
+      "network#wifi",
+      "bluetooth",
+      "clock#date",
+      "clock"
+    ],
     "hyprland/workspaces": {
       "on-click": "activate",
+      "sort-by": "id",
       "format": "{icon}",
       "format-icons": {
         "default": "",
@@ -25,7 +34,7 @@
         "9": "9",
         "chat": "󰭹",
         "mail": "󰇮",
-        "dev": "",
+        "dev": "",
         "media": "󰝚"
       }
     },
@@ -58,22 +67,6 @@
       "tooltip": false,
       "on-click-right": "omarchy-launch-floating-terminal-with-presentation omarchy-tz-select"
     },
-    "battery": {
-      "format": "{capacity}% {icon}",
-      "format-discharging": "{icon} {capacity}% · {time}",
-      "format-charging": "󰂄 {capacity}%",
-      "format-plugged": "",
-      "format-full": "󰂅",
-      "format-icons": {
-        "charging": ["󰢜", "󰂆", "󰂇", "󰂈", "󰢝", "󰂉", "󰢞", "󰂊", "󰂋", "󰂅"],
-        "default": ["󰁺", "󰁻", "󰁼", "󰁽", "󰁾", "󰁿", "󰂀", "󰂁", "󰂂", "󰁹"]
-      },
-      "tooltip-format-discharging": "{power:>1.0f}W↓ {capacity}% · {time} remaining",
-      "tooltip-format-charging": "{power:>1.0f}W↑ {capacity}% · {time} to full",
-      "interval": 5,
-      "on-click": "omarchy-menu power",
-      "states": { "warning": 20, "critical": 10 }
-    },
     "custom/screenrecording-indicator": {
       "on-click": "omarchy-cmd-screenrecord",
       "exec": "$OMARCHY_PATH/default/waybar/indicators/screen-recording.sh",
@@ -89,77 +82,27 @@
       "on-click-right": "pkill -USR2 -f notification-listener",
       "tooltip": true
     },
-    "hyprland/window": {
-      "format": "{title}",
-      "max-length": 80,
-      "separate-outputs": true
+    "custom/media": {
+      "format": "{}",
+      "return-type": "json",
+      "exec": "~/.config/waybar/scripts/media-player.py",
+      "on-click": "playerctl -p spotify play-pause",
+      "on-click-right": "hyprctl dispatch workspace name:media && omarchy-launch-or-focus spotify-launcher",
+      "on-click-middle": "playerctl -p spotify previous",
+      "escape": true
     },
-    "tray": { "icon-size": 14, "spacing": 12 }
-  },
-  {
-    "reload_style_on_change": true,
-    "layer": "top",
-    "position": "bottom",
-    "exclusive": false,
-    "spacing": 0,
-    "height": 22,
-    "name": "bottom",
-    "modules-left": [
-      "cpu#bar",
-      "temperature",
-      "memory#ram",
-      "memory#swap",
-      "disk",
-      "network#bottom"
-    ],
-    "modules-center": ["custom/cursor"],
-    "custom/cursor": {
-      "format": "▊",
-      "on-click": "rofi -show drun -show-icons -no-config -theme dmenu-crystal -display-drun \">\"",
-      "tooltip-format": "Command mode (Super + ;)"
-    },
-    "modules-right": ["network#wifi", "bluetooth", "pulseaudio", "battery"],
-    "cpu#bar": {
-      "interval": 2,
-      "format": "󰍛 CPU {usage:>3}% {icon0}{icon1}{icon2}{icon3}{icon4}{icon5}{icon6}{icon7}{icon8}{icon9}{icon10}{icon11}{icon12}{icon13}{icon14}{icon15}",
-      "format-icons": ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"],
-      "tooltip-format": "CPU: {usage}%  {avg_frequency:0.2f} GHz",
-      "on-click": "xdg-terminal-exec btop",
-      "states": { "normal": 40, "warning": 70, "critical": 90 }
-    },
-    "memory#ram": {
-      "interval": 5,
-      "format": "󰍺 RAM {used:0.1f}G/{total:0.1f}G",
-      "tooltip-format": "RAM: {used:0.1f}G / {total:0.1f}G",
-      "on-click": ""
-    },
-    "memory#swap": {
-      "interval": 5,
-      "format": "󰾴 SWAP {swapUsed:0.1f}G/{swapTotal:0.1f}G",
-      "tooltip-format": "Swap: {swapUsed:0.1f}G / {swapTotal:0.1f}G",
-      "on-click": ""
-    },
-    "temperature": {
-      "interval": 3,
-      "format": "󰈸 TEMP {temperatureC}°C",
-      "critical-threshold": 80,
-      "warning-threshold": 65,
-      "format-critical": "󰈸 TEMP {temperatureC}°C",
-      "tooltip-format": "CPU temp: {temperatureC}°C"
-    },
-    "disk": {
-      "interval": 30,
-      "format": "󰋊 DISK {used}/{total}",
-      "path": "/",
-      "tooltip-format": "{path}: {used} / {total} ({percentage_used}%)",
-      "states": { "warning": 80, "critical": 90 }
-    },
-    "network#bottom": {
-      "interval": 2,
-      "format": "󰛳 ↑{bandwidthUpBytes:>9}↓{bandwidthDownBytes:>9}",
-      "tooltip-format-wifi": "{essid}  ↑{bandwidthUpBytes} ↓{bandwidthDownBytes}",
-      "tooltip-format-ethernet": "↑{bandwidthUpBytes} ↓{bandwidthDownBytes}",
-      "tooltip-format-disconnected": "Disconnected"
+    "pulseaudio": {
+      "format": "{icon} {volume}%",
+      "on-click": "omarchy-launch-audio",
+      "on-click-right": "pamixer -t",
+      "tooltip-format": "Playing at {volume}%",
+      "scroll-step": 5,
+      "format-muted": "󰖁",
+      "format-icons": {
+        "headphone": "󰋋",
+        "headset": "󰋎",
+        "default": ["󰕿", "󰖀", "󰕾"]
+      }
     },
     "network#wifi": {
       "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
@@ -182,18 +125,79 @@
       "tooltip-format": "Devices connected: {num_connections}",
       "on-click": "omarchy-launch-bluetooth"
     },
-    "pulseaudio": {
-      "format": "{icon} {volume}%",
-      "on-click": "omarchy-launch-audio",
-      "on-click-right": "pamixer -t",
-      "tooltip-format": "Playing at {volume}%",
-      "scroll-step": 5,
-      "format-muted": "󰖁",
-      "format-icons": {
-        "headphone": "󰋋",
-        "headset": "󰋎",
-        "default": ["󰕿", "󰖀", "󰕾"]
-      }
+    "hyprland/window": {
+      "format": "{title}",
+      "max-length": 80,
+      "separate-outputs": true
+    },
+    "tray": { "icon-size": 14, "spacing": 12 }
+  },
+  {
+    "reload_style_on_change": true,
+    "layer": "top",
+    "position": "bottom",
+    "exclusive": false,
+    "spacing": 0,
+    "height": 22,
+    "name": "bottom",
+    "modules-left": [],
+    "modules-center": [
+      "cpu#bar",
+      "temperature",
+      "memory#ram",
+      "disk",
+      "network#bottom",
+      "custom/power-stats",
+      "battery"
+    ],
+    "modules-right": [],
+    "cpu#bar": {
+      "interval": 2,
+      "format": "󰍛 {usage:>3}% · {avg_frequency:0.2f}/{max_frequency:0.2f}GHz · {load:0.2f}/16",
+      "tooltip-format": "CPU: {usage}%\nFrequency: {avg_frequency:0.2f}/{max_frequency:0.2f} GHz\nLoad: {load:0.2f}/16",
+      "on-click": "xdg-terminal-exec btop",
+      "states": { "normal": 40, "warning": 70, "critical": 90 }
+    },
+    "memory#ram": {
+      "interval": 5,
+      "format": "󰓅 RAM {percentage}%",
+      "tooltip-format": "RAM: {used:0.1f}G / {total:0.1f}G ({percentage}%)",
+      "states": { "warning": 70, "critical": 90 }
+    },
+    "memory#swap": {
+      "interval": 5,
+      "format": "󰓅 SWAP {swapPercentage}%",
+      "tooltip-format": "Swap: {swapUsed:0.1f}G / {swapTotal:0.1f}G ({swapPercentage}%)",
+      "states": { "warning": 70, "critical": 90 }
+    },
+    "temperature": {
+      "interval": 3,
+      "format": "{icon} {temperatureC}°C",
+      "format-icons": ["󰜗", "󱃁", "󰔏", "󱃂", "󰈸"],
+      "critical-threshold": 80,
+      "warning-threshold": 65,
+      "format-critical": "󰈸 {temperatureC}°C",
+      "tooltip-format": "CPU temp: {temperatureC}°C"
+    },
+    "disk": {
+      "interval": 30,
+      "format": "󰋊 {used}/{total}",
+      "path": "/",
+      "tooltip-format": "{path}: {used} / {total} ({percentage_used}%)",
+      "states": { "warning": 80, "critical": 90 }
+    },
+    "network#bottom": {
+      "interval": 2,
+      "format": "󰛳 {bandwidthUpBytes:>9}󰁝 {bandwidthDownBytes:>9}󰁅",
+      "tooltip-format-wifi": "{essid}  ↑{bandwidthUpBytes} ↓{bandwidthDownBytes}",
+      "tooltip-format-ethernet": "↑{bandwidthUpBytes} ↓{bandwidthDownBytes}",
+      "tooltip-format-disconnected": "Disconnected"
+    },
+    "custom/power-stats": {
+      "exec": "V=$(awk '{printf \"%.2f\", $1/1000000}' /sys/class/power_supply/BAT0/voltage_now); W=$(upower -i /org/freedesktop/UPower/devices/battery_BAT0 | awk '/energy-rate/{printf \"%.2f\", $2}'); echo \"󱐋 ${V}V ${W}W\"",
+      "interval": 3,
+      "format": "{}",
+      "tooltip-format": "Battery voltage (min design: 11.58V) · System power draw"
     },
     "battery": {
       "format": "{capacity}% {icon}",

@@ -25,7 +25,6 @@ Theme: [omarchy-theme-crystal](https://github.com/aldochaconc/omarchy-theme-crys
 
 - **Vim-style window navigation** — `Super+H/J/K/L` as alternative to arrow keys
 - **Named workspaces** — chat, mail, dev, media with persistent icons in waybar; apps auto-route via window rules
-- **Workspace overview** — `Super+Space` or 3-finger swipe up/down on trackpad (hyprexpo)
 - **3-finger horizontal swipe** — switch workspaces
 - **Single-key app launcher** — `Super+Shift+<key>` for every app (W=WhatsApp, S=Slack, M=Music, E=Email, G=GitHub, etc.)
 - **Dual waybar** — top bar for workspaces/window/clock, bottom bar for CPU/RAM/temp/disk/network stats
@@ -38,7 +37,7 @@ Theme: [omarchy-theme-crystal](https://github.com/aldochaconc/omarchy-theme-crys
 |-----|--------|
 | `Super+H/J/K/L` | Focus left/down/up/right |
 | `Super+Return` | Terminal (preserves CWD) |
-| `Super+Space` | Workspace overview |
+| `Super+Space` | App launcher (rofi) |
 | `Super+;` | App launcher (rofi) |
 | `Super+Shift+;` | Command runner (rofi) |
 | `Super+F` | Full width |

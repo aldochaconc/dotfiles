@@ -31,3 +31,14 @@ esac
 
 # Source local secrets (tokens, API keys) - not committed to git
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
+
+# bun
+export PNPM_HOME="/home/crystal/.local/share/mise/installs/bun/1.3.12/bin"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# bun end
+#
+alias claude='CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING=1 MAX_THINKING_TOKENS=128000 CLAUDE_CODE_NO_FLICKER=1 claude --dangerously-skip-permissions --chrome'
+export PATH="$HOME/.local/bin:$PATH"

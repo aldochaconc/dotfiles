@@ -1,5 +1,5 @@
 {
-  "editor.fontSize": 15,
+  "workbench.colorTheme": "Kanso Zen",
   "terminal.integrated.gpuAcceleration": "off",
   "typescript.updateImportsOnFileMove.enabled": "always",
   "[jsonc]": {
@@ -7,7 +7,6 @@
   },
   "makefile.configureOnOpen": true,
   "terminal.integrated.customGlyphs": false,
-  "workbench.colorTheme": "Kanso Zen",
   "files.associations": {
     "*.conf": "properties"
   },
@@ -70,5 +69,9 @@
     "editor.selectionBackground": "#2A2E3A",
     "editor.inactiveSelectionBackground": "#252833fe",
     "terminal.selectionBackground": "#2A2E3A"
-  }
+  },
+  "diffEditor.ignoreTrimWhitespace": true,
+  "diffEditor.experimental.showMoves": true,
+  "window.autoDetectColorScheme": false,
+  "git.blame.editorDecoration.enabled": true
 }

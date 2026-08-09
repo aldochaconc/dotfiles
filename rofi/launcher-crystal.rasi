@@ -1,0 +1,91 @@
+/**
+ * launcher-crystal — top-left dropdown launcher
+ * Anchored below waybar top bar, next to workspaces
+ * Shows 3 filtered results as you type
+ */
+
+@import "~/.config/omarchy/current/theme/rofi.rasi"
+
+configuration {
+    combi-display-format: "{text}";
+    matching: "fuzzy";
+    sort: true;
+    sorting-method: "fzf";
+}
+
+* {
+    font: "Monaco 10";
+}
+
+window {
+    anchor:           north;
+    location:         north;
+    x-offset:         0;
+    y-offset:         26;
+    width:            320px;
+    padding:          6px;
+    border:           1px;
+    border-color:     #1C1E25;
+    border-radius:    4px;
+    background-color: #090E13;
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+    spacing: 4px;
+    background-color: transparent;
+}
+
+inputbar {
+    children: [ prompt, entry ];
+    background-color: transparent;
+    spacing: 8px;
+    padding: 4px 6px;
+}
+
+prompt {
+    background-color: transparent;
+    text-color:       #8BA4B0;
+    font:             "Monaco Bold 10";
+}
+
+entry {
+    background-color: transparent;
+    text-color:       #dcd7ba;
+    placeholder:      "search...";
+    placeholder-color: #9E9B93;
+}
+
+listview {
+    lines:            5;
+    dynamic:          true;
+    fixed-height:     false;
+    scrollbar:        false;
+    background-color: transparent;
+    spacing:          2px;
+    padding:          2px 0 0 0;
+}
+
+element {
+    padding:          4px 6px;
+    background-color: transparent;
+    text-color:       #dcd7ba;
+    border-radius:    3px;
+}
+
+element selected {
+    background-color: #24262D;
+    text-color:       #8BA4B0;
+}
+
+element-icon {
+    size:             16px;
+    margin:           0 8px 0 0;
+    background-color: transparent;
+}
+
+element-text {
+    background-color: transparent;
+    text-color:       inherit;
+    highlight:        bold #8BA4B0;
+}

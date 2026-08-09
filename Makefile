@@ -30,6 +30,7 @@ endef
 # ─────────────────────────────────────────────
 LINKS := \
 	"chromium-flags.conf|$(CONFIG)/chromium-flags.conf" \
+	"thorium-flags.conf|$(CONFIG)/thorium-flags.conf" \
 	"cursor/settings.json|$(CONFIG)/Cursor/User/settings.json" \
 	"cursor/keybindings.json|$(CONFIG)/Cursor/User/keybindings.json" \
 	"hypr/autostart.conf|$(CONFIG)/hypr/autostart.conf" \
@@ -54,10 +55,13 @@ LINKS := \
 	"fontconfig/fonts.conf|$(CONFIG)/fontconfig/fonts.conf" \
 	"rofi/config.rasi|$(CONFIG)/rofi/config.rasi" \
 	"rofi/dmenu-crystal.rasi|$(CONFIG)/rofi/dmenu-crystal.rasi" \
+	"rofi/launcher-crystal.rasi|$(CONFIG)/rofi/launcher-crystal.rasi" \
 	"walker/config.toml|$(CONFIG)/walker/config.toml" \
 	"waybar/config.jsonc|$(CONFIG)/waybar/config.jsonc" \
 	"waybar/style.css|$(CONFIG)/waybar/style.css" \
 	"waybar/scripts/notification-listener.py|$(CONFIG)/waybar/scripts/notification-listener.py" \
+	"waybar/scripts/media-player.py|$(CONFIG)/waybar/scripts/media-player.py" \
+	"waybar/scripts/power-monitor.py|$(CONFIG)/waybar/scripts/power-monitor.py" \
 	"zshrc|$(HOME_DIR)/.zshrc"
 
 .PHONY: all link unlink help nvidia-sleep

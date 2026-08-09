@@ -7,12 +7,8 @@
   border: none;
   border-radius: 0;
   min-height: 0;
-  font-family: 'Monaco';
+  font-family: 'JetBrainsMono Nerd Font';
   font-size: 12px;
-}
-
-#window label {
-  min-width: 0;
 }
 
 .modules-left {
@@ -25,23 +21,13 @@
 
 #workspaces button {
   all: initial;
-  font-family: 'Monaco', 'JetBrainsMono Nerd Font Mono';
-  font-size: 8px;
   padding: 0 6px;
   margin: 0 1.5px;
   min-width: 9px;
-  color: @foreground;
-  opacity: 0.5;
-}
-
-#workspaces button.active {
-  color: @accent;
-  opacity: 1;
-  border-bottom: 2px solid @accent;
 }
 
 #workspaces button.empty {
-  opacity: 0.3;
+  opacity: 0.5;
 }
 
 #cpu,
@@ -53,25 +39,20 @@
   margin: 0 7.5px;
 }
 
-#custom-notification {
-  margin: 0 12px;
-}
-
-#custom-notification.critical {
-  color: #E46876;
-}
-
 #tray {
   margin-right: 16px;
 }
 
 #bluetooth {
   margin-right: 17px;
-  color: @foreground;
 }
 
 #network {
-  margin: 0 7.5px;
+  margin-right: 13px;
+}
+
+#custom-expand-icon {
+  margin-right: 18px;
 }
 
 tooltip {
@@ -84,7 +65,17 @@ tooltip {
 
 #clock {
   margin-left: 8.75px;
-  color: @foreground;
+}
+
+#custom-weather {
+  margin-left: 7.5px;
+  margin-right: 7.5px;
+}
+
+#custom-weather.unavailable {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .hidden {
@@ -102,12 +93,12 @@ tooltip {
 }
 
 #custom-screenrecording-indicator.active {
-  color: @indicator-active;
+  color: #a55555;
 }
 
 #custom-idle-indicator.active,
 #custom-notification-silencing-indicator.active {
-  color: @indicator-active;
+  color: #a55555;
 }
 
 #custom-voxtype {
@@ -116,53 +107,5 @@ tooltip {
 }
 
 #custom-voxtype.recording {
-  color: @indicator-active;
-}
-
-/* Battery states */
-#battery.warning {
-  color: @battery-warning;
-}
-
-#battery.critical {
-  color: @battery-critical;
-}
-
-/* Bottom bar cursor blinker */
-window#waybar.bottom #custom-cursor {
-  color: @accent;
-  opacity: 0.4;
-  font-size: 10px;
-  padding: 0;
-}
-
-/* Bottom bar */
-window#waybar.bottom {
-  color: @foreground;
-}
-
-window#waybar.bottom #cpu-bar {
-  margin: 0 14px;
-  min-width: 260px;
-}
-
-window#waybar.bottom #memory,
-window#waybar.bottom #temperature,
-window#waybar.bottom #disk,
-window#waybar.bottom #network,
-window#waybar.bottom #clock {
-  margin: 0 14px;
-}
-
-/* Bottom bar color states */
-#cpu-bar.warning,
-#temperature.warning,
-#disk.warning {
-  color: @battery-warning;
-}
-
-#cpu-bar.critical,
-#temperature.critical,
-#disk.critical {
-  color: @battery-critical;
+  color: #a55555;
 }

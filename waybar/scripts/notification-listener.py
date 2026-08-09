@@ -1,54 +1,40 @@
 #!/usr/bin/env python3
-"""Notification center for Waybar.
+"""Notification widget for Waybar.
 
-Replaces both hyprland/window and mako popup in a single center module.
-Shows active window title when idle, notifications when they arrive.
+Shows notifications in a compact format. Empty when idle.
 
 Features:
 - Typewriter effect on new notifications
-- Queue with (+n) counter (before title, in urgency color)
-- 4 blinks before auto-dismiss (alternates notification / window title)
+- Queue with (+n) counter
+- 4 blinks before auto-dismiss
 - Click: dismiss current, show next. Right-click: dismiss all.
 - SIGUSR1: dismiss current / SIGUSR2: dismiss all
 """
 import json
-import os
 import queue
 import re
 import signal
-import socket
 import subprocess
+import sys
 import threading
 import time
 from html import escape as esc
 
 TIMEOUT = 4
-TYPE_DELAY = 0.025
-MAX_LENGTH = 80
-BLINK_COUNT = 4
-BLINK_ON = 0.15
-BLINK_OFF = 0.15
+TYPE_DELAY = 0.015
+MAX_LENGTH = 60
 
 DOT_COLORS = {"low": "#9ea1a7", "normal": "#8bae79", "critical": "#E46876"}
 
 notif_queue = queue.Queue()
 interrupt = threading.Event()
 clear_all = threading.Event()
-notification_active = threading.Event()
 output_lock = threading.Lock()
-title_lock = threading.Lock()
-current_title = ""
 
 
 def emit(text="", tooltip="", css_class="empty"):
     with output_lock:
         print(json.dumps({"text": text, "tooltip": tooltip, "class": css_class}), flush=True)
-
-
-def emit_title():
-    with title_lock:
-        t = current_title
-    emit(text=esc(t), tooltip=t, css_class="title")
 
 
 def truncate_body(summary, body):
@@ -62,17 +48,23 @@ def truncate_body(summary, body):
 
 def build_markup(summary, body, dot_color, pending, typed=None):
     full = summary + ("  " + body if body else "")
-    shown = full[:typed] if typed is not None else full
+    # Right-to-left reveal: show last `typed` chars (dot stays static)
+    if typed is not None:
+        shown = full[len(full) - typed:]
+    else:
+        shown = full
 
     parts = []
     if pending > 0:
         parts.append(f"<span foreground='{dot_color}'>(+{pending})</span>  ")
 
-    if len(shown) <= len(summary):
-        parts.append(f"<span foreground='{dot_color}'><b>\u25cf</b></span>  <b>{esc(shown)}</b>")
+    parts.append(f"<span foreground='{dot_color}'><b>\u25cf</b></span>  ")
+
+    if len(shown) <= len(summary) or typed is not None and typed < len(full):
+        # During typing or partial reveal — no bold distinction
+        parts.append(esc(shown))
     else:
-        rest = shown[len(summary):]
-        parts.append(f"<span foreground='{dot_color}'><b>\u25cf</b></span>  <b>{esc(summary)}</b>{esc(rest)}")
+        parts.append(f"<b>{esc(summary)}</b>{esc(shown[len(summary):])}")
 
     return "".join(parts)
 
@@ -85,16 +77,14 @@ def drain():
             break
 
 
-def finish(reason="clear"):
-    """End notification display, return to title or next notification."""
+def finish():
     if clear_all.is_set():
         clear_all.clear()
         drain()
     if interrupt.is_set():
         interrupt.clear()
     if notif_queue.empty():
-        notification_active.clear()
-        emit_title()
+        emit()
 
 
 def is_interrupted():
@@ -112,7 +102,6 @@ def display_loop():
             finish()
             continue
 
-        notification_active.set()
         summary, body, urgency_class, timeout_s = notif
         dot_color = DOT_COLORS.get(urgency_class, "#9ea1a7")
         body = truncate_body(summary, body)
@@ -135,7 +124,6 @@ def display_loop():
             finish()
             continue
 
-        # Full text after typing completes
         emit(
             text=build_markup(summary, body, dot_color, notif_queue.qsize()),
             tooltip=tooltip, css_class=urgency_class,
@@ -157,7 +145,6 @@ def display_loop():
                     prev = cur
                 time.sleep(0.1)
         else:
-            # Critical — hold until dismissed
             prev = notif_queue.qsize()
             while not is_interrupted():
                 cur = notif_queue.qsize()
@@ -169,83 +156,7 @@ def display_loop():
                     prev = cur
                 time.sleep(0.1)
 
-        if is_interrupted():
-            finish()
-            continue
-
-        # --- Blink effect (notification <-> window title) ---
-        blinked = True
-        for _ in range(BLINK_COUNT):
-            if is_interrupted():
-                blinked = False
-                break
-            emit_title()
-            time.sleep(BLINK_OFF)
-            if is_interrupted():
-                blinked = False
-                break
-            emit(
-                text=build_markup(summary, body, dot_color, notif_queue.qsize()),
-                tooltip=tooltip, css_class=urgency_class,
-            )
-            time.sleep(BLINK_ON)
-
-        if not blinked or is_interrupted():
-            finish()
-            continue
-
-        # Blink done — advance to next or show title
-        if notif_queue.empty():
-            notification_active.clear()
-            emit_title()
-
-
-# --- Hyprland active window monitor ---
-
-def hyprland_monitor():
-    global current_title
-
-    # Initial title
-    try:
-        r = subprocess.run(
-            ["hyprctl", "activewindow", "-j"],
-            capture_output=True, text=True, timeout=2,
-        )
-        data = json.loads(r.stdout)
-        with title_lock:
-            current_title = (data.get("title") or "")[:80]
-    except Exception:
-        pass
-
-    if not notification_active.is_set():
-        emit_title()
-
-    # Stream events from Hyprland socket2
-    sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
-    runtime = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
-    sock_path = f"{runtime}/hypr/{sig}/.socket2"
-
-    while True:
-        try:
-            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            s.connect(sock_path)
-            buf = ""
-            while True:
-                chunk = s.recv(4096).decode("utf-8", errors="replace")
-                if not chunk:
-                    break
-                buf += chunk
-                while "\n" in buf:
-                    line, buf = buf.split("\n", 1)
-                    if line.startswith("activewindow>>"):
-                        parts = line[len("activewindow>>"):].split(",", 1)
-                        t = (parts[1] if len(parts) > 1 else "")[:80]
-                        with title_lock:
-                            current_title = t
-                        if not notification_active.is_set():
-                            emit_title()
-        except Exception:
-            time.sleep(1)
+        finish()
 
 
 # --- D-Bus notification monitor ---
@@ -323,7 +234,6 @@ def main():
     signal.signal(signal.SIGUSR2, handle_usr2)
     emit()
 
-    threading.Thread(target=hyprland_monitor, daemon=True).start()
     threading.Thread(target=display_loop, daemon=True).start()
     dbus_monitor()
 

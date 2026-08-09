@@ -1,0 +1,24 @@
+diff --git c/bin/omarchy-launch-webapp w/bin/omarchy-launch-webapp
+index 607ef6ce..06d82420 100755
+--- c/bin/omarchy-launch-webapp
++++ w/bin/omarchy-launch-webapp
+@@ -5,7 +5,7 @@
+ browser=$(xdg-settings get default-web-browser)
+ 
+ case $browser in
+-google-chrome* | brave-browser* | microsoft-edge* | opera* | vivaldi* | helium*) ;;
++google-chrome* | brave-browser* | microsoft-edge* | opera* | vivaldi* | helium* | thorium-browser*) ;;
+ *) browser="chromium.desktop" ;;
+ esac
+ 
+diff --git c/default/hypr/apps/browser.conf w/default/hypr/apps/browser.conf
+index 7f30ba38..21def910 100644
+--- c/default/hypr/apps/browser.conf
++++ w/default/hypr/apps/browser.conf
+@@ -1,5 +1,5 @@
+ # Browser types
+-windowrule = tag +chromium-based-browser, match:class ((google-)?[cC]hrom(e|ium)|[bB]rave-browser|[mM]icrosoft-edge|Vivaldi-stable|helium)
++windowrule = tag +chromium-based-browser, match:class ((google-)?[cC]hrom(e|ium)|[bB]rave-browser|[mM]icrosoft-edge|Vivaldi-stable|helium|[tT]horium-browser)
+ windowrule = tag +firefox-based-browser, match:class ([fF]irefox|zen|librewolf)
+ windowrule = tag -default-opacity, match:tag chromium-based-browser
+ windowrule = tag -default-opacity, match:tag firefox-based-browser
