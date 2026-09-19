@@ -1,5 +1,5 @@
 {
-  "workbench.colorTheme": "Kanso Zen",
+  "workbench.colorTheme": "Catppuccin Mocha",
   "terminal.integrated.gpuAcceleration": "off",
   "typescript.updateImportsOnFileMove.enabled": "always",
   "[jsonc]": {
@@ -73,5 +73,6 @@
   "diffEditor.ignoreTrimWhitespace": true,
   "diffEditor.experimental.showMoves": true,
   "window.autoDetectColorScheme": false,
-  "git.blame.editorDecoration.enabled": true
+  "git.blame.editorDecoration.enabled": true,
+  "cursor.composer.editorConversationDensity": "compact-all-grouped"
 }

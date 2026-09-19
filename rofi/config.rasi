@@ -1,7 +1,0 @@
-configuration {
-    show-icons: true;
-    terminal: "kitty";
-    case-sensitive: false;
-}
-
-@theme "dmenu-crystal"
