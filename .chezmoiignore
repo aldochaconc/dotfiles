@@ -1,13 +1,12 @@
 # Repo-only files: never applied to $HOME.
 README.md
+CLAUDE.md
 bootstrap.sh
 packages.txt
 packages-aur.txt
 themes.txt
 av.png
 
-# Theme wallpapers stay out of git; colors and templates are versioned.
-.config/omarchy/themes/*/backgrounds
 
 {{ if not .hybrid_gpu -}}
 # AQ_DRM_DEVICES only makes sense on the hybrid AMD+NVIDIA laptop.

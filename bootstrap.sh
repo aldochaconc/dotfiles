@@ -15,9 +15,44 @@ echo "==> packages: AUR"
 # shellcheck disable=SC2046
 omarchy pkg aur add $(pkgs "$here/packages-aur.txt")
 
-echo "==> dotfiles via chezmoi (asks the per-machine questions once)"
+echo "==> shell: zsh as login shell, stock oh-my-zsh template when ~/.zshrc is absent"
+[[ $(getent passwd "$USER" | cut -d: -f7) == /usr/bin/zsh ]] || chsh -s /usr/bin/zsh
+[[ -f ~/.zshrc ]] || cp /usr/share/oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc
+
+echo "==> secrets: stored once in the system keyring; ~/.claude/settings.json is rendered from them"
 omarchy pkg add chezmoi
+for s in github_token gdrive_client_id gdrive_client_secret; do
+  chezmoi secret keyring get --service claude --user "$s" >/dev/null 2>&1 ||
+    chezmoi secret keyring set --service claude --user "$s"
+done
+
+echo "==> dotfiles via chezmoi (asks the per-machine questions once)"
 chezmoi init --source "$here" --apply
+
+echo "==> rtk: Claude Code output filter, static musl build from GitHub Releases"
+if ! command -v rtk >/dev/null; then
+  tmp=$(mktemp -d)
+  curl -fsSL -o "$tmp/rtk.tgz" https://github.com/rtk-ai/rtk/releases/latest/download/rtk-x86_64-unknown-linux-musl.tar.gz
+  curl -fsSL -o "$tmp/checksums.txt" https://github.com/rtk-ai/rtk/releases/latest/download/checksums.txt
+  (cd "$tmp" && awk '/x86_64-unknown-linux-musl/ {print $1"  rtk.tgz"}' checksums.txt | sha256sum -c -)
+  mkdir -p ~/.local/bin && tar -xzf "$tmp/rtk.tgz" -C ~/.local/bin rtk && chmod 755 ~/.local/bin/rtk
+  rm -rf "$tmp"
+fi
+
+if omarchy hw match omen && ! pacman -Q omen-space-git >/dev/null 2>&1; then
+  echo "==> omen-space: HP OMEN fan/RGB/MUX daemon, built as a pacman package from a pinned tag"
+  omen_tag=2.0.9
+  tmp=$(mktemp -d)
+  git clone -q --depth 1 -b "$omen_tag" https://github.com/yunusemreyl/omen-space "$tmp"
+  # upstream's PKGBUILD tracks main; pin the source to the same tag we cloned.
+  # It also builds with --locked while .gitignore excludes Cargo.lock, so no lock file ever
+  # exists in the repo and the build aborts; drop the flag (crates resolve at build time).
+  sed -i -e "s|^source=(.*)|source=(\"git+https://github.com/yunusemreyl/omen-space.git#tag=$omen_tag\")|" \
+         -e "s/ --locked//" "$tmp/PKGBUILD"
+  echo 'options=(!debug)' >>"$tmp/PKGBUILD"   # makepkg.conf enables debug: skips the -debug split package
+  (cd "$tmp" && makepkg -sri --noconfirm)   # -r drops the build deps (rust) afterwards
+  rm -rf "$tmp"
+fi
 
 echo "==> omarchy defaults"
 omarchy default browser chromium

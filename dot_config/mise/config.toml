@@ -1,6 +1,7 @@
 [tools]
 claude = "latest"
 codex = "latest"
+go = "latest"
 node = "lts"
 
 [settings.upgrade]

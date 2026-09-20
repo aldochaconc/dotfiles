@@ -50,12 +50,13 @@
           "id": "omarchy.monitor"
         },
         {
-          "id": "omarchy.power"
+          "id": "omarchy.power",
+          "showPercentage": false
         }
       ]
     },
-    "position": "top",
-    "transparent": false
+    "position": "left",
+    "transparent": true
   },
   "idle": {
     "lock": 300,
