@@ -1,0 +1,236 @@
+{
+  "agentPushNotifEnabled": true,
+  "alwaysThinkingEnabled": false,
+  "autoCompactEnabled": true,
+  "autoMemoryEnabled": false,
+  "effortLevel": "xhigh",
+  "enabledPlugins": {
+    "caveman@caveman": true,
+    "engineering-skills@claude-code-skills": true,
+    "ponytail@ponytail": true,
+    "security-guidance@claude-code-skills": true,
+    "superpowers@superpowers-marketplace": true
+  },
+  "extraKnownMarketplaces": {
+    "anthropic-agent-skills": {
+      "source": {
+        "repo": "anthropics/skills",
+        "source": "github"
+      }
+    },
+    "caveman": {
+      "source": {
+        "repo": "JuliusBrussee/caveman",
+        "source": "github"
+      }
+    },
+    "claude-code-skills": {
+      "source": {
+        "repo": "alirezarezvani/claude-skills",
+        "source": "github"
+      }
+    },
+    "karpathy-skills": {
+      "source": {
+        "repo": "forrestchang/andrej-karpathy-skills",
+        "source": "github"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "repo": "DietrichGebert/ponytail",
+        "source": "github"
+      }
+    }
+  },
+  "feedbackDrafts": "off",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/register-check.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write"
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/command-audit.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/file-protection.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Edit|Write"
+      },
+      {
+        "hooks": [
+          {
+            "command": "rtk hook claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/session-register.py",
+            "statusMessage": "Loading the speaking rules…",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "startup|resume|clear|compact"
+      }
+    ]
+  },
+  "inputNeededNotifEnabled": false,
+  "language": "English",
+  "mcpServers": {
+    "github-projects": {
+      "args": [
+        "mcp-github-projects"
+      ],
+      "command": "uvx",
+      "env": {
+        "GITHUB_TOKEN": "{{ keyring "claude" "github_token" }}"
+      }
+    },
+    "googleDrive": {
+      "args": [
+        "{{ if hasKey . "gdrive_mcp_path" }}{{ .gdrive_mcp_path }}{{ end }}"
+      ],
+      "command": "node",
+      "env": {
+        "CLIENT_ID": "{{ keyring "claude" "gdrive_client_id" }}",
+        "CLIENT_SECRET": "{{ keyring "claude" "gdrive_client_secret" }}",
+        "REDIRECT_URI": "http://localhost:3000"
+      }
+    }
+  },
+  "model": "claude-fable-5-1[1m]",
+  "modelSettings": {
+    "claude-fable-5-1": {
+      "effortLevel": "xhigh"
+    },
+    "claude-opus-5": {
+      "effortLevel": "xhigh"
+    }
+  },
+  "permissions": {
+    "additionalDirectories": {{ if hasKey . "claude_additional_dirs" }}{{ .claude_additional_dirs | toJson }}{{ else }}[]{{ end }},
+    "allow": [
+      "mcp__googleDrive__get-file-download-link",
+      "mcp__googleDrive__list-all-folders",
+      "mcp__googleDrive__list-files-in-folder",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(done)",
+      "Bash(npm run type-check:*)",
+      "Bash(gt status:*)",
+      "Bash(gt modify:*)",
+      "Bash(gt ls:*)",
+      "Bash(gt log:*)",
+      "Bash(gt info:*)",
+      "Bash(gt state:*)",
+      "Bash(gt top:*)",
+      "Bash(gt bottom:*)",
+      "Bash(gt up:*)",
+      "Bash(gt down:*)",
+      "Bash(gt checkout:*)",
+      "Bash(npm run build:*)",
+      "mcp__claude_ai_Linear__get_issue",
+      "Bash(gt add:*)",
+      "Bash(gt create:*)",
+      "Bash(gt sync:*)",
+      "Bash(gt restack:*)",
+      "Bash(gt move:*)",
+      "Bash(gt reorder:*)",
+      "Bash(gt rename:*)",
+      "Bash(gt track:*)",
+      "Bash(gt untrack:*)",
+      "Bash(gt continue:*)",
+      "Bash(git checkout:*)"
+    ],
+    "ask": [
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "WebSearch"
+    ],
+    "defaultMode": "auto",
+    "deny": [
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Edit(**/*.key)",
+      "Edit(**/*.pem)",
+      "Edit(**/*apikey*)",
+      "Edit(**/*api_key*)",
+      "Edit(**/*keystore*)",
+      "Edit(**/*.secret)",
+      "Edit(**/secrets.json)",
+      "Edit(**/secrets.y*ml)",
+      "Edit(.aws/**)",
+      "Edit(.env)",
+      "Edit(.npmrc)",
+      "Edit(.pypirc)",
+      "Edit(.ssh/**)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(**/*apikey*)",
+      "Read(**/*api_key*)",
+      "Read(**/*keystore*)",
+      "Read(**/*.secret)",
+      "Read(**/secrets.json)",
+      "Read(**/secrets.y*ml)",
+      "Read(.aws/**)",
+      "Read(.env)",
+      "Read(.npmrc)",
+      "Read(.pypirc)",
+      "Read(.ssh/**)"
+    ]
+  },
+  "promptSuggestionEnabled": false,
+  "sandbox": {
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.github.com",
+        "*.githubusercontent.com",
+        "*.graphite.dev",
+        "api.linear.app",
+        "registry.npmjs.org",
+        "*.npmjs.org",
+        "*.npmjs.com",
+        "pypi.org",
+        "files.pythonhosted.org",
+        "*.amazonaws.com",
+        "api.anthropic.com"
+      ],
+      "strictAllowlist": true
+    }
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "statusLine": {
+    "command": "bash ~/.claude/statusline-command.sh",
+    "type": "command"
+  },
+  "syntaxHighlightingDisabled": false,
+  "theme": "dark-daltonized",
+  "tui": "fullscreen",
+  "verbose": false
+}
