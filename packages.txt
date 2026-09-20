@@ -1,0 +1,26 @@
+# Arch / Omarchy repo packages added on top of the Omarchy base.
+# Applied with: omarchy pkg add $(grep -v '^#' packages.txt)
+7zip
+amd-ucode
+amdgpu_top
+arch-audit
+aws-cli-v2
+calibre
+dbeaver
+fwupd
+github-cli
+gparted
+libqalculate
+libva-utils
+mbedtls
+ntfs-3g
+nwg-displays
+perl-image-exiftool
+shfmt
+spotify
+supergfxctl
+ttf-fira-code
+uv
+visual-studio-code-bin
+xmlstarlet
+yq

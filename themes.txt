@@ -1,0 +1,6 @@
+# Themes installed from git. Applied with: omarchy theme install <url>
+# Wallpaper-generated (aether) themes are per machine and not listed here.
+https://github.com/vale-c/omarchy-arc-blueberry
+https://github.com/row-huh/omarchy-ghost-pastel-theme
+https://github.com/devgtv/omarchy-japan-night-theme
+https://github.com/bjarneo/omarchy-monokai-theme

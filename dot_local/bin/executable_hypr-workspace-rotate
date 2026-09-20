@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# Move to the adjacent workspace, creating it when missing, bounded by the
+# workspaces the Omarchy bar is showing.
+#
+# Hyprland's r+1 selector creates a missing workspace but carries no upper bound, so a held
+# key or a scroll flick walks past the configured range and keeps creating workspaces. No
+# workspace selector accepts a ceiling, which is why the clamp lives here instead of in a
+# bind argument.
+#
+# The ceiling mirrors Workspaces.qml, which seeds its indicator list with
+# [1, 2, 3, 4, 5] and appends 6..10 only while they hold windows. Omarchy exposes
+# that seed nowhere, so BASE repeats it; the occupied ids come from hyprctl, which
+# keeps rotation reaching exactly as far as the bar draws.
+set -euo pipefail
+
+BASE=5
+HARD_MAX=10
+
+# ceiling -> the highest workspace rotation may reach: BASE, or the highest
+# occupied id above it.
+ceiling() {
+  hyprctl workspaces -j |
+    jq --argjson base "$BASE" --argjson hard "$HARD_MAX" -r \
+      '[.[] | select(.id > 0 and .id <= $hard and .windows > 0) | .id] + [$base] | max'
+}
+
+# target_for CUR DIR MAX -> the workspace id to move to, or nothing when the move would
+# leave the range.
+target_for() {
+  local cur=$1 dir=$2 max=$3 target
+
+  # A workspace created with `name:` carries a negative id and sits outside the range;
+  # anything out of range re-enters at 1.
+  if ((cur < 1 || cur > max)); then
+    echo 1
+    return
+  fi
+
+  case $dir in
+    next) target=$((cur + 1)) ;;
+    prev) target=$((cur - 1)) ;;
+  esac
+
+  if ((target >= 1 && target <= max)); then
+    echo "$target"
+  fi
+}
+
+self_check() {
+  local cur dir max exp got
+  while read -r cur dir max exp; do
+    got=$(target_for "$cur" "$dir" "$max")
+    if [[ $got != "$exp" ]]; then
+      echo "FAIL: $cur $dir max=$max -> '$got', expected '$exp'" >&2
+      return 1
+    fi
+  done <<EOF
+1 next 5 2
+1 prev 5
+4 next 5 5
+5 next 5
+5 prev 5 4
+6 next 5 1
+-1337 next 5 1
+-1337 prev 5 1
+5 next 7 6
+7 next 7
+7 prev 7 6
+EOF
+  echo "ok"
+}
+
+case ${1:-} in
+  next | prev)
+    target=$(target_for "$(hyprctl activeworkspace -j | jq -r '.id')" "$1" "$(ceiling)")
+    if [[ -n $target ]]; then
+      hyprctl dispatch workspace "$target"
+    fi
+    ;;
+  self-check)
+    self_check
+    ;;
+  *)
+    echo "usage: ${0##*/} next|prev|self-check" >&2
+    exit 2
+    ;;
+esac

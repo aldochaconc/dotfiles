@@ -1,0 +1,7 @@
+[tools]
+claude = "latest"
+codex = "latest"
+node = "lts"
+
+[settings.upgrade]
+auto_prune = false

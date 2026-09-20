@@ -3,7 +3,7 @@
     "defaultMode": "acceptEdits",
     "allow": ["Bash", "Read", "WebFetch", "WebSearch"],
     "ask": ["Bash(git clean:*)", "Bash(git push:*)", "Bash(git rebase:*)", "Bash(git reset:*)", "Bash(rm -rf:*)", "Bash(sudo:*)"],
-    "deny": ["Edit(**/*key*)", "Edit(**/*secret*)", "Edit(.aws/**)", "Edit(.env)", "Edit(.npmrc)", "Edit(.pypirc)", "Edit(.ssh/**)", "Read(**/*key*)", "Read(**/*secret*)", "Read(.aws/**)", "Read(.env)", "Read(.npmrc)", "Read(.pypirc)", "Read(.ssh/**)", "Write(**/*key*)", "Write(**/*secret*)", "Write(.aws/**)", "Write(.env)", "Write(.npmrc)", "Write(.pypirc)", "Write(.ssh/**)"],
+    "deny": ["Edit(**/*key*)", "Edit(**/*secret*)", "Edit(.aws/**)", "Edit(.env)", "Edit(.npmrc)", "Edit(.pypirc)", "Edit(.ssh/**)", "Read(**/*key*)", "Read(**/*secret*)", "Read(.aws/**)", "Read(.env)", "Read(.npmrc)", "Read(.pypirc)", "Read(.ssh/**)"],
     "additionalDirectories": []
   },
   "hooks": {
