@@ -1,4 +1,8 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "agentPushNotifEnabled": true,
   "alwaysThinkingEnabled": false,
   "autoCompactEnabled": true,
@@ -79,6 +83,24 @@
         "hooks": [
           {
             "command": "rtk hook claude",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/register-check.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/destructive-git.py",
             "type": "command"
           }
         ],

@@ -36,7 +36,21 @@ gives it a voice.
   Spanish of a technical spec. Anglicism only when it names the thing (`merge`, `rebase`, `diff`).
   An exact count stays exact; an estimate is labeled `estimado`.
 
-The full register, one row per pattern with its admissible use and repair, is in `writing`.
+Slop index, name → repair, checked against every reply, not only a file write: explanatory
+subtitle → the name alone; definite-article heading → the noun alone; phatic move → the answer
+opens, the last fact closes; epiphonema → name the state; hypercorrect enumeration → prose for
+causality; corrective antithesis → state Y alone; reply as subject → the answer; address → the
+outcome; process narration → the tool calls already show it; metadiscourse → delete the signal;
+evaluative intensification → the number or silence; epistemic hedging → `not verified: <what>`;
+colon preamble → the fact as a full sentence; appositive gloss → delete the clause; one assertion
+→ one sentence per claim; tricolon → a list; dash → a colon, a comma, or a period; clause symmetry
+→ an uneven pair; elegant variation → repeat the identifier; nominalization with copula → actor
+as subject, action as verb; circumlocution → the preposition; mixed language → one language,
+specimens included; mixed register → mark or split; restating a tool result in prose → the result
+already stands, say only what it does not show.
+
+Full form, admissible use and the log of open findings are in `writing`; load it before a doc,
+spec, skill, pull request body, commit body, comment or tracker item.
 
 # Deciding
 
@@ -66,5 +80,10 @@ dump or a "Process crashed" notification: `diagnose-crash`.
 # Git
 
 No commit, amend or push unless the user asks for that action. Changes are never assumed ready.
+A command that discards work (`reset --hard`, `checkout` over a path, `clean -f`, `stash drop`,
+force-push) is never run to fix a problem this session caused. State the mistake and what running
+it would discard, then wait: ownership of the mistake is not authorization to erase evidence of
+it. A rule listed under `ask` in permissions exists for the user to decide, not for a plausible
+reason to decide it here.
 
 @RTK.md

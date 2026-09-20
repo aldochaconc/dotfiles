@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""High-frequency battery logger to capture state before a hard power cut.
+
+Samples voltage/current/charge/status every second and fsyncs each line so the
+LAST line survives an instant power loss (brownout/BMS cutoff). Diagnostic tool
+for spontaneous reboots that leave no journal trace.
+"""
+import glob, os, time, sys
+
+LOG = os.path.expanduser("~/.local/state/battery-brownout/samples.log")
+INTERVAL = 1.0
+# One sample per second is about 8.6 MB a day. Past MAX_BYTES the file is renamed to
+# samples.log.1 (replacing the previous one) and a fresh log starts: at most two files,
+# roughly twelve days, and the last line before a cut is always in the newest file.
+MAX_BYTES = 50 * 1024 * 1024
+
+bat = (glob.glob("/sys/class/power_supply/BAT*") or [None])[0]
+if not bat:
+    sys.stderr.write("no battery found\n"); sys.exit(1)
+ac = (glob.glob("/sys/class/power_supply/A*/online") or [None])[0]
+
+def rd(path):
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+fields = ["voltage_now", "current_now", "power_now", "charge_now",
+          "energy_now", "capacity", "status"]
+
+os.makedirs(os.path.dirname(LOG), exist_ok=True)
+if os.path.exists(LOG) and os.path.getsize(LOG) > MAX_BYTES:
+    os.replace(LOG, LOG + ".1")
+f = open(LOG, "a", buffering=1)
+# Header marks each logger start so we can tell a fresh boot from a continuation.
+f.write(f"# logger start {time.strftime('%Y-%m-%d %H:%M:%S')} boot_uptime={rd('/proc/uptime').split()[0]}\n")
+f.flush(); os.fsync(f.fileno())
+
+while True:
+    ts = time.strftime("%Y-%m-%d %H:%M:%S")
+    vals = {k: rd(f"{bat}/{k}") for k in fields}
+    online = rd(ac) if ac else "?"
+    try:
+        la = open("/proc/loadavg").read().split()[0]
+    except OSError:
+        la = "?"
+    line = (f"{ts} ac={online} status={vals['status']} cap={vals['capacity']}% "
+            f"V={vals['voltage_now']} I={vals['current_now']} P={vals['power_now']} "
+            f"chg={vals['charge_now']} eng={vals['energy_now']} load={la}\n")
+    f.write(line)
+    f.flush()
+    os.fsync(f.fileno())   # critical: survive an instant power cut
+    time.sleep(INTERVAL)

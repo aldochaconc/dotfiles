@@ -1,0 +1,10 @@
+# VS Code extensions installed on top of the bare editor.
+# Applied by bootstrap.sh with code --install-extension, skipping the installed ones.
+anthropic.claude-code
+dbaeumer.vscode-eslint
+mkhl.shfmt
+ms-vscode.vscode-typescript-next
+prisma.prisma
+timonwong.shellcheck
+typescriptteam.native-preview
+vscodevim.vim

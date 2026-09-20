@@ -29,3 +29,5 @@
 [user]
 	name = Aldo W. Chacon
 	email = aldochaconc@gmail.com
+[core]
+	editor = code --wait   # $EDITOR is omarchy-launch-editor --inline, which detaches GUI editors and aborts git commit

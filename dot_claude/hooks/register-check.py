@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""PostToolUse(Edit|Write): flag prose tells in written markdown.
+"""PostToolUse(Edit|Write) on markdown, PreToolUse(Bash) on `git commit -m/-F`:
+flag prose tells before they land.
 
-Enforces the one grep-detectable tic of the Speaking section in
-~/.claude/CLAUDE.md. Only .md files, only prose: fenced code blocks and inline
-code spans are exempt, since a tell inside code is data. End-user product copy
-is exempt, since Speaking does not govern it.
+Enforces the grep-detectable tics of the Replying section in ~/.claude/CLAUDE.md.
+For a file: only .md, only prose; fenced code blocks and inline code spans are
+exempt, since a tell inside code is data. End-user product copy is exempt, since
+Replying does not govern it. For a Bash command: only `git commit` with an
+inline `-m`/`--message` string; `-F <file>` and an interactive editor are not
+interceptable here and stay uncovered.
 
 The dash carries no check here. A blanket ban on `—` and `–` flagged the numeric
 range (`2020-2024`) and the paired parenthetical aside, both of which the dash
@@ -51,12 +54,34 @@ def scan(lines):
     return hits
 
 
+COMMIT_MSG = re.compile(r"""git\s+commit\b.*?(?:-m|--message)(?:=|\s+)(['"])(.*?)\1""", re.S)
+
+
+def commit_messages(command):
+    """Every -m/--message string in a `git commit` invocation, decoded from shell quoting."""
+    if not re.search(r"\bgit\s+commit\b", command):
+        return []
+    return [m.group(2) for m in COMMIT_MSG.finditer(command)]
+
+
 def main():
     try:
         event = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):
         return 0
-    path = (event.get("tool_input") or {}).get("file_path") or ""
+    tool_input = event.get("tool_input") or {}
+
+    if event.get("tool_name") == "Bash" or "command" in tool_input:
+        for msg in commit_messages(tool_input.get("command") or ""):
+            hits = scan(msg.splitlines())
+            if hits:
+                print("Replying violations in the commit message:", file=sys.stderr)
+                for n, why in hits[:MAX_REPORTED]:
+                    print(f"  line {n}: {why}", file=sys.stderr)
+                return 2
+        return 0
+
+    path = tool_input.get("file_path") or ""
     if not path.endswith(".md") or (EXEMPT_PATH and EXEMPT_PATH.search(path)):
         return 0
     try:
@@ -67,7 +92,7 @@ def main():
     hits = scan(lines)
     if not hits:
         return 0
-    print("Speaking violations in written markdown:", file=sys.stderr)
+    print("Replying violations in written markdown:", file=sys.stderr)
     for n, why in hits[:MAX_REPORTED]:
         print(f"  {path}:{n}: {why}", file=sys.stderr)
     if len(hits) > MAX_REPORTED:
@@ -99,6 +124,12 @@ def selftest():
 
     unclosed = ["```", "code: no es X, es Y exempt to EOF"]
     assert not scan(unclosed), "unclosed fence should stay exempt"
+
+    assert commit_messages('git commit -m "not a rule but a layer"') == ["not a rule but a layer"]
+    assert commit_messages("git commit -m 'clean message'") == ["clean message"]
+    assert commit_messages("git commit -F -") == []
+    assert commit_messages("git status") == []
+    assert commit_messages('git commit --message="not X but Y"') == ["not X but Y"]
     print("selftest ok")
 
 

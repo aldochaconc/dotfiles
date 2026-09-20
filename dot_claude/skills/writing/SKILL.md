@@ -44,6 +44,19 @@ register.
 | Mixed language | a specimen, term or value in one language inside a text committed to another | a code identifier, a glossary entry, a quotation reproduced verbatim | one language per text, specimens included |
 | Mixed register | a text asserts a target and a measurement of the tree without marking which is which, so a reader cannot tell a promise from a mistake | a target declared as one, and a measurement carrying the command that produced it | mark the register per section, or split the two into separate documents |
 
+## Pull request body
+
+The title is the imperative alone: no gloss after a comma, no gerund trailing it. Three parts,
+each optional only when the diff makes it obvious:
+
+1. What changes, one paragraph. The subject is the code, not the author: a table when the change
+   touches several areas, prose when one change has one cause.
+2. How to verify it: the command run or the check to run, not a restated diff.
+3. What is left open, as a labeled list: a risk, a follow-up, a `not verified: <what>`.
+
+No "context and motivation" heading, no restated title as a first sentence, no closing line
+grading the change.
+
 ## Before the first line
 
 | # | Clear before writing | Cost of skipping it |
@@ -109,5 +122,6 @@ a row nobody closes shows its age at every start.
 
 | Date | Surface | Violated | Finding | Uniform correction |
 |---|---|---|---|---|
-
-Empty.
+| 2026-09-20 | pull request body | Process narration | Two rounds of the same task ("write only the PR body text, nothing else") opened with a line before the title stating that the body is about to be written. The instruction to emit nothing else did not stop it. | gap: a rule against narration inside the surface does not reach a line placed outside it, before the surface starts |
+| 2026-09-20 | reply | gap | A reply confirmed a git command's result ("sin Co-Authored-By, sin gt") in prose after the tool output already showed it, restating the same fact the user had just read. Not `Process narration` (nothing was announced before acting) and not `Colon preamble` (no fragment-colon-fact shape): a fact stated twice, once by the tool and once by the reply. | gap: no register row matches restating a result the tool output already carries |
+| 2026-09-20 | reply | Metadiscourse, Process narration | The permanent index in `CLAUDE.md` was lost to a `git reset --hard` mid-session, rebuilt from memory once without diffing it against the file, lost again unnoticed, then absent for several turns. Two of those turns opened a parenthetical announcing the reply's own form and closed by stating a negative the tool output already showed, both rows the index names. Verification checked HOME against the repo, which agreed on both sides being wrong, never the file against what it should contain. | after restoring a file lost to a destructive command, diff the restored content against what was written earlier in the same conversation, not only HOME against the repo |

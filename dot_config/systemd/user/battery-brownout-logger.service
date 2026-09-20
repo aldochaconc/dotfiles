@@ -1,0 +1,12 @@
+[Unit]
+Description=Battery brownout logger (diagnostic for spontaneous reboots)
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/battery-brownout-logger
+Restart=always
+RestartSec=2
+Nice=10
+
+[Install]
+WantedBy=default.target
