@@ -1,0 +1,38 @@
+#!/bin/bash
+# theme-set.d hook: Omarchy runs it after `omarchy theme set <name>` with the name as $1.
+# aether owns colors.toml, icons.theme and backgrounds/ of the moon theme and rewrites them on
+# Apply; the repo owns unlock.png and preview.png. Each side goes where it belongs: aether's files
+# into the chezmoi source, the repo's files back into HOME if aether dropped them,
+# preview-unlock.png regenerated from the current palette, and the Slack custom theme string
+# written for pasting. Committing stays manual.
+[[ $1 == moon ]] || exit 0
+theme=$HOME/.config/omarchy/themes/moon
+state=$HOME/.local/state/omarchy
+color() { grep -E "^$1 *=" "$theme/colors.toml" | head -1 | cut -d'"' -f2; }
+
+# aether-owned -> repo (add re-adds changed files and picks up new wallpapers)
+chezmoi add "$theme/colors.toml" "$theme/icons.theme" "$theme/backgrounds" 2>/dev/null || true
+# repo-owned -> HOME
+chezmoi apply --force "$theme/unlock.png" "$theme/preview.png" 2>/dev/null || true
+
+# boot-screen preview: solid black, text in the theme foreground. omarchy-plymouth-preview ends
+# with `imv -f <output>`, so it runs with a no-op imv first on PATH: the file is written, nothing opens.
+fg=$(color foreground)
+if [[ -n $fg && -f $theme/unlock.png ]]; then
+  shim=$(mktemp -d) && printf '#!/bin/sh\nexit 0\n' >"$shim/imv" && chmod +x "$shim/imv"
+  PATH="$shim:$PATH" omarchy plymouth preview "#000000" "$fg" "$theme/unlock.png" "$theme/preview-unlock.png" >/dev/null 2>&1 &&
+    chezmoi add "$theme/preview-unlock.png" 2>/dev/null || true
+  rm -rf "$shim"
+fi
+
+# Slack custom theme, in Slack's field order: column background, menu hover, active item,
+# active item text, hover item, text, active presence, mention badge, top nav background,
+# top nav text
+mkdir -p "$state"
+slack=$(printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s' \
+  "$(color background)" "$(color lighter_background)" "$(color accent)" "$(color background)" \
+  "$(color lighter_background)" "$(color foreground)" "$(color green)" "$(color red)" \
+  "$(color background)" "$(color foreground)")
+echo "$slack" >"$state/slack-theme.txt"
+# The completion notice carries the string, so a palette change ends with what Slack needs.
+omarchy-notification-send -t 20000 "Tema moon aplicado" "Slack, tema personalizado: $slack" 2>/dev/null || true

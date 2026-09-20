@@ -19,3 +19,4 @@ text/x-tex=code.desktop
 application/x-shellscript=code.desktop
 application/json=code.desktop
 x-scheme-handler/claude-cli=claude-code-url-handler.desktop
+x-scheme-handler/aether=li.oever.aether.url-handler.desktop

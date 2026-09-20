@@ -32,7 +32,11 @@
       ],
       "right": [
         {
-          "id": "omarchy.tray"
+          "hidden": [],
+          "id": "omarchy.tray",
+          "pinned": [
+            "omenspace_tray"
+          ]
         },
         {
           "id": "omarchy.agents"
@@ -55,7 +59,7 @@
         }
       ]
     },
-    "position": "left",
+    "position": "top",
     "transparent": true
   },
   "idle": {

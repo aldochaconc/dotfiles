@@ -1,0 +1,20 @@
+#!/bin/bash
+set -e
+# post-update.d hook, sudo already live. omarchy-settings owns
+# /usr/share/plymouth/themes/omarchy/{logo.png,omarchy.script} and neither is in its backup list,
+# so a package update restores the stock logo and colours; a palette change in the moon theme
+# moves the text colour. Reapply the boot and login screen (tux on solid black, text in the theme
+# foreground) when the logo, the background or the recorded colours drifted. Running this file by
+# hand is the manual step after a fresh install (README.md).
+theme_dir=$(omarchy theme dir moon)
+plymouth=/usr/share/plymouth/themes/omarchy
+state=$HOME/.local/state/omarchy/plymouth-moon.colors
+bg="#000000"
+fg=$(grep -E '^foreground *=' "$theme_dir/colors.toml" | head -1 | cut -d'"' -f2)
+[[ -n $fg ]] || exit 0
+if ! cmp -s "$theme_dir/unlock.png" "$plymouth/logo.png" ||
+   ! grep -q 'SetBackgroundTopColor(0.000, 0.000, 0.000)' "$plymouth/omarchy.script" ||
+   [[ $(cat "$state" 2>/dev/null) != "$bg $fg" ]]; then
+  omarchy plymouth set "$bg" "$fg" "$theme_dir/unlock.png"
+  mkdir -p "$(dirname "$state")" && echo "$bg $fg" >"$state"
+fi

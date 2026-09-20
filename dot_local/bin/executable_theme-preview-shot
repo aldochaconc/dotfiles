@@ -1,0 +1,49 @@
+#!/bin/bash
+# Compose the theme switcher preview of a theme and write it as preview.png at 1800x1012, the
+# geometry of Omarchy's stock previews. Four windows tiled 2x2 on the first free workspace: nvim
+# on colors.toml, btop with cpu and memory only, fastfetch without the user@host line, Nautilus on
+# ~/dotfiles with every sidebar bookmark hidden while the shot is taken. Everything is closed and
+# restored afterwards; the file is re-added to chezmoi when it is managed.
+# Usage: theme-preview-shot [theme]   (default: the current theme)
+set -euo pipefail
+theme=${1:-$(cat "$HOME/.local/state/omarchy/current/theme.name")}
+theme_dir=$(omarchy theme dir "$theme")
+dispatch() { hyprctl dispatch "$1" >/dev/null; }
+clients() { hyprctl clients -j | jq -r --argjson w "$ws" "$1"; }
+foot_at() { clients "[.[] | select(.workspace.id==\$w and .class==\"foot\")] | sort_by(.pid) | .[$1].address"; }
+
+back=$(hyprctl activeworkspace -j | jq -r .id)
+used=$(hyprctl workspaces -j | jq -r '.[].id')
+for ws in 2 3 4 5 6 7 8 9; do grep -qx "$ws" <<<"$used" || break; done
+
+bookmarks=$HOME/.config/gtk-3.0/bookmarks
+[[ -f $bookmarks ]] && cp "$bookmarks" "$bookmarks.preview-shot" && : >"$bookmarks"
+cleanup() {
+  for a in $(clients '.[] | select(.workspace.id==$w) | .address'); do
+    dispatch "hl.dsp.focus({ window = \"address:$a\" })"; sleep 0.2; dispatch "hl.dsp.window.close()"; sleep 0.3
+  done
+  [[ -f $bookmarks.preview-shot ]] && mv -f "$bookmarks.preview-shot" "$bookmarks"
+  dispatch "hl.dsp.focus({ workspace = \"$back\" })"
+}
+trap cleanup EXIT
+
+dispatch "hl.dsp.focus({ workspace = \"$ws\" })"; sleep 0.3
+dispatch "hl.dsp.exec_cmd(\"foot -D $theme_dir -e nvim colors.toml\")"; sleep 3
+dispatch "hl.dsp.exec_cmd(\"foot -e btop -p 2\")"; sleep 2.5
+nvim=$(foot_at 0); btop=$(foot_at 1)
+dispatch "hl.dsp.focus({ window = \"address:$btop\" })"; sleep 0.3; wtype 3   # btop: hide the net box
+dispatch "hl.dsp.focus({ window = \"address:$nvim\" })"; sleep 0.3
+dispatch "hl.dsp.exec_cmd(\"foot -e bash -c 'fastfetch --structure host:os:kernel:uptime:packages:shell:display:wm:terminal:cpu:gpu:memory:disk:battery:colors; exec sleep infinity'\")"; sleep 2.5
+dispatch "hl.dsp.focus({ window = \"address:$btop\" })"; sleep 0.3
+nautilus -q 2>/dev/null || true; sleep 0.5   # a lingering instance would serve the window with stale GTK CSS
+setsid uwsm-app -- nautilus --new-window "$HOME/dotfiles" >/dev/null 2>&1 &   # same launcher as Omarchy's binding: session env, not Hyprland's
+sleep 4
+dispatch "hl.dsp.focus({ window = \"address:$nvim\" })"; sleep 0.4; wtype -k Escape; sleep 2
+
+shots=$(mktemp -d)
+OMARCHY_SCREENSHOT_DIR=$shots omarchy capture screenshot fullscreen save >/dev/null 2>&1; sleep 1
+shot=$(ls -t "$shots"/*.png | head -1)
+magick "$shot" -resize 1800x1012! "$theme_dir/preview.png"
+rm -rf "$shots"
+chezmoi source-path "$theme_dir/preview.png" >/dev/null 2>&1 && chezmoi add "$theme_dir/preview.png"
+echo "$theme_dir/preview.png"

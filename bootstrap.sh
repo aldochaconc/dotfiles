@@ -11,6 +11,10 @@ echo "==> packages: Arch / Omarchy repos"
 # shellcheck disable=SC2046
 omarchy pkg add $(pkgs "$here/packages.txt")
 
+echo "==> AUR build hygiene: no leftover makedepends, no -debug split packages"
+yay -Y --save --removemake >/dev/null
+[[ -f /etc/makepkg.conf.d/no-debug.conf ]] || echo 'OPTIONS+=(!debug)' | sudo tee /etc/makepkg.conf.d/no-debug.conf >/dev/null
+
 echo "==> packages: AUR"
 # shellcheck disable=SC2046
 omarchy pkg aur add $(pkgs "$here/packages-aur.txt")
@@ -18,6 +22,10 @@ omarchy pkg aur add $(pkgs "$here/packages-aur.txt")
 echo "==> shell: zsh as login shell, stock oh-my-zsh template when ~/.zshrc is absent"
 [[ $(getent passwd "$USER" | cut -d: -f7) == /usr/bin/zsh ]] || chsh -s /usr/bin/zsh
 [[ -f ~/.zshrc ]] || cp /usr/share/oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc
+
+echo "==> thpm: theme hook that carries the palette into GTK apps (Nautilus and friends)"
+thpm install --no-ui
+thpm enable gtk-css-compat
 
 echo "==> secrets: stored once in the system keyring; ~/.claude/settings.json is rendered from them"
 omarchy pkg add chezmoi
@@ -49,7 +57,6 @@ if omarchy hw match omen && ! pacman -Q omen-space-git >/dev/null 2>&1; then
   # exists in the repo and the build aborts; drop the flag (crates resolve at build time).
   sed -i -e "s|^source=(.*)|source=(\"git+https://github.com/yunusemreyl/omen-space.git#tag=$omen_tag\")|" \
          -e "s/ --locked//" "$tmp/PKGBUILD"
-  echo 'options=(!debug)' >>"$tmp/PKGBUILD"   # makepkg.conf enables debug: skips the -debug split package
   (cd "$tmp" && makepkg -sri --noconfirm)   # -r drops the build deps (rust) afterwards
   rm -rf "$tmp"
 fi

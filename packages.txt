@@ -1,6 +1,7 @@
 # Arch / Omarchy repo packages added on top of the Omarchy base.
 # Applied with: omarchy pkg add $(grep -v '^#' packages.txt)
 7zip
+aether
 amd-ucode
 amdgpu_top
 arch-audit
