@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Blocks commits that leak private names or paths. Enable once: git config core.hooksPath .githooks
+cd "$(git rev-parse --show-toplevel)" || exit 1
+mapfile -t files < <(git diff --cached --name-only --diff-filter=ACMR)
+(( ${#files[@]} )) || exit 0
+exec ./.claude/hooks/guard-private.sh "${files[@]}"

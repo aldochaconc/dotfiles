@@ -10,8 +10,27 @@ git clone <this repo> ~/dotfiles
 ~/dotfiles/bootstrap.sh
 ```
 
-`bootstrap.sh` installs the extra packages, runs `chezmoi init --apply` (three yes/no questions
-about this machine's displays and GPU), sets the Omarchy defaults and the kept web apps.
+`bootstrap.sh` installs the extra packages, sets zsh as the login shell, runs `chezmoi init --apply` (three yes/no questions
+about this machine's displays and GPU, plus the Google Drive MCP path, empty if none), sets the Omarchy defaults and the kept web apps.
+Before `chezmoi apply` it asks for three secrets once (GitHub token, Google Drive OAuth id and
+secret) and stores them in the system keyring; `~/.claude/settings.json` is rendered from there.
+
+One manual step after that, once per machine (sudo): the boot and login screen, tux from the `omen`
+theme (`unlock.png`) on solid black, text in the theme foreground. The `post-update.d/plymouth-omen.hook`
+reapplies it whenever an Omarchy update restores the stock logo or colours.
+
+```sh
+omarchy plymouth set "#000000" "#dcd7ba" "$(omarchy theme dir omen)/unlock.png"
+```
+
+Without a TTY, answer the prompts on the command line; `--promptBool` is keyed by the prompt text:
+
+```sh
+chezmoi init --source ~/dotfiles \
+  --promptBool "Hybrid AMD+NVIDIA laptop (supergfxd Hybrid, AQ_DRM_DEVICES for Hyprland)=true" \
+  --promptBool "Laptop panel eDP-1 pinned to 1920x1080@144=true" \
+  --promptBool "External HDMI-A-1 pinned to 1920x1080@100=true"
+```
 
 ## Day to day
 
@@ -28,9 +47,15 @@ Files are copied, never symlinked: deleting or moving this repo leaves `~/.confi
 | Path | Target |
 |---|---|
 | `dot_config/hypr/` | `~/.config/hypr/` (`bindings.lua`, `monitors.lua` template) |
-| `dot_config/omarchy/` | shell, hooks, branding, themes (wallpapers excluded) |
+| `dot_config/omarchy/` | shell, hooks, branding (`about.txt`/`screensaver.txt` are what `omarchy branding` edits), theme `omen` (Kanagawa fork: own palette files, tux `unlock.png`, wallpapers and preview linked from the stock theme) |
 | `dot_config/uwsm/env-hyprland` | `AQ_DRM_DEVICES`; only applied when `hybrid_gpu` is true |
 | `dot_local/bin/` | `hypr-workspace-rotate` |
+| `dot_config/mise/config.toml` | toolchains (`node`, `go`, `claude`, `codex`); `bootstrap.sh` runs `mise install` |
 | `packages.txt`, `packages-aur.txt` | packages on top of the Omarchy base |
 | `themes.txt` | themes reinstalled from git; `aether`-generated themes are per machine |
+| `bootstrap.sh` omen-space step | HP OMEN only (`omarchy hw match omen`): builds `omen-space-git` from the pinned upstream tag with `makepkg`, so pacman owns the daemon, CLI, GUI and the `hp-omen-extra` DKMS module |
+| `dot_claude/` | `~/.claude`: settings (secrets rendered from the keyring), CLAUDE.md, hooks, skills, theme |
+| `dot_config/rtk/` | rtk config; the binary comes from `bootstrap.sh` |
 | `.claude/` | Claude Code settings for working in this repo; not applied to `$HOME` |
+| `CLAUDE.md` | facts and toolbelt for the agent working in this repo; not applied to `$HOME` |
+| `.claude/hooks/guard-private.sh`, `.githooks/` | refuse files that leak the login, `/home/<login>`, `~/Work`, `~/Projects` or a term from `~/.config/dotfiles-guard/terms` (kept out of git); wired as git pre-commit (`git config core.hooksPath .githooks`, once) and as a Claude Code `PostToolUse` hook |
