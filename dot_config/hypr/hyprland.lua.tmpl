@@ -88,12 +88,6 @@ o.window(floating_panels, { center = true })
 -- to Spotify on 6.
 o.window("^(DBeaver)$", { workspace = "7", tag = "-default-opacity", opacity = "1 1" })
 
--- herdr waits on workspace 8, launched at login from autostart.lua. "silent" places the
--- window there without switching the view, so the login session stays on workspace 1.
--- SUPER + SHIFT + H then brings it to the focused workspace through hypr-app-here, which
--- is why the home workspace only decides where it waits, never where it is used.
-o.window("^(herdr)$", { workspace = "8 silent" })
-
 -- Window rules Omarchy applies by default (default/hypr/windows.lua, Omarchy 4.0.4-1), for
 -- reference. A rule written in this file runs after them; for the same window and property
 -- the later rule wins.
