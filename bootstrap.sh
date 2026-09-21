@@ -73,6 +73,17 @@ omarchy default browser chromium
 omarchy default terminal foot
 omarchy default editor code
 
+echo "==> chromium: force-install the Claude extension, so Claude Code can drive the browser"
+# Claude Code ships the native messaging host in ~/.config/chromium/NativeMessagingHosts/, but
+# not the extension itself, and Chromium's Web Store install is unreliable without Google API
+# keys. ExtensionInstallForcelist makes Chromium fetch it at startup instead. The id is the one
+# the native host already allows in allowed_origins.
+[[ -f /etc/chromium/policies/managed/claude-extension.json ]] || {
+  sudo mkdir -p /etc/chromium/policies/managed
+  printf '{"ExtensionInstallForcelist":["fcoeoabgfenejglbffodgkkbkcdhcgfn;https://clients2.google.com/service/update2/crx"]}\n' |
+    sudo tee /etc/chromium/policies/managed/claude-extension.json >/dev/null
+}
+
 echo "==> toolchains declared in ~/.config/mise/config.toml"
 mise install
 
