@@ -131,9 +131,30 @@
 -- Omarchy ships workspaces disabled, so a 3-finger swipe cut between workspaces with
 -- nothing on screen showing the direction. "slide" makes the outgoing and incoming
 -- workspace travel horizontally, which is the motion the swipe already describes.
--- speed is in deciseconds, and higher is faster: 6 is ~250ms, quick enough to keep up
--- with the fingers while still showing which way the workspaces travelled.
-hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "easeOutQuint", style = "slide" })
+--
+-- The value has to be set on workspacesIn and workspacesOut, not on workspaces alone:
+-- the parent node reports whatever it is given, but the two leaves are what actually run
+-- on a workspace change, and setting only the parent leaves them at speed 0 with no
+-- bezier. A duration set there has no effect on screen while appearing correct in
+-- `hyprctl animations`.
+--
+-- speed is a DURATION in deciseconds, so a lower number is a shorter animation. The name
+-- reads backwards; Omarchy's own defaults above are the check: windowsOut sits at 1.49
+-- and global, the slow baseline, at 10. 1.8 sits just above windowsOut, among the
+-- fastest things on the system.
+--
+-- quick, not linear or easeOutQuint. linear holds one velocity from first frame to last,
+-- which is what makes a short slide feel mechanical: real movement starts and stops.
+-- easeOutQuint has the acceleration but spends its long tail crawling into place, and
+-- that tail is what reads as heavy at any duration. quick's control points, (0.15, 0)
+-- and (0.1, 1), leave the start fast and arrive without the crawl.
+--
+-- This is on the path of every workspace change, so SUPER + number pays it too, and there
+-- the switch is instant: the number has to stay near the floor where travel is still
+-- visible rather than anywhere it would read as waiting.
+hl.animation({ leaf = "workspaces", enabled = true, speed = 1.8, bezier = "quick", style = "slide" })
+hl.animation({ leaf = "workspacesIn", enabled = true, speed = 1.8, bezier = "quick", style = "slide" })
+hl.animation({ leaf = "workspacesOut", enabled = true, speed = 1.8, bezier = "quick", style = "slide" })
 
 -- dwindle -------------------------------------------------------------------
 

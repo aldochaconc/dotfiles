@@ -86,16 +86,18 @@ BarWidget {
     height: target ? target.height : 0
 
     // OutCubic is what the shell already uses for a sliding element (Ui/PanelSlider.qml,
-    // Ui/WidgetButton.qml's own opacity Behavior), at 140. 120 here instead, matching
-    // rotateCooldown above: the pill finishes exactly as the next swipe step unlocks.
+    // Ui/WidgetButton.qml's own opacity Behavior), at 140. 70 here instead: the pill also
+    // moves on SUPER + number, where the switch itself is instant and anything longer
+    // trails the window that already appeared. Well under the 120ms rotateCooldown, so a
+    // held scroll never queues behind it.
     //
     // The jump from no target to a target is a first paint, not a move, so animating it
     // would slide the pill in from the corner on startup. Enabling the Behaviors only
     // once a target exists keeps that first placement instant.
-    Behavior on x { enabled: pill.target !== null; NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-    Behavior on y { enabled: pill.target !== null; NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-    Behavior on width { enabled: pill.target !== null; NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-    Behavior on height { enabled: pill.target !== null; NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
+    Behavior on x { enabled: pill.target !== null; NumberAnimation { duration: 70; easing.type: Easing.OutCubic } }
+    Behavior on y { enabled: pill.target !== null; NumberAnimation { duration: 70; easing.type: Easing.OutCubic } }
+    Behavior on width { enabled: pill.target !== null; NumberAnimation { duration: 70; easing.type: Easing.OutCubic } }
+    Behavior on height { enabled: pill.target !== null; NumberAnimation { duration: 70; easing.type: Easing.OutCubic } }
   }
 
   GridLayout {
