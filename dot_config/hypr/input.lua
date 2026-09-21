@@ -27,6 +27,17 @@
 -- kb_layout and appends ",grp:alts_toggle" to kb_options; the values below are the resolved
 -- ones, without that branch.
 
+-- Two layouts, us first and latam second, toggled with ALT + SPACE (grp:alt_space_toggle).
+-- The toggle is an XKB option, not a Hyprland binding: it never appears in `hyprctl binds`
+-- and ALT + SPACE stays free of any o.bind. kb_options replaces the default wholesale, so
+-- compose:caps and shift:both_capslock_cancel are repeated here to survive.
+hl.config({
+  input = {
+    kb_layout = "us,latam", -- default us
+    kb_options = "compose:caps,shift:both_capslock_cancel,grp:alt_space_toggle",
+  },
+})
+
 -- hl.config({
 --   input = {
 --     kb_layout = "us",
