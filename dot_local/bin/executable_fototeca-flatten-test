@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+# Self-check for fototeca-flatten's collision comparator.
+#
+# Usage: fototeca-flatten-test
+#
+# The comparator is the part that can silently lose a photo: it decides which
+# of two files sharing a name survives at its original name. The cases below
+# are the real ones found in the library, plus the degenerate ones that a naive
+# "bigger file wins" or "more pixels wins" rule gets wrong.
+#
+# Synthetic images are generated so the test needs no access to the library.
+
+set -euo pipefail
+
+command -v exiftool >/dev/null || { echo "SKIP: exiftool not installed"; exit 0; }
+command -v magick >/dev/null || { echo "SKIP: imagemagick not installed"; exit 0; }
+
+T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
+
+# Same ranking logic as fototeca-flatten. Kept in sync by hand; it is 20 lines.
+pixels() {
+  local w h
+  w=$(exiftool -s3 -ImageWidth "$1" 2>/dev/null | head -1)
+  h=$(exiftool -s3 -ImageHeight "$1" 2>/dev/null | head -1)
+  [ -n "$w" ] && [ -n "$h" ] && printf '%s' "$((w * h))" || printf '0'
+}
+captured() {
+  local d
+  d=$(exiftool -s3 -DateTimeOriginal -CreateDate "$1" 2>/dev/null | head -1)
+  printf '%s' "$(printf '%s' "$d" | tr -cd '0-9')"
+}
+better() {
+  local a="$1" b="$2" pa pb ca cb sa sb
+  pa=$(pixels "$a"); pb=$(pixels "$b")
+  if [ "$pa" -ne "$pb" ]; then
+    [ "$pa" -gt "$pb" ] && printf '%s' "$a" || printf '%s' "$b"; return
+  fi
+  ca=$(captured "$a"); cb=$(captured "$b")
+  [ -z "$ca" ] && ca=0; [ -z "$cb" ] && cb=0
+  if [ "$ca" -ne "$cb" ] && [ "$ca" -ne 0 ] && [ "$cb" -ne 0 ]; then
+    [ "$ca" -lt "$cb" ] && printf '%s' "$a" || printf '%s' "$b"; return
+  fi
+  [ "$ca" -eq 0 ] && [ "$cb" -ne 0 ] && { printf '%s' "$b"; return; }
+  [ "$cb" -eq 0 ] && [ "$ca" -ne 0 ] && { printf '%s' "$a"; return; }
+  sa=$(stat -c%s "$a"); sb=$(stat -c%s "$b")
+  [ "$sb" -gt "$sa" ] && printf '%s' "$b" || printf '%s' "$a"
+}
+
+# Same sidecar merge as fototeca-flatten. -tagsfromfile must precede the
+# assignments; with it trailing, exiftool writes nothing and reports success.
+apply_sidecar() {
+  local img="$1" json="$2"
+  exiftool -m -q -q -overwrite_original \
+    -d '%s' \
+    -tagsfromfile "$json" \
+    "-DateTimeOriginal<PhotoTakenTimeTimestamp" \
+    "-CreateDate<PhotoTakenTimeTimestamp" \
+    "-GPSLatitude<GeoDataLatitude" \
+    "-GPSLongitude<GeoDataLongitude" \
+    "$img" 2>/dev/null || true
+}
+
+# Same content sniff as fototeca-flatten.
+real_ext() {
+  local mt ext
+  mt=$(file -b --mime-type "$1" 2>/dev/null)
+  ext="${1##*.}"; ext="${ext,,}"
+  case "$mt" in
+    image/jpeg) [ "$ext" = jpg ] || [ "$ext" = jpeg ] || printf 'jpg' ;;
+    image/png)  [ "$ext" = png ] || printf 'png' ;;
+    image/heic) [ "$ext" = heic ] || printf 'heic' ;;
+  esac
+}
+
+# Same naming as fototeca-flatten.
+captured_raw() {
+  exiftool -s3 -DateTimeOriginal -CreateDate -CreationDate -MediaCreateDate \
+    "$1" 2>/dev/null | grep -m1 -E '^[12][0-9]{3}:[0-9]{2}:[0-9]{2} '
+}
+dated_name() {
+  local f="$1" ext d y
+  ext="${f##*.}"; ext="${ext,,}"
+  [ "$ext" = jpeg ] && ext=jpg
+  d=$(captured_raw "$f")
+  if [ -n "$d" ]; then
+    printf '%s.%s' "$(printf '%s' "$d" | sed -E 's/^([0-9]{4}):([0-9]{2}):([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2}).*/\1-\2-\3_\4\5\6/')" "$ext"
+    return
+  fi
+  if [ "${2:-1}" = 1 ]; then
+    d=$(date -r "$f" '+%Y-%m-%d_%H%M%S' 2>/dev/null)
+    [ -n "$d" ] && { printf '%s_%s' "$d" "$(basename "$f")"; return; }
+  fi
+  y=$(printf '%s' "$(dirname "$f")" | grep -oE '(19|20)[0-9]{2}' | tail -1 || true)
+  printf '%s-00-00_%s' "${y:-0000}" "$(basename "$f")"
+}
+
+pass=0; fail=0
+check() {
+  local want="$1" got="$2" desc="$3"
+  if [ "$(basename "$want")" = "$(basename "$got")" ]; then
+    pass=$((pass + 1)); printf 'ok   %s\n' "$desc"
+  else
+    fail=$((fail + 1)); printf 'FAIL %s (wanted %s, got %s)\n' \
+      "$desc" "$(basename "$want")" "$(basename "$got")"
+  fi
+}
+
+# IMG_0523.JPG: the takeout copy is a 720x480 thumbnail at 25KB, the local one
+# is 900x1600. "Prefer the takeout" would lose the real photo.
+magick -size 720x480   xc:red   "$T/thumb.jpg"
+magick -size 900x1600  xc:blue  "$T/full.jpg"
+check "$T/full.jpg" "$(better "$T/thumb.jpg" "$T/full.jpg")" "more pixels wins over thumbnail"
+check "$T/full.jpg" "$(better "$T/full.jpg" "$T/thumb.jpg")" "argument order does not matter"
+
+# IMG_3785.HEIC: 4032x3024 against 3024x4032, the same shot rotated. Equal
+# pixel count, so the capture date has to break the tie.
+magick -size 4032x3024 xc:gray "$T/land.jpg"
+magick -size 3024x4032 xc:gray "$T/port.jpg"
+exiftool -q -q -overwrite_original -DateTimeOriginal='2019:01:01 10:00:00' "$T/land.jpg"
+exiftool -q -q -overwrite_original -DateTimeOriginal='2023:06:01 10:00:00' "$T/port.jpg"
+check "$T/land.jpg" "$(better "$T/port.jpg" "$T/land.jpg")" "equal pixels, older capture wins"
+
+# A file with no date must never beat one that has a date, whatever its size.
+magick -size 100x100 xc:green "$T/dated.jpg"
+magick -size 100x100 xc:white "$T/undated.jpg"
+exiftool -q -q -overwrite_original -DateTimeOriginal='2020:05:05 12:00:00' "$T/dated.jpg"
+exiftool -q -q -overwrite_original -all= "$T/undated.jpg"
+check "$T/dated.jpg" "$(better "$T/undated.jpg" "$T/dated.jpg")" "a present date beats a missing one"
+check "$T/dated.jpg" "$(better "$T/dated.jpg" "$T/undated.jpg")" "missing date loses in either order"
+
+# IMG_3830.HEIC: identical dimensions and no usable dates, so the larger file
+# is the more complete one.
+magick -size 200x200 xc:black    "$T/small.jpg"
+magick -size 200x200 plasma: -quality 100 "$T/large.jpg"
+exiftool -q -q -overwrite_original -all= "$T/small.jpg" "$T/large.jpg"
+check "$T/large.jpg" "$(better "$T/small.jpg" "$T/large.jpg")" "equal pixels, no dates, bigger wins"
+
+# A Google sidecar's date and GPS have to reach the image. This is the check
+# that fails when the -tagsfromfile argument order regresses.
+magick -size 64x64 xc:orange "$T/sc.jpg"
+exiftool -q -q -overwrite_original -all= "$T/sc.jpg"
+cat > "$T/sc.jpg.supplemental-metadata.json" <<'JSON'
+{"photoTakenTime":{"timestamp":"1500000000"},"geoData":{"latitude":-33.45,"longitude":-70.66}}
+JSON
+apply_sidecar "$T/sc.jpg" "$T/sc.jpg.supplemental-metadata.json"
+got_date=$(exiftool -s3 -DateTimeOriginal "$T/sc.jpg" 2>/dev/null)
+got_gps=$(exiftool -s3 -GPSLatitude "$T/sc.jpg" 2>/dev/null)
+if [ "$got_date" = "2017:07:13 22:40:00" ]; then
+  pass=$((pass + 1)); printf 'ok   sidecar date reaches EXIF\n'
+else
+  fail=$((fail + 1)); printf 'FAIL sidecar date reaches EXIF (got "%s")\n' "$got_date"
+fi
+if [ -n "$got_gps" ]; then
+  pass=$((pass + 1)); printf 'ok   sidecar GPS reaches EXIF\n'
+else
+  fail=$((fail + 1)); printf 'FAIL sidecar GPS reaches EXIF (got nothing)\n'
+fi
+
+# 45 files in the takeout are named .PNG and hold a JPEG. exiftool refuses to
+# write into them until the extension matches, so the merge has to rename
+# first or the sidecar's date is lost with no error.
+magick -size 48x48 xc:purple "$T/liar.jpg"
+mv "$T/liar.jpg" "$T/liar.PNG"
+got_ext=$(real_ext "$T/liar.PNG")
+if [ "$got_ext" = "jpg" ]; then
+  pass=$((pass + 1)); printf 'ok   JPEG named .PNG is detected\n'
+else
+  fail=$((fail + 1)); printf 'FAIL JPEG named .PNG is detected (got "%s")\n' "$got_ext"
+fi
+
+# A name that already agrees with its content must not be renamed.
+magick -size 48x48 xc:teal "$T/honest.png"
+got_ext=$(real_ext "$T/honest.png")
+if [ -z "$got_ext" ]; then
+  pass=$((pass + 1)); printf 'ok   a correct extension is left alone\n'
+else
+  fail=$((fail + 1)); printf 'FAIL a correct extension is left alone (got "%s")\n' "$got_ext"
+fi
+
+# The whole point: after the rename the sidecar merge succeeds.
+mv "$T/liar.PNG" "$T/liar.jpg"
+cat > "$T/liar.jpg.supplemental-metadata.json" <<'JSON'
+{"photoTakenTime":{"timestamp":"1500000000"}}
+JSON
+apply_sidecar "$T/liar.jpg" "$T/liar.jpg.supplemental-metadata.json"
+got_date=$(exiftool -s3 -DateTimeOriginal "$T/liar.jpg" 2>/dev/null)
+if [ "$got_date" = "2017:07:13 22:40:00" ]; then
+  pass=$((pass + 1)); printf 'ok   retyped file accepts the sidecar date\n'
+else
+  fail=$((fail + 1)); printf 'FAIL retyped file accepts the sidecar date (got "%s")\n' "$got_date"
+fi
+
+# Camera numbering recycles: IMG_0527 names three different photos from three
+# different years in this library. The capture time is what separates them.
+magick -size 64x64 xc:navy "$T/IMG_0527.JPG"
+exiftool -q -q -overwrite_original -DateTimeOriginal='2024:04:04 11:30:17' "$T/IMG_0527.JPG"
+got=$(dated_name "$T/IMG_0527.JPG")
+check_eq() {
+  local want="$1" got="$2" desc="$3"
+  if [ "$want" = "$got" ]; then
+    pass=$((pass + 1)); printf 'ok   %s\n' "$desc"
+  else
+    fail=$((fail + 1)); printf 'FAIL %s (wanted %s, got %s)\n' "$desc" "$want" "$got"
+  fi
+}
+check_eq "2024-04-04_113017.jpg" "$got" "capture time becomes the name"
+
+# .JPEG and .JPG must land on one extension, or the same photo can be filed twice.
+cp "$T/IMG_0527.JPG" "$T/IMG_0527.JPEG"
+check_eq "2024-04-04_113017.jpg" "$(dated_name "$T/IMG_0527.JPEG")" "jpeg normalises to jpg"
+
+# A video answers with CreateDate, not DateTimeOriginal. Asking for one tag
+# and taking head -1 would return an empty line here.
+magick -size 32x32 xc:olive "$T/vid.jpg"
+exiftool -q -q -overwrite_original -all= "$T/vid.jpg"
+exiftool -q -q -overwrite_original -CreateDate='2018:12:29 17:58:24' "$T/vid.jpg"
+check_eq "2018-12-29_175824.jpg" "$(dated_name "$T/vid.jpg")" "CreateDate alone is enough"
+
+# No date anywhere: the takeout folder's year, with month and day left unknown
+# rather than invented, and the original name kept.
+mkdir -p "$T/Fotos del 2018"
+magick -size 32x32 xc:maroon "$T/Fotos del 2018/a526255d.jpg"
+exiftool -q -q -overwrite_original -all= "$T/Fotos del 2018/a526255d.jpg"
+# An unzipped file with no date and no sidecar: its mtime is the unzip time,
+# so the takeout folder's year is all that is left.
+check_eq "2018-00-00_a526255d.jpg" "$(dated_name "$T/Fotos del 2018/a526255d.jpg" 0)" \
+  "undated file falls back to the folder year"
+
+# The year tree nests the month under the year, so an undated file's year is
+# its grandparent, not its parent. Looking only at the parent yields "09".
+mkdir -p "$T/2025/09"
+magick -size 32x32 xc:pink "$T/2025/09/IMG_7702.WEBP"
+exiftool -q -q -overwrite_original -all= "$T/2025/09/IMG_7702.WEBP" 2>/dev/null || true
+check_eq "2025-00-00_IMG_7702.WEBP" "$(dated_name "$T/2025/09/IMG_7702.WEBP" 0)" \
+  "year comes from the grandparent when the parent is a month"
+
+# A quarter of the tree has no EXIF at all: messaging strips it. Their mtime
+# agrees with the folder in 536 of 543 cases, so it is used as the date.
+magick -size 32x32 xc:coral "$T/2025/09/stripped.jpg"
+exiftool -q -q -overwrite_original -all= "$T/2025/09/stripped.jpg"
+touch -t 202604031302.34 "$T/2025/09/stripped.jpg"
+check_eq "2026-04-03_130234_stripped.jpg" "$(dated_name "$T/2025/09/stripped.jpg")" \
+  "mtime dates a file with no EXIF"
+
+# A bulk import writes many files in one second, so the mtime alone is not
+# unique. The original name is what separates them.
+cp "$T/2025/09/stripped.jpg" "$T/2025/09/stripped2.jpg"
+touch -t 202604031302.34 "$T/2025/09/stripped2.jpg"
+a=$(dated_name "$T/2025/09/stripped.jpg"); b=$(dated_name "$T/2025/09/stripped2.jpg")
+if [ "$a" != "$b" ]; then
+  pass=$((pass + 1)); printf 'ok   same mtime, different names\n'
+else
+  fail=$((fail + 1)); printf 'FAIL same mtime, different names (both %s)\n' "$a"
+fi
+
+# An unzipped file's mtime is the time of the unzip, so the caller says not to
+# trust it and the path's year is used instead.
+check_eq "2025-00-00_stripped.jpg" "$(dated_name "$T/2025/09/stripped.jpg" 0)" \
+  "mtime is ignored when the caller says so"
+
+# A real EXIF date always beats the mtime.
+magick -size 32x32 xc:gold "$T/2025/09/shot.jpg"
+exiftool -q -q -overwrite_original -DateTimeOriginal='2019:03:07 084500' "$T/2025/09/shot.jpg" 2>/dev/null
+exiftool -q -q -overwrite_original -DateTimeOriginal='2019:03:07 08:45:00' "$T/2025/09/shot.jpg"
+touch -t 202604031302.34 "$T/2025/09/shot.jpg"
+check_eq "2019-03-07_084500.jpg" "$(dated_name "$T/2025/09/shot.jpg")" \
+  "EXIF beats mtime"
+
+# The whole pipeline: a photo present in both sources, where the takeout copy
+# gains EXIF from its sidecar and so stops being byte-identical to the tree
+# copy. Deduping on the pre-merge hash discarded the tree copy against a twin
+# that no longer matched it; 41 of 59 dedups did that. Both must survive.
+FLATTEN="$(dirname "$0")/executable_fototeca-flatten"
+[ -f "$FLATTEN" ] || FLATTEN="$HOME/.local/bin/fototeca-flatten"
+if [ -f "$FLATTEN" ]; then
+  L="$T/lib"; mkdir -p "$L/2026/04" "$L/build/Takeout/Google Fotos/Fotos del 2023"
+  G="$L/build/Takeout/Google Fotos/Fotos del 2023"
+  magick -size 640x480 xc:teal "$G/c71eeddc.jpg"
+  exiftool -q -q -overwrite_original -all= "$G/c71eeddc.jpg"
+  cp "$G/c71eeddc.jpg" "$L/2026/04/IMG_0413.JPG"
+  touch -t 202604031316.05 "$L/2026/04/IMG_0413.JPG"
+  cat > "$G/c71eeddc.jpg.supplemental-metadata.json" <<'JSON'
+{"photoTakenTime":{"timestamp":"1676558121"}}
+JSON
+  ( cd "$L/build" && zip -qr "$L/takeout-20260412T014835Z-7-001.zip" Takeout )
+  rm -rf "$L/build"
+  FOTOTECA_SRC="$L" FOTOTECA_WORK="$T/w" bash "$FLATTEN" --apply >/dev/null 2>&1
+  # Both copies survive: the winner in all/, the loser in all/_review/.
+  n=$(find "$L/all" -type f 2>/dev/null | wc -l || true)
+  if [ "$n" -eq 2 ]; then
+    pass=$((pass + 1)); printf 'ok   a merged twin does not swallow the tree copy\n'
+  else
+    fail=$((fail + 1)); printf 'FAIL a merged twin does not swallow the tree copy (%s files, wanted 2)\n' "$n"
+  fi
+  # Neither copy sits in _review: their capture times differ, so they take
+  # different names and never compete. _review is only for a real contest.
+  r=$(find "$L/all/_review" -type f 2>/dev/null | wc -l || true)
+  if [ "$r" -eq 0 ]; then
+    pass=$((pass + 1)); printf 'ok   no contest, so nothing goes to _review\n'
+  else
+    fail=$((fail + 1)); printf 'FAIL no contest, so nothing goes to _review (%s files)\n' "$r"
+  fi
+
+  # A real contest: two different photos sharing one capture second. The
+  # winner stays in all/, the loser goes to _review/ instead of sitting next
+  # to 4000 good photos where nobody would find it.
+  C="$T/contest"; mkdir -p "$C/2026/04"
+  magick -size 900x600 xc:crimson "$C/2026/04/IMG_7001.JPG"
+  magick -size 400x300 xc:navy    "$C/2026/04/IMG_7002.JPG"
+  exiftool -q -q -overwrite_original -DateTimeOriginal='2024:02:02 12:00:00' \
+    "$C/2026/04/IMG_7001.JPG" "$C/2026/04/IMG_7002.JPG"
+  FOTOTECA_SRC="$C" FOTOTECA_WORK="$T/wc" bash "$FLATTEN" --apply >/dev/null 2>&1
+  w=$(find "$C/all" -maxdepth 1 -type f 2>/dev/null | wc -l || true)
+  r=$(find "$C/all/_review" -type f 2>/dev/null | wc -l || true)
+  if [ "$w" -eq 1 ] && [ "$r" -eq 1 ]; then
+    pass=$((pass + 1)); printf 'ok   the loser of a contest lands in _review\n'
+  else
+    fail=$((fail + 1)); printf 'FAIL the loser of a contest lands in _review (all=%s review=%s, wanted 1 and 1)\n' "$w" "$r"
+  fi
+else
+  printf 'skip fototeca-flatten not found, pipeline case not run\n'
+fi
+
+printf '\n%s passed, %s failed\n' "$pass" "$fail"
+[ "$fail" -eq 0 ]

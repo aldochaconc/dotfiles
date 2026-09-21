@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Move the non-photo Google Takeout zips out of ~/Pictures/Fototeca.
+#
+# Usage: fototeca-move-drive-zips [--apply]
+#
+# The takeout export was split by category, and only the -7-* parts hold Google
+# Fotos. The -9-* parts are Google Drive documents (2971 entries) and -6-001 is
+# Play Store / Store / Pay metadata; none of them belong in a photo library.
+# They are moved, not extracted and not deleted.
+#
+# -9-002 was never downloaded, so the Drive set is incomplete. That is reported
+# rather than repaired: only a fresh export from Google can fill the gap.
+#
+# ponytail: mv, no extraction. Whether those documents are ever unpacked is a
+# separate decision about ~/Documents, not about the photo library.
+
+set -euo pipefail
+
+SRC="${FOTOTECA_SRC:-$HOME/Pictures/Fototeca}"
+DEST="${DRIVE_DEST:-$HOME/Documents/google-takeout}"
+
+APPLY=0
+[ "${1:-}" = "--apply" ] && APPLY=1
+
+[ -d "$SRC" ] || { printf 'no such directory: %s\n' "$SRC" >&2; exit 1; }
+
+moved=0
+for z in "$SRC"/takeout-*-9-*.zip "$SRC"/takeout-*-6-*.zip; do
+  [ -f "$z" ] || continue
+  printf '%s -> %s/\n' "$(basename "$z")" "$DEST"
+  if [ "$APPLY" -eq 1 ]; then
+    mkdir -p "$DEST"
+    mv -n "$z" "$DEST/"
+  fi
+  moved=$((moved + 1))
+done
+
+# The extracted -6-001 directory travels with its zip.
+if [ -d "$SRC/takeout-20260412T014835Z-6-001" ]; then
+  printf '%s/ -> %s/\n' "takeout-20260412T014835Z-6-001" "$DEST"
+  if [ "$APPLY" -eq 1 ]; then
+    mkdir -p "$DEST"
+    mv -n "$SRC/takeout-20260412T014835Z-6-001" "$DEST/"
+  fi
+  moved=$((moved + 1))
+fi
+
+printf '\n%s items\n' "$moved"
+[ -f "$SRC"/takeout-*-9-002.zip ] 2>/dev/null || \
+  printf 'note: -9-002 missing from the export, Drive backup is incomplete\n'
+[ "$APPLY" -eq 0 ] && printf 'dry run, nothing moved. re-run with --apply\n'
+exit 0

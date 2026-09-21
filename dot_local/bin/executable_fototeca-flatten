@@ -1,0 +1,438 @@
+#!/usr/bin/env bash
+# Flatten ~/Pictures/Fototeca into a single root-level folder, merging the
+# Google Takeout photo export into the existing year/month tree.
+#
+# Usage: fototeca-flatten [--apply]
+#
+# Without --apply it is a dry run: it reports what would be copied, deduped and
+# renamed, and writes nothing outside the work directory. Sources are never
+# modified; the year tree and the zips stay where they are until the result has
+# been checked by hand.
+#
+# Three inputs land in one flat directory:
+#   - the existing tree (0000, 2016, 2021, 2023-2026), 2070 media of 2193
+#     files; the other 123 are iOS .aae edit recipes, which carry no image
+#   - the Google Fotos zips (takeout-*-7-00*.zip), 2023 media files
+#   - the two loose JPGs at the root of Fototeca
+#
+# The -9-* zips are Google Drive, not photos, and -6-001 is Play/Store/Pay
+# metadata; move-drive-zips relocates them to ~/Documents and they are never
+# read here.
+#
+# Files are named after their capture time, YYYY-MM-DD_HHMMSS.ext. Camera
+# numbering recycles, so IMG_0527 names three different photos from three
+# different years here and IMG_0556 two more; a flat folder keyed on the
+# original names would collide by design. The shutter time does not recycle
+# and sorts chronologically in a plain listing.
+#
+# A quarter of the tree, 543 files, carries no EXIF at all: messaging strips
+# it, and only 12 of them are in the takeout for the sidecar to rescue. They
+# fall back to the file mtime, which is the write time rather than the
+# shutter, so a 2019 photo forwarded in 2026 is filed under 2026. It is real
+# information here, agreeing with the folder's year and month in 536 of the
+# 543. A bulk import writes many files in the same second, so those names
+# keep the camera name too: 2026-04-03_130359_IMG_2222.JPG, unique for all
+# 543, and visibly an inferred date rather than a read one.
+#
+# Two photos can still share a second, and the same photo can exist in two
+# versions, so the comparator stays. It ranks on pixel count, then on the
+# older capture date, then on byte size, and only then keeps both under a ~2
+# suffix. That ordering is the user's rule: best quality, then oldest, then
+# most complete. Neither size nor pixel count alone is enough: IMG_0523.JPG is
+# 25KB/720x480 in the takeout against 310KB/900x1600 locally, so "prefer the
+# takeout" loses the photo, and IMG_3785 is 4032x3024 against 3024x4032, the
+# same shot rotated, so "prefer more pixels" is a coin flip.
+#
+# The .supplemental-metadata.json sidecars carry Google's capture date and
+# GPS, and 1384 of the export's media files have one. exiftool writes it into
+# the image before the sidecar is dropped, so a photo whose EXIF was stripped
+# keeps its real date, and its name. Without exiftool installed the script
+# refuses to run rather than silently discarding those dates.
+#
+# Google writes the timestamp in UTC and exiftool renders it in the system's
+# zone, so a shot taken at 16:09 UTC is named 130959 here. Consistent across
+# the library, and the chronological order is unaffected.
+#
+# ponytail: md5 over whole files, no perceptual hashing. Two files that differ
+# by a re-encode are kept as separate photos rather than guessed about; the
+# suffixed pair is visible in the output and a human settles it. Perceptual
+# dedup is the upgrade path if the ~2 files pile up.
+
+set -euo pipefail
+
+SRC="${FOTOTECA_SRC:-$HOME/Pictures/Fototeca}"
+DEST="${FOTOTECA_DEST:-$SRC/all}"
+# Losers of a name contest go here rather than beside the winners: 133 of
+# them in the full library, and mixed into 4000 photos they are invisible.
+REVIEW="$DEST/_review"
+WORK="${FOTOTECA_WORK:-${XDG_CACHE_HOME:-$HOME/.cache}/fototeca-flatten}"
+
+APPLY=0
+[ "${1:-}" = "--apply" ] && APPLY=1
+
+die() { printf 'fototeca-flatten: %s\n' "$1" >&2; exit 1; }
+
+command -v exiftool >/dev/null || die "exiftool not installed: omarchy pkg add perl-image-exiftool"
+command -v unzip >/dev/null || die "unzip not installed"
+[ -d "$SRC" ] || die "no such directory: $SRC"
+
+# Media only. The JSON sidecars ride along in the zips and are consumed by
+# exiftool, never copied to DEST. The 119 .aae files in the tree are iOS edit
+# recipes with no image of their own, and are dropped with them.
+is_media() {
+  case "${1,,}" in
+    *.jpg|*.jpeg|*.png|*.heic|*.mov|*.mp4) return 0 ;;
+    # Four files in the tree: 2 gif, 1 webp, 1 avif. Rare, but images.
+    *.gif|*.webp|*.avif) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Pixel count, or 0 when the format is unreadable. HEIC needs a recent
+# imagemagick; exiftool answers for every format the library holds, so it is
+# the one asked.
+pixels() {
+  local w h
+  w=$(exiftool -s3 -ImageWidth "$1" 2>/dev/null | head -1)
+  h=$(exiftool -s3 -ImageHeight "$1" 2>/dev/null | head -1)
+  [ -n "$w" ] && [ -n "$h" ] && printf '%s' "$((w * h))" || printf '0'
+}
+
+# Capture date as a sortable integer, 0 when absent. DateTimeOriginal is the
+# shutter; CreateDate is the fallback. File mtime is deliberately not used: a
+# copy or an unzip rewrites it, so it says nothing about when the photo was
+# taken.
+captured() {
+  printf '%s' "$(captured_raw "$1" | tr -cd '0-9')"
+}
+
+# "YYYY:MM:DD HH:MM:SS" from the first tag that carries one, or nothing.
+#
+# Stills answer with DateTimeOriginal, video containers with CreateDate or
+# QuickTime's CreationDate, and a few only with MediaCreateDate. Asking for
+# one tag and taking head -1 returns an empty line when that tag is the
+# missing one, so every candidate is asked for and the first real date wins.
+captured_raw() {
+  exiftool -s3 -DateTimeOriginal -CreateDate -CreationDate -MediaCreateDate \
+    "$1" 2>/dev/null | grep -m1 -E '^[12][0-9]{3}:[0-9]{2}:[0-9]{2} '
+}
+
+# Rank two files, print the winner. Pixel count, then older capture, then more
+# bytes. Ties keep $1, the incumbent.
+better() {
+  local a="$1" b="$2" pa pb ca cb sa sb
+  pa=$(pixels "$a"); pb=$(pixels "$b")
+  if [ "$pa" -ne "$pb" ]; then
+    [ "$pa" -gt "$pb" ] && printf '%s' "$a" || printf '%s' "$b"
+    return
+  fi
+  ca=$(captured "$a"); cb=$(captured "$b")
+  # A missing date must never beat a present one, so 0 sorts last.
+  [ -z "$ca" ] && ca=0; [ -z "$cb" ] && cb=0
+  if [ "$ca" -ne "$cb" ] && [ "$ca" -ne 0 ] && [ "$cb" -ne 0 ]; then
+    [ "$ca" -lt "$cb" ] && printf '%s' "$a" || printf '%s' "$b"
+    return
+  fi
+  [ "$ca" -eq 0 ] && [ "$cb" -ne 0 ] && { printf '%s' "$b"; return; }
+  [ "$cb" -eq 0 ] && [ "$ca" -ne 0 ] && { printf '%s' "$a"; return; }
+  sa=$(stat -c%s "$a"); sb=$(stat -c%s "$b")
+  [ "$sb" -gt "$sa" ] && printf '%s' "$b" || printf '%s' "$a"
+}
+
+# The extension the bytes actually deserve, or nothing when it already agrees.
+#
+# Google converts on export and keeps the original name, so the takeout is
+# full of files whose extension contradicts their content: 56 .png and 32
+# .heic that are JPEG, plus 63 .mov that are MP4 and 24 .mp4 that are
+# QuickTime. exiftool refuses to write a tag into a still whose type is wrong
+# ("Not a valid PNG (looks more like a JPEG)"), so those 88 photos would
+# silently lose the date and GPS their sidecar carries.
+#
+# Videos are deliberately not mapped. exiftool writes into a mislabelled MP4
+# or QuickTime without complaining, so renaming them would buy nothing, and
+# .MOV is what iOS calls its recordings whatever the container turns out to
+# be.
+#
+# ponytail: a mismatch outside these three still formats keeps its name. The
+# upgrade path is one more case here, if such a file ever shows up.
+real_ext() {
+  local mt ext
+  mt=$(file -b --mime-type "$1" 2>/dev/null)
+  ext="${1##*.}"; ext="${ext,,}"
+  case "$mt" in
+    image/jpeg) [ "$ext" = jpg ] || [ "$ext" = jpeg ] || printf 'jpg' ;;
+    image/png)  [ "$ext" = png ] || printf 'png' ;;
+    image/heic) [ "$ext" = heic ] || printf 'heic' ;;
+  esac
+}
+
+# The name a file gets in DEST: YYYY-MM-DD_HHMMSS.ext from its capture time.
+#
+# Camera numbering recycles, so IMG_0527 names three different photos from
+# three different years in this library alone. The shutter time does not
+# recycle, it sorts chronologically under a plain alphabetical listing, and it
+# survives the file being re-exported under another name.
+#
+# Without any date the year comes from the takeout folder, which was checked
+# against the sidecars and agreed on all 753 files where both exist. Month and
+# day are written as 00 rather than guessed, and the original name is kept so
+# the file stays identifiable: 2018-00-00_a526255d-....jpg. Six files in the
+# export need this, all of them UUID-named images that arrived with no
+# metadata at all.
+# Are these the same bytes? $2 is a name already placed in DEST, read from
+# DEST under --apply and from the source that holds that slot in a dry run.
+same_bytes() {
+  local other
+  if [ "$APPLY" -eq 1 ]; then
+    other="$DEST/$2"; [ -f "$other" ] || other="$REVIEW/$2"
+  else
+    other="${SRC_OF[$2]:-}"
+  fi
+  [ -n "$other" ] && [ -f "$other" ] || return 1
+  [ "$(md5sum "$1" | cut -d' ' -f1)" = "$(md5sum "$other" | cut -d' ' -f1)" ]
+}
+
+# dated_name <file> [trust_mtime]
+dated_name() {
+  local f="$1" ext d y
+  ext="${f##*.}"; ext="${ext,,}"
+  [ "$ext" = jpeg ] && ext=jpg
+
+  d=$(captured_raw "$f")
+  if [ -n "$d" ]; then
+    printf '%s.%s' "$(printf '%s' "$d" | sed -E 's/^([0-9]{4}):([0-9]{2}):([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2}).*/\1-\2-\3_\4\5\6/')" "$ext"
+    return
+  fi
+
+  # No EXIF date. 543 files in the tree are in this state, a quarter of it:
+  # images that arrived through messaging, which strips the metadata. Only 12
+  # of them are in the takeout, so the sidecar rescues almost none.
+  #
+  # Their mtime is not a copy artefact. It agrees with the year AND month of
+  # the folder holding them in 536 of the 543, so the tree was built from it.
+  # It dates when the file was written, not when the shutter fired, so a 2019
+  # photo forwarded in 2026 is filed under 2026. That is the cost of having
+  # them sort with everything else instead of piling up under one year.
+  #
+  # Only for files read in place. Anything unzipped carries the time of the
+  # unzip, which says nothing, so the caller passes trust_mtime=0 for those.
+  # The original name rides along. A bulk import writes dozens of files in the
+  # same second, so the mtime alone gives the 543 only 250 distinct names, the
+  # worst second holding 12. Appending the camera name makes them unique
+  # without a ~N suffix that would suggest a relation these photos do not
+  # have, and it marks at a glance which dates are inferred.
+  if [ "${2:-1}" = 1 ]; then
+    d=$(date -r "$f" '+%Y-%m-%d_%H%M%S' 2>/dev/null)
+    [ -n "$d" ] && { printf '%s_%s' "$d" "$(basename "$f")"; return; }
+  fi
+
+  # Not even that: the year from the path. The takeout names its folders
+  # "Fotos del 2018", and the year tree nests the month under the year, so the
+  # year can be the parent or its parent. The rightmost match wins, since
+  # $HOME holds no year but the folders do.
+  y=$(printf '%s' "$(dirname "$f")" | grep -oE '(19|20)[0-9]{2}' | tail -1 || true)
+  printf '%s-00-00_%s' "${y:-0000}" "$(basename "$f")"
+}
+
+# Locate a photo's JSON sidecar, or print nothing.
+#
+# Google truncates the sidecar name at 46 characters, so IMG_1234.JPG may be
+# accompanied by IMG_1234.JPG.supplemental-metadata.json, by a clipped
+# IMG_1234.JPG.supplemen.json, or by neither. A shell glob is wrong here: with
+# no match it yields the literal pattern, and with several it yields them all
+# joined into one unusable path. find answers one name or none.
+sidecar_for() {
+  local dir base
+  dir=$(dirname "$1"); base=$(basename "$1")
+  find "$dir" -maxdepth 1 -type f -name "$base.*.json" -print -quit 2>/dev/null
+}
+
+# Fold the sidecar's date and GPS into the image, then forget the sidecar.
+# -overwrite_original leaves no _original copies to clean up afterwards.
+apply_sidecar() {
+  local img="$1" json="$2"
+  [ -f "$json" ] || return 0
+  # -tagsfromfile has to come before the -DST<SRC assignments: exiftool binds
+  # each assignment to the source file in effect at that point, so with the
+  # flag trailing, every tag resolves against nothing and the image is written
+  # unchanged.
+  exiftool -m -q -q -overwrite_original \
+    -d '%s' \
+    -tagsfromfile "$json" \
+    "-DateTimeOriginal<PhotoTakenTimeTimestamp" \
+    "-CreateDate<PhotoTakenTimeTimestamp" \
+    "-GPSLatitude<GeoDataLatitude" \
+    "-GPSLongitude<GeoDataLongitude" \
+    "$img" 2>/dev/null || true
+}
+
+mkdir -p "$WORK"
+
+# Content hash -> destination name already placed, so identical bytes collapse
+# no matter which source they arrived from.
+declare -A BY_HASH=()
+declare -A BY_NAME=()
+# Destination name -> the source file whose bytes hold that slot. The
+# comparator needs something to read; under --apply that is the copy in DEST,
+# and during a dry run nothing has been copied, so the original source is read
+# in place. Staging the bytes instead would duplicate the whole 27G library
+# into the cache just to answer 30 collisions.
+declare -A SRC_OF=()
+
+copied=0; deduped=0; replaced=0; suffixed=0; sidecars=0; retyped=0
+
+# place <file> <preferred-name> [hash]
+# Decides where one file lands, applying the comparator when the name is taken.
+#
+# The hash is passed in for files out of the takeout: merging the sidecar
+# rewrites the image, so hashing afterwards would make a photo that is
+# byte-identical to its copy in the year tree look different, and both would
+# be kept. The hash of the original bytes is what identifies the photo.
+#
+# That identity is a candidate, not a verdict. A takeout file's bytes change
+# when its sidecar is merged, so the copy standing in DEST under that hash is
+# no longer the bytes the hash names. Dropping the newcomer on the strength
+# of the stale hash silently loses it: 41 of 59 such dedups discarded a file
+# whose supposed twin in DEST had different content. The placed bytes are
+# therefore checked before anything is discarded, and a mismatch falls
+# through to the comparator, which keeps both.
+place() {
+  local src="$1" name="$2" hash="${3:-}" target rival winner stem ext n twin
+  [ -n "$hash" ] || hash=$(md5sum "$src" | cut -d' ' -f1)
+
+  twin="${BY_HASH[$hash]:-}"
+  if [ -n "$twin" ]; then
+    if same_bytes "$src" "$twin"; then
+      deduped=$((deduped + 1))
+      return
+    fi
+    # Stale hash: the twin was rewritten after it was recorded. Fall through
+    # and let the name and the comparator decide.
+    hash="stale:$hash:$name"
+  fi
+
+  target="$DEST/$name"
+  if [ -z "${BY_NAME[$name]:-}" ]; then
+    BY_NAME[$name]="$hash"
+    BY_HASH[$hash]="$name"
+    SRC_OF[$name]="$src"
+    [ "$APPLY" -eq 1 ] && cp -n "$src" "$target"
+    copied=$((copied + 1))
+    return
+  fi
+
+  # Name taken by different content: rank them. Under --apply the incumbent is
+  # already in DEST; during a dry run it is still at its source path.
+  rival="${SRC_OF[$name]}"
+  [ "$APPLY" -eq 1 ] && rival="$target"
+  [ -f "$rival" ] || die "incumbent for $name missing at $rival"
+
+  winner=$(better "$rival" "$src")
+  if [ "$winner" = "$src" ]; then
+    # Incumbent loses. It is not deleted: it keeps the suffix, so nothing that
+    # was already placed is destroyed by a later arrival.
+    stem="${name%.*}"; ext="${name##*.}"
+    n=2; while [ -n "${BY_NAME[${stem}~${n}.${ext}]:-}" ]; do n=$((n + 1)); done
+    BY_NAME[${stem}~${n}.${ext}]="${BY_NAME[$name]}"
+    # The loser keeps its bytes under the new name, so its hash has to point
+    # there too or a later identical file dedupes against the wrong name.
+    BY_HASH[${BY_NAME[$name]}]="${stem}~${n}.${ext}"
+    # Under --apply the loser's bytes now live in REVIEW; in a dry run
+    # nothing moved, so its source path still holds them.
+    if [ "$APPLY" -eq 1 ]; then
+      SRC_OF[${stem}~${n}.${ext}]="$REVIEW/${stem}~${n}.${ext}"
+    else
+      SRC_OF[${stem}~${n}.${ext}]="${SRC_OF[$name]}"
+    fi
+    [ "$APPLY" -eq 1 ] && { mkdir -p "$REVIEW"; mv "$target" "$REVIEW/${stem}~${n}.${ext}"; }
+    [ "$APPLY" -eq 1 ] && cp -n "$src" "$target"
+    BY_NAME[$name]="$hash"
+    BY_HASH[$hash]="$name"
+    SRC_OF[$name]="$src"
+    replaced=$((replaced + 1))
+    printf '  replace %-24s (kept loser as %s~%s.%s)\n' "$name" "$stem" "$n" "$ext"
+  else
+    stem="${name%.*}"; ext="${name##*.}"
+    n=2; while [ -n "${BY_NAME[${stem}~${n}.${ext}]:-}" ]; do n=$((n + 1)); done
+    BY_NAME[${stem}~${n}.${ext}]="$hash"
+    BY_HASH[$hash]="${stem}~${n}.${ext}"
+    SRC_OF[${stem}~${n}.${ext}]="$src"
+    [ "$APPLY" -eq 1 ] && { mkdir -p "$REVIEW"; cp -n "$src" "$REVIEW/${stem}~${n}.${ext}"; }
+    suffixed=$((suffixed + 1))
+    printf '  suffix  %-24s -> %s~%s.%s\n' "$name" "$stem" "$n" "$ext"
+  fi
+}
+
+[ "$APPLY" -eq 1 ] && mkdir -p "$DEST"
+
+printf 'source: %s\n' "$SRC"
+printf 'dest:   %s%s\n\n' "$DEST" "$([ "$APPLY" -eq 0 ] && printf ' (dry run)')"
+
+# 1. The takeout zips first, so their sidecar dates are in place before the
+# local tree is ranked against them.
+printf 'takeout zips\n'
+# The extraction survives every pass: SRC_OF points at these files, and a
+# collision found later in the year tree has to be able to read them.
+EX="$WORK/ex"; rm -rf "$EX"; mkdir -p "$EX"
+trap 'rm -rf "$EX"' EXIT
+for z in "$SRC"/takeout-*-7-00*.zip; do
+  [ -f "$z" ] || continue
+  printf '  %s\n' "$(basename "$z")"
+  ex="$EX/$(basename "$z" .zip)"; mkdir -p "$ex"
+  unzip -q -o "$z" -d "$ex" 2>/dev/null || true
+  while IFS= read -r -d '' f; do
+    is_media "$f" || continue
+    base=$(basename "$f")
+    # Hash the untouched bytes: apply_sidecar rewrites the file below.
+    h=$(md5sum "$f" | cut -d' ' -f1)
+    # Google truncates the sidecar name at 46 chars, so an exact
+    # "$f.supplemental-metadata.json" is not always there; glob for the stem.
+    json=$(sidecar_for "$f")
+    # Fix the extension before the merge, or exiftool rejects the file and the
+    # sidecar's date is lost. The sidecar is found under the original name, so
+    # it is located first.
+    rext=$(real_ext "$f")
+    if [ -n "$rext" ]; then
+      nf="${f%.*}.$rext"
+      if mv -n "$f" "$nf" && [ -f "$nf" ]; then
+        printf '  retype  %-24s -> %s\n' "$base" "$(basename "$nf")"
+        f="$nf"; base=$(basename "$nf")
+        retyped=$((retyped + 1))
+      fi
+    fi
+    if [ -n "$json" ]; then
+      apply_sidecar "$f" "$json"
+      sidecars=$((sidecars + 1))
+    fi
+    # Named after the merge: the sidecar is what gives most of these files
+    # their date in the first place.
+    place "$f" "$(dated_name "$f" 0)" "$h"
+  done < <(find "$ex" -type f -print0)
+done
+
+# 2. The year tree.
+printf '\nyear tree\n'
+while IFS= read -r -d '' f; do
+  is_media "$f" || continue
+  place "$f" "$(dated_name "$f")"
+done < <(find "$SRC" -mindepth 2 -maxdepth 3 -type f \
+  -regextype posix-extended -regex '.*/(0000|19[0-9]{2}|20[0-9]{2})/.*' -print0)
+
+# 3. Loose files at the root of Fototeca, excluding DEST itself.
+printf '\nloose root files\n'
+while IFS= read -r -d '' f; do
+  is_media "$f" || continue
+  place "$f" "$(dated_name "$f")"
+done < <(find "$SRC" -maxdepth 1 -type f -print0)
+
+printf '\n%s\n' "----"
+printf 'copied:   %s\n' "$copied"
+printf 'deduped:  %s (identical content)\n' "$deduped"
+printf 'replaced: %s (better copy won, loser suffixed)\n' "$replaced"
+printf 'suffixed: %s (kept both, same name)\n' "$suffixed"
+printf 'sidecars: %s merged into EXIF\n' "$sidecars"
+printf 'retyped:  %s (extension corrected to match content)\n' "$retyped"
+[ $((replaced + suffixed)) -gt 0 ] && printf '\n%s files in %s, each competing with the one of the same name in %s\n' \
+  "$((replaced + suffixed))" "$REVIEW" "$DEST"
+[ "$APPLY" -eq 0 ] && printf '\ndry run, nothing written. re-run with --apply\n'
+exit 0
