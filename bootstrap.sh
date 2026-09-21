@@ -11,6 +11,13 @@ echo "==> packages: Arch / Omarchy repos"
 # shellcheck disable=SC2046
 omarchy pkg add $(pkgs "$here/packages.txt")
 
+echo "==> journal retention: 500M, so it stops growing toward journald's 10%-of-disk default"
+[[ -f /etc/systemd/journald.conf.d/size.conf ]] || {
+  sudo mkdir -p /etc/systemd/journald.conf.d
+  printf '[Journal]\nSystemMaxUse=500M\n' | sudo tee /etc/systemd/journald.conf.d/size.conf >/dev/null
+  sudo systemctl kill --kill-who=main --signal=SIGUSR2 systemd-journald
+}
+
 echo "==> AUR build hygiene: no leftover makedepends, no -debug split packages"
 yay -Y --save --removemake >/dev/null
 [[ -f /etc/makepkg.conf.d/no-debug.conf ]] || echo 'OPTIONS+=(!debug)' | sudo tee /etc/makepkg.conf.d/no-debug.conf >/dev/null
@@ -68,6 +75,13 @@ omarchy default editor code
 
 echo "==> toolchains declared in ~/.config/mise/config.toml"
 mise install
+
+echo "==> file expiry declared in ~/.config/user-tmpfiles.d (screenshots keep 7 days)"
+# The rules are chezmoi-managed; only the timer that acts on them has to be turned on, and it
+# ships disabled. The timer runs --clean alone, so --create runs once here to make the
+# directories the rules declare; after that omarchy has somewhere to write on the first capture.
+systemd-tmpfiles --user --create
+systemctl --user enable --now systemd-tmpfiles-clean.timer
 
 echo "==> vscode extensions"
 # --install-extension is idempotent on its own but re-downloads each one; comparing against
