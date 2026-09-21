@@ -77,6 +77,11 @@ while read -r url; do
   omarchy theme install "$url"
 done < <(grep -vE '^\s*#|^\s*$' "$here/themes.txt")
 
+echo "==> shell plugins from git"
+while read -r url; do
+  omarchy plugin add "$url" --enable --yes
+done < <(grep -vE '^\s*#|^\s*$' "$here/plugins.txt")
+
 if chezmoi data | jq -e '.hybrid_gpu' >/dev/null 2>&1 && [[ "$(supergfxctl -g 2>/dev/null)" != "Hybrid" ]]; then
   echo "==> hybrid GPU: this machine is not in Hybrid mode. Run:  omarchy toggle hybrid gpu   (reboots)"
 fi

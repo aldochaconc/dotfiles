@@ -59,6 +59,7 @@ Files are copied, never symlinked: deleting or moving this repo leaves `~/.confi
 | `dot_config/mise/config.toml` | toolchains (`node`, `go`, `claude`, `codex`); `bootstrap.sh` runs `mise install` |
 | `packages.txt`, `packages-aur.txt` | packages on top of the Omarchy base |
 | `themes.txt` | themes reinstalled from git; `aether`-generated themes are per machine |
+| `plugins.txt` | Omarchy shell plugins reinstalled from git with `omarchy plugin add`. A community plugin runs unsandboxed and marketplace approval is not a security audit, so each entry carries what its source was reviewed for |
 | `bootstrap.sh` thpm step | `thpm` (AUR) hooks into `theme-set.d`; its `gtk-css-compat` integration writes `~/.config/gtk-{3,4}.0/gtk.css` from the palette so Nautilus and other GTK apps follow the theme. `thpm doctor` reports the state |
 | `bootstrap.sh` omen-space step | HP OMEN only (`omarchy hw match omen`): builds `omen-space-git` from the pinned upstream tag with `makepkg`, so pacman owns the daemon, CLI, GUI and the `hp-omen-extra` DKMS module |
 | `dot_claude/` | `~/.claude`: settings (secrets rendered from the keyring), CLAUDE.md, hooks, skills |
