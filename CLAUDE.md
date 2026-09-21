@@ -4,9 +4,10 @@ Omarchy customizations applied with chezmoi. This repo is the chezmoi source (`s
 files are copied into `$HOME`, never symlinked. Edited in place → `chezmoi re-add <file>`;
 edited here → `chezmoi diff`, then `chezmoi apply`.
 
-Decisions no rule surface owns are logged in [`adr.md`](adr.md). A lesson from a session belongs
-in the surface that owns it, `Rules of this machine` below or a skill, and reaches `adr.md` only
-when no surface owns it and it has happened twice.
+A lesson from a session is routed by the table in the `skill-growth` skill, which names the
+surface each class of mistake belongs to and is the authority on that question. Decisions no
+surface there owns are logged in [`adr.md`](adr.md), and only after the failure has appeared
+twice.
 
 ## Rules of this machine
 
