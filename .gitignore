@@ -6,5 +6,9 @@ uwsm/env.d/
 *.bak
 *.bak.*
 
+# Generated: Python writes these beside any hook it runs.
+__pycache__/
+*.py[cod]
+
 # OS
 .DS_Store

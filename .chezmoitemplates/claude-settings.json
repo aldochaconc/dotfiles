@@ -1,10 +1,10 @@
 {
+  "agentPushNotifEnabled": true,
+  "alwaysThinkingEnabled": false,
   "attribution": {
     "commit": "",
     "pr": ""
   },
-  "agentPushNotifEnabled": true,
-  "alwaysThinkingEnabled": false,
   "autoCompactEnabled": true,
   "autoMemoryEnabled": false,
   "effortLevel": "xhigh",
@@ -105,6 +105,15 @@
           }
         ],
         "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/tracked-rm.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
       }
     ],
     "SessionStart": [
@@ -130,22 +139,22 @@
       ],
       "command": "uvx",
       "env": {
-        "GITHUB_TOKEN": "{{ keyring "claude" "github_token" }}"
+        "GITHUB_TOKEN": "${GITHUB_PAT}"
       }
     },
     "googleDrive": {
       "args": [
-        "{{ if hasKey . "gdrive_mcp_path" }}{{ .gdrive_mcp_path }}{{ end }}"
+        "@HOME@/Work/mcp-servers/googleDriveMCP/build/index.js"
       ],
       "command": "node",
       "env": {
-        "CLIENT_ID": "{{ keyring "claude" "gdrive_client_id" }}",
-        "CLIENT_SECRET": "{{ keyring "claude" "gdrive_client_secret" }}",
+        "CLIENT_ID": "${GCP_CLIENT_ID}",
+        "CLIENT_SECRET": "${GCP_CLIENT_SECRET}",
         "REDIRECT_URI": "http://localhost:3000"
       }
     }
   },
-  "model": "claude-fable-5-1[1m]",
+  "model": "opus",
   "modelSettings": {
     "claude-fable-5-1": {
       "effortLevel": "xhigh"
@@ -155,7 +164,6 @@
     }
   },
   "permissions": {
-    "additionalDirectories": {{ if hasKey . "claude_additional_dirs" }}{{ .claude_additional_dirs | toJson }}{{ else }}[]{{ end }},
     "allow": [
       "mcp__googleDrive__get-file-download-link",
       "mcp__googleDrive__list-all-folders",
@@ -187,16 +195,24 @@
       "Bash(gt track:*)",
       "Bash(gt untrack:*)",
       "Bash(gt continue:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git rm:*)",
+      "Bash(rm ~/Work/:*)",
+      "Bash(rm -f ~/Work/:*)",
+      "Bash(rm ~/dotfiles/:*)",
+      "Bash(rm -f ~/dotfiles/:*)",
+      "Bash(rm /tmp/claude-:*)",
+      "Bash(rm -f /tmp/claude-:*)",
+      "Bash(curl -fsSL:*)",
+      "Bash(curl -sI:*)",
+      "WebSearch"
     ],
     "ask": [
       "Bash(rm -rf:*)",
-      "Bash(sudo:*)",
-      "WebSearch"
+      "Bash(sudo:*)"
     ],
     "defaultMode": "auto",
     "deny": [
-      "Bash(curl:*)",
       "Bash(wget:*)",
       "Edit(**/*.key)",
       "Edit(**/*.pem)",

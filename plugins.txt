@@ -1,0 +1,9 @@
+# Omarchy shell plugins installed from git, added with: omarchy plugin add <url> --enable
+# Community plugins run unsandboxed and marketplace approval is not a security audit:
+# read a plugin's source before adding it here.
+#
+# Removable drives in the bar: mount, open and eject USB sticks, SD cards and external
+# disks. Reviewed at 1.8.0: udisksctl, lsblk, busctl, gio and udevadm only, no network,
+# no sudo or pkexec, no mkfs or dd. Filesystem repair goes through UDisks2 and is offered
+# only after a failed check, authorised by volume UUID rather than by /dev path.
+https://github.com/Wian47/omarchy-removable-drives.git

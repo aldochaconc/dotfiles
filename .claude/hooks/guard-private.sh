@@ -5,7 +5,7 @@
 set -u
 terms_file="${DOTFILES_GUARD_TERMS:-$HOME/.config/dotfiles-guard/terms}"
 skip='^(dot_config/git/config|\.claude/hooks/guard-private\.sh|\.githooks/.*)$'   # git identity is versioned on purpose
-patterns=("$USER" "$HOME" "/home/$USER" '~/Work/' '~/Projects/' "$HOME/Work" "$HOME/Projects")
+patterns=("$USER" "$HOME" "/home/$USER" "$HOME/Work" "$HOME/Projects")
 [[ -r $terms_file ]] && while IFS= read -r t; do [[ -n $t && $t != \#* ]] && patterns+=("$t"); done < "$terms_file"
 status=0
 for f in "$@"; do

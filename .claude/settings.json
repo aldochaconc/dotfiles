@@ -89,7 +89,9 @@
       "Bash(readlink:*)",
       "Bash(rev:*)",
       "Bash(rg:*)",
+      "Bash(rm .claude/:*)",
       "Bash(rm /tmp/claude-:*)",
+      "Bash(rm dot_config/:*)",
       "Bash(rm ~/.config/:*)",
       "Bash(rm ~/.local/:*)",
       "Bash(rm ~/dotfiles/:*)",
@@ -145,7 +147,6 @@
       "Bash(git rebase:*)",
       "Bash(git reset:*)",
       "Bash(rm -rf:*)",
-      "Bash(rm:*)",
       "Bash(sudo:*)"
     ],
     "deny": [
@@ -174,6 +175,16 @@
             "type": "command",
             "command": "f=$(jq -r '.tool_input.file_path // empty'); [ -n \"$f\" ] && ./.claude/hooks/guard-private.sh \"$f\" || true",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" 2>/dev/null || exit 0; git ls-files -co --exclude-standard | xargs -r ./.claude/hooks/guard-private.sh >&2 || true",
+            "timeout": 15
           }
         ]
       }

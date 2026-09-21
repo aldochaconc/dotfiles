@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+# chezmoi modify_ script: stdin is the live ~/.claude/settings.json, stdout replaces it.
+#
+# Everything in this file is versioned except ROTATING, the keys Claude Code rewrites
+# as the session goes (model picker, effort level, theme, font size). Versioning those
+# means every `apply` overwrites the choice made minutes ago and every `re-add` commits
+# it back as if it were configuration. They are read from the live file instead, so a
+# `chezmoi apply` leaves them where the user left them.
+#
+# Self-check: python3 -c "import json,subprocess;print(json.loads(subprocess.run(['chezmoi','execute-template','--init'],capture_output=True,text=True).stdout) is not None)"
+import json
+import os
+import sys
+
+ROTATING = (
+    ("model",),
+    ("theme",),
+    ("effortLevel",),
+    ("permissions", "defaultMode"),
+    ("modelSettings",),
+    ("permissions", "additionalDirectories"),
+)
+
+CANONICAL = json.loads(r"""
+{{ includeTemplate "claude-settings.json" }}
+""")
+
+
+def get(d, path):
+    for k in path:
+        if not isinstance(d, dict) or k not in d:
+            return None
+        d = d[k]
+    return d
+
+
+def put(d, path, value):
+    for k in path[:-1]:
+        d = d.setdefault(k, {})
+    d[path[-1]] = value
+
+
+def main():
+    raw = sys.stdin.read().strip()
+    # First apply on a fresh machine: no live file, nothing to preserve.
+    live = json.loads(raw) if raw else {}
+
+    # @HOME@ keeps the literal home path out of the repo; it expands at apply time.
+    result = json.loads(json.dumps(CANONICAL).replace("@HOME@", os.path.expanduser("~")))
+    for path in ROTATING:
+        value = get(live, path)
+        if value is not None:
+            put(result, path, value)
+
+    json.dump(result, sys.stdout, indent=2, sort_keys=True, ensure_ascii=False)
+    sys.stdout.write("\n")
+
+
+main()
