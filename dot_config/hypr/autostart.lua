@@ -19,3 +19,9 @@
 -- A process added here starts once per Hyprland session:
 --
 --   o.launch_on_start("my-service")
+
+-- herdr, started silently so the singleton exists before the first SUPER + SHIFT + H.
+-- The window rule in hyprland.lua.tmpl parks it on workspace 8 with "silent", which places
+-- it without switching the view; hypr-app-here then brings it to the focused workspace on
+-- each keypress, so the home workspace only decides where it waits.
+o.launch_on_start("foot --app-id=herdr herdr")

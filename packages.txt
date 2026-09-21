@@ -12,6 +12,7 @@ dbeaver
 github-cli
 gparted
 gvfs-afc
+herdr
 libgepub
 libgsf
 libinput-tools
