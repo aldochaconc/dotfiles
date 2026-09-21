@@ -11,8 +11,8 @@ hl.monitor({ output = "", mode = "preferred", position = "auto", scale = omarchy
 hl.monitor({ output = "eDP-1", mode = "1920x1080@144", position = "auto", scale = omarchy_monitor_scale })
 {{- end }}
 {{ if .hdmi_100hz }}
--- External monitor on the NVIDIA HDMI: the panel offers 100 Hz but "preferred" picks 60.
-hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@100", position = "auto", scale = omarchy_monitor_scale })
+-- External monitor on the AMD iGPU: the panel offers 100 Hz but "preferred" picks 60.
+hl.monitor({ output = "DP-1", mode = "1920x1080@100", position = "auto", scale = omarchy_monitor_scale })
 {{- end }}
 
 -- Configure a specific monitor.
