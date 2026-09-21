@@ -10,9 +10,8 @@
   "effortLevel": "xhigh",
   "enabledPlugins": {
     "caveman@caveman": true,
-    "engineering-skills@claude-code-skills": true,
+    "plugin-dev@claude-code-plugins": true,
     "ponytail@ponytail": true,
-    "security-guidance@claude-code-skills": true,
     "superpowers@superpowers-marketplace": true
   },
   "extraKnownMarketplaces": {
@@ -28,15 +27,25 @@
         "source": "github"
       }
     },
-    "claude-code-skills": {
+    "claude-code-plugins": {
       "source": {
-        "repo": "alirezarezvani/claude-skills",
-        "source": "github"
+        "repo": "anthropics/claude-code",
+        "source": "github",
+        "sparsePaths": [
+          ".claude-plugin",
+          "plugins"
+        ]
       }
     },
     "ponytail": {
       "source": {
         "repo": "DietrichGebert/ponytail",
+        "source": "github"
+      }
+    },
+    "superpowers-marketplace": {
+      "source": {
+        "repo": "obra/superpowers-marketplace",
         "source": "github"
       }
     }

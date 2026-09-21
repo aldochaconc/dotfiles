@@ -1,0 +1,21 @@
+# Claude Code marketplaces, in readable form. What declares them is `extraKnownMarketplaces` in
+# .chezmoitemplates/claude-settings.json; bootstrap.sh replays this list with
+# `claude plugin marketplace add <source>` so the clones exist before the plugins install
+# against them. Adding one means editing both.
+#
+# Fields: <source> [sparse paths...]. A sparse list limits the checkout to those directories,
+# for a marketplace living inside a large repository: anthropics/claude-code is the whole
+# Claude Code repository, and only .claude-plugin and plugins are needed to resolve plugin-dev.
+#
+# anthropics/skills serves no plugin in claude-plugins.txt and is kept for its skills tree,
+# which is read directly. skill-creator lives there, but no plugin in that marketplace packages
+# it: the copy in use arrives through ~/.claude/skills/synced/ from the account, so a machine
+# without that sync does not have it.
+#
+# One marketplace in the live registry is absent here: a private SSH remote belonging to the
+# work organisation, not part of this machine's setup.
+anthropics/claude-code .claude-plugin plugins
+anthropics/skills
+obra/superpowers-marketplace
+DietrichGebert/ponytail
+JuliusBrussee/caveman

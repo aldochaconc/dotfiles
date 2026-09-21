@@ -1,0 +1,32 @@
+# Claude Code plugins, in readable form. What declares the set is `enabledPlugins` in
+# .chezmoitemplates/claude-settings.json: a plugin absent from there is disabled at the next
+# `chezmoi apply` whatever this file says. This list carries what the JSON cannot, the reason a
+# plugin is here and the reason another was rejected, and bootstrap.sh replays it with
+# `claude plugin install <plugin>@<marketplace> --scope user -y` so the plugins are unpacked
+# before the first session. Adding one means editing both, plus claude-marketplaces.txt.
+#
+# Only user scope is listed. The live registry also holds project- and local-scope installs
+# under ~/Work: those belong to work repositories, not to this machine, and --scope user would
+# not reproduce them anyway.
+#
+# A plugin runs unsandboxed, a marketplace listing is not a security audit, and the `-y` that
+# bootstrap.sh passes waives the install-time prompt for marketplace-declared commands: read a
+# plugin's hooks and commands before adding it here.
+#
+# Rejected, checked 2026-09-21:
+#   skill-tools (github.com/skill-tools/skill-tools-plugin), for linting SKILL.md. It publishes
+#   no .claude-plugin/marketplace.json, so it installs only by URL, and its linter is
+#   `npx skill-tools@0.2.2` resolved at run time rather than a version pinned here. Nothing
+#   replaces it: no mechanical check runs on a SKILL.md, and the form is read by a human at the
+#   gate-skill-writes.py prompt.
+#   engineering-skills and security-guidance (alirezarezvani/claude-skills), removed 2026-09-21.
+#   33 of the 96 active skills came from that one marketplace, none of them used.
+#
+# Skill authoring: writing-skills (superpowers) is the authority on the form of a SKILL.md.
+# plugin-dev ships skill-development, which covers the same ground; the six other skills in it
+# own hooks, agents, commands, plugin structure, plugin settings and MCP integration, which
+# nothing else here covers. See the skills paragraph in CLAUDE.md.
+plugin-dev@claude-code-plugins
+superpowers@superpowers-marketplace
+ponytail@ponytail
+caveman@caveman

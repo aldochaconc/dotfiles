@@ -68,6 +68,33 @@ if omarchy hw match omen && ! pacman -Q omen-space-git >/dev/null 2>&1; then
   rm -rf "$tmp"
 fi
 
+echo "==> toolchains declared in ~/.config/mise/config.toml"
+mise install
+
+echo "==> claude code: marketplaces, then the plugins that resolve against them"
+# What declares the set is `enabledPlugins` and `extraKnownMarketplaces` in
+# .chezmoitemplates/claude-settings.json, already applied by chezmoi above. This section
+# clones the marketplaces and unpacks the plugins ahead of the first session instead of
+# leaving that to it, and the two .txt lists are the readable form of the same set: a JSON
+# file of nested source objects does not say why a plugin is there or why another was
+# rejected. Keep the three in step; a plugin missing from the settings template is
+# disabled at the next `chezmoi apply` whatever these lists say.
+#
+# Both commands are idempotent: an already-added marketplace and an already-installed
+# plugin report so and exit 0. Neither is allowed to abort the run, because a renamed
+# marketplace or a network failure would take the rest of the bootstrap with it under
+# `set -e`, and every step below this one is unrelated to Claude Code.
+while read -r source sparse; do
+  # shellcheck disable=SC2086 # sparse is a list of paths, word splitting is the point
+  claude plugin marketplace add "$source" ${sparse:+--sparse $sparse} ||
+    echo "WARN: marketplace $source failed; the settings template still declares it" >&2
+done < <(grep -vE '^\s*#|^\s*$' "$here/claude-marketplaces.txt")
+
+while read -r plugin; do
+  claude plugin install "$plugin" --scope user -y ||
+    echo "WARN: plugin $plugin failed; the settings template still declares it" >&2
+done < <(grep -vE '^\s*#|^\s*$' "$here/claude-plugins.txt")
+
 echo "==> omarchy defaults"
 omarchy default browser chromium
 omarchy default terminal foot
@@ -83,9 +110,6 @@ echo "==> chromium: force-install the Claude extension, so Claude Code can drive
   printf '{"ExtensionInstallForcelist":["fcoeoabgfenejglbffodgkkbkcdhcgfn;https://clients2.google.com/service/update2/crx"]}\n' |
     sudo tee /etc/chromium/policies/managed/claude-extension.json >/dev/null
 }
-
-echo "==> toolchains declared in ~/.config/mise/config.toml"
-mise install
 
 echo "==> file expiry declared in ~/.config/user-tmpfiles.d (screenshots keep 7 days)"
 # The rules are chezmoi-managed; only the timer that acts on them has to be turned on, and it

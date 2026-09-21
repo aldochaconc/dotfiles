@@ -9,6 +9,25 @@ surface each class of mistake belongs to and is the authority on that question. 
 surface there owns are logged in [`adr.md`](adr.md), and only after the failure has appeared
 twice.
 
+Writing a skill goes through two surfaces: `skill-growth` decides whether the rule belongs and
+which surface takes it, and `writing-skills` (superpowers) governs the form of the `SKILL.md`.
+`plugin-dev` ships a `skill-development` skill covering the same ground as `writing-skills`;
+`writing-skills` is the authority here and the other six skills in `plugin-dev` own hooks,
+agents, commands, plugin structure, plugin settings and MCP integration, which nothing else
+installed covers. `~/.claude/hooks/gate-skill-writes.py` asks before every write to a skill
+file. `skill-creator` is not part of this: it arrives through `~/.claude/skills/synced/` from
+the account, no plugin here installs it, and a machine without that sync does not have it.
+
+What declares the plugin set is `enabledPlugins` and `extraKnownMarketplaces` in
+[`.chezmoitemplates/claude-settings.json`](.chezmoitemplates/claude-settings.json), which
+`modify_private_settings.json.tmpl` writes from `CANONICAL`: a plugin absent from there is
+disabled at the next `chezmoi apply`, whatever else lists it.
+[`claude-plugins.txt`](claude-plugins.txt) and
+[`claude-marketplaces.txt`](claude-marketplaces.txt) are the readable form of the same set,
+carrying why a plugin is there and why another was rejected, and `bootstrap.sh` replays them to
+clone the marketplaces ahead of the first session. Three files, one set: adding a plugin means
+editing all three.
+
 ## Rules of this machine
 
 - Every Hyprland keybinding lives in `dot_config/hypr/bindings.lua`. Omarchy's defaults are off
