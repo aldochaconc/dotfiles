@@ -11,9 +11,9 @@
   <property name="misc-use-csd" type="bool" value="false"/>
   <property name="last-toolbar-items" type="string" value="menu:1,back:1,forward:1,open-parent:1,open-home:1,new-tab:0,new-window:0,toggle-split-view:1,undo:0,redo:0,zoom-out:0,zoom-in:0,zoom-reset:1,view-as-icons:0,view-as-detailed-list:0,view-as-compact-list:0,view-switcher:1,location-bar:1,reload:0,search:1,uca-action-omarchy-localsend:0"/>
   <property name="last-details-view-zoom-level" type="string" value="THUNAR_ZOOM_LEVEL_38_PERCENT"/>
-  <property name="last-details-view-column-widths" type="string" value="50,50,131,115,87,942,50,50,1317,50,50,85,50,125"/>
+  <property name="last-details-view-column-widths" type="string" value="50,50,131,115,87,942,50,50,490,50,50,85,50,125"/>
   <property name="last-menubar-visible" type="bool" value="false"/>
-  <property name="last-sort-column" type="string" value="THUNAR_COLUMN_TYPE"/>
+  <property name="last-sort-column" type="string" value="THUNAR_COLUMN_NAME"/>
   <property name="last-sort-order" type="string" value="GTK_SORT_ASCENDING"/>
   <property name="last-location-bar" type="string" value="ThunarLocationButtons"/>
   <property name="misc-expandable-folders" type="bool" value="true"/>
