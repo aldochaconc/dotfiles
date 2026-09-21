@@ -50,13 +50,9 @@ require("default.hypr.toggles")
 o.window("^(slack)$", { workspace = "special:scratchpad silent" })
 o.window("^(chrome-web\\.whatsapp\\.com__-Default)$", { workspace = "special:scratchpad silent" })
 
--- The vault lives on workspace 5, so notes are always in the same place whatever else is
--- open. No "silent": Obsidian is launched to be used, so the workspace comes along.
-o.window("^(md\\.obsidian\\.Obsidian)$", { workspace = "5" })
-
 -- Music sits on workspace 6, behind the five the bar shows, so it is never in the way of
--- the workspaces in rotation. No "silent", same reasoning as Obsidian: SUPER + SHIFT + M
--- is pressed to look at Spotify, so the workspace comes along.
+-- the workspaces in rotation. No "silent": SUPER + SHIFT + M is pressed to look at Spotify,
+-- so the workspace comes along.
 -- Class is "Spotify", not the "spotify" its desktop file declares as StartupWMClass.
 -- Album art and player artwork are the content, so the 0.985/0.96 default opacity goes,
 -- the same treatment Omarchy gives vlc and mpv.

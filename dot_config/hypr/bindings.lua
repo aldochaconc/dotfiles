@@ -337,13 +337,6 @@ end)
 -- session
 o.bind("SUPER + CTRL + ESCAPE", "Lock system", "omarchy-system-lock")
 
--- tools
-o.bind("SUPER + CTRL + Q", "Calculator", "omacalc")
-o.bind("XF86Calculator", "Calculator", "omacalc")
-o.bind("SUPER + CTRL + T", "Activity", { tui = "btop" })
-o.bind("SUPER + CTRL + PERIOD", "Transcode", "omarchy-transcode")
-o.bind("SUPER + SHIFT + CTRL + A", "Agent", "omarchy-agent --pick")
-
 -- reminders
 o.bind("SUPER + CTRL + R", "Set reminder", "omarchy-menu toggle reminder-set")
 o.bind("SUPER + CTRL + ALT + R", "Show reminders", "omarchy-reminder show")
@@ -373,6 +366,22 @@ o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)", "thunar-cwd")
 
 -- editor
 o.bind("SUPER + SHIFT + N", "Editor", { omarchy = "editor" })
+
+-- tools that open a window. SUPER + CTRL elsewhere in this file changes the environment
+-- (menus, toggles, window geometry); anything that puts a window on screen belongs here.
+o.bind("SUPER + SHIFT + T", "Activity", { tui = "btop" })
+o.bind("SUPER + SHIFT + C", "Calculator", "omacalc")
+o.bind("XF86Calculator", "Calculator", "omacalc")
+o.bind("SUPER + SHIFT + A", "Agent", "omarchy-agent --pick")
+o.bind("SUPER + SHIFT + P", "Transcode", "omarchy-transcode")
+
+-- vault. Obsidian is single instance: a second launch hands over to the running process and
+-- exits, so a plain launch announces itself and no window appears. launch_sole focuses the
+-- existing one instead. No workspace rule, so it opens wherever the focus already is.
+--
+-- The pattern is the full class, not the bare word: launch_sole matches title as well as
+-- class, and any terminal whose title carries "obsidian" would be focused instead.
+o.bind("SUPER + SHIFT + O", "Obsidian", o.launch_sole("md\\.obsidian\\.Obsidian", "obsidian"))
 
 -- music. Starts Spotify the first time and focuses it afterwards, which pulls workspace 6
 -- along (see the window rule in hyprland.lua). launch_sole matches on word boundaries, so
