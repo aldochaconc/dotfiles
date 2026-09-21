@@ -12,6 +12,19 @@ omarchy_default_bindings = false
 
 -- Load Omarchy defaults.
 require("default.hypr.omarchy")
+{{ if .hybrid_gpu }}
+-- Hardware video decode on the GPU that composites. Omarchy's default/hypr/nvidia.lua sets
+-- LIBVA_DRIVER_NAME=nvidia whenever a GSP-era NVIDIA GPU is present, keyed on the PCI device ID
+-- alone. Here AQ_DRM_DEVICES puts the AMD iGPU first, so Hyprland and Chromium render on amdgpu
+-- while decode lands on NVDEC, whose frames carry an NVIDIA-only DRM modifier radeonsi cannot
+-- import: video goes black or white, and a feed with autoplaying video strobes the whole window
+-- on every corrupted frame (omacom/omarchy#9708, #12674; fix pending upstream in PR #7851).
+--
+-- An hl.env here, after the defaults above, is the only override that holds: nvidia.lua re-runs
+-- its hl.env at launch and on every reload and exports it to the systemd user environment, so a
+-- value set earlier in uwsm/env.d is overwritten before any client sees it. The last hl.env wins.
+hl.env("LIBVA_DRIVER_NAME", "radeonsi")
+{{- end }}
 
 -- Put your personal overrides in these files. They're loaded after Omarchy's
 -- defaults so package updates can improve the defaults without rewriting your
