@@ -4,9 +4,6 @@
     "layout": {
       "center": [
         {
-          "id": "omarchy.indicators"
-        },
-        {
           "format": "dddd HH:mm",
           "formatAlt": "d MMMM 'W'ww yyyy",
           "id": "omarchy.clock",
@@ -31,10 +28,7 @@
         {
           "hidden": [],
           "id": "omarchy.tray",
-          "pinned": [
-            "omenspace_tray",
-            "Slack_status_icon_1"
-          ]
+          "pinned": []
         },
         {
           "id": "omarchy.agents"
@@ -61,11 +55,15 @@
         },
         {
           "id": "omarchy.keyboard-layout"
+        },
+        {
+          "alwaysShow": true,
+          "id": "omarchy.indicators"
         }
       ]
     },
     "position": "top",
-    "transparent": true
+    "transparent": false
   },
   "idle": {
     "lock": 300,
