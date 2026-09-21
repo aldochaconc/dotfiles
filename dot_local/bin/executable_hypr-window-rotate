@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+# Focus the adjacent window, crossing into the neighbouring workspace at either end.
+#
+# Hyprland's cyclenext wraps inside the workspace and never leaves it, so a wheel flick
+# past the last window returns to the first instead of advancing. No dispatcher expresses
+# "next window, then next workspace", which is why the traversal lives here.
+#
+# Order is visual, not focus history: windows sort by column then row, so the wheel walks
+# the screen left to right, top to bottom, the same way twice. focusHistoryID would make
+# the same flick land somewhere different each time.
+#
+# Workspace bounds mirror hypr-workspace-rotate: the range the Omarchy bar draws, which is
+# 1..5 plus any higher workspace holding windows. Entering a workspace from the left edge
+# focuses its last window, from the right edge its first, so a reversed flick retraces the
+# path it came by.
+set -euo pipefail
+
+BASE=5
+HARD_MAX=10
+
+# ceiling -> the highest workspace rotation may reach.
+ceiling() {
+  hyprctl workspaces -j |
+    jq --argjson base "$BASE" --argjson hard "$HARD_MAX" -r \
+      '[.[] | select(.id > 0 and .id <= $hard and .windows > 0) | .id] + [$base] | max'
+}
+
+# windows_on WS -> addresses on that workspace, in visual order, one per line.
+windows_on() {
+  hyprctl clients -j |
+    jq --argjson ws "$1" -r \
+      '[.[] | select(.workspace.id == $ws)] | sort_by(.at[0], .at[1]) | .[].address'
+}
+
+# step LIST CURRENT DIR -> the neighbouring entry, or nothing at the edge.
+# LIST arrives newline separated on stdin; CURRENT may be absent from it.
+step() {
+  local current=$1 dir=$2 list i=0 n
+  mapfile -t list
+  n=${#list[@]}
+  ((n)) || return 0
+
+  while ((i < n)) && [[ ${list[i]} != "$current" ]]; do ((i++)); done
+  # Current not found: the wheel enters from outside, so start at the near end.
+  if ((i == n)); then
+    [[ $dir == next ]] && echo "${list[0]}" || echo "${list[n - 1]}"
+    return 0
+  fi
+
+  case $dir in
+    next) ((i + 1 < n)) && echo "${list[i + 1]}" ;;
+    prev) ((i > 0)) && echo "${list[i - 1]}" ;;
+  esac
+  return 0
+}
+
+# next_workspace CUR DIR MAX OCCUPIED -> the next workspace holding windows, or nothing at
+# the range edge. Empty workspaces are skipped: crossing into one would leave the focus on
+# nothing, and the wheel would appear to stop working.
+# OCCUPIED is a space separated list of ids; it arrives as an argument so the traversal
+# stays testable without a live compositor.
+next_workspace() {
+  local dir=$2 max=$3 occupied=" $4 " target=$1
+  while :; do
+    case $dir in
+      next) target=$((target + 1)) ;;
+      prev) target=$((target - 1)) ;;
+    esac
+    ((target >= 1 && target <= max)) || return 0
+    [[ $occupied == *" $target "* ]] && { echo "$target"; return 0; }
+  done
+}
+
+# occupied_workspaces -> space separated ids of the workspaces holding windows.
+occupied_workspaces() {
+  hyprctl clients -j | jq -r '[.[] | select(.workspace.id > 0) | .workspace.id] | unique | join(" ")'
+}
+
+rotate() {
+  local dir=$1 cur_ws cur_win target max ws
+  cur_ws=$(hyprctl activeworkspace -j | jq -r '.id')
+  cur_win=$(hyprctl activewindow -j | jq -r '.address // empty')
+
+  target=$(windows_on "$cur_ws" | step "$cur_win" "$dir")
+  if [[ -n $target ]]; then
+    hyprctl dispatch "hl.dsp.focus({ window = \"address:$target\" })"
+    return
+  fi
+
+  # At the edge of the workspace: cross, then take the window nearest the edge entered.
+  max=$(ceiling)
+  ws=$(next_workspace "$cur_ws" "$dir" "$max" "$(occupied_workspaces)")
+  [[ -n $ws ]] || return 0
+  hyprctl dispatch "hl.dsp.focus({ workspace = \"$ws\" })"
+
+  target=$(windows_on "$ws" | step "" "$dir")
+  [[ -n $target ]] && hyprctl dispatch "hl.dsp.focus({ window = \"address:$target\" })"
+  return 0
+}
+
+self_check() {
+  local got exp fail=0
+
+  check() { # check LABEL EXPECTED ACTUAL
+    if [[ $3 != "$2" ]]; then
+      echo "FAIL: $1 -> '$3', expected '$2'" >&2
+      fail=1
+    fi
+  }
+
+  # step: inside the list, at both edges, and entering from outside
+  got=$(printf 'a\nb\nc\n' | step b next); check "step b next" c "$got"
+  got=$(printf 'a\nb\nc\n' | step b prev); check "step b prev" a "$got"
+  got=$(printf 'a\nb\nc\n' | step c next); check "step c next (edge)" "" "$got"
+  got=$(printf 'a\nb\nc\n' | step a prev); check "step a prev (edge)" "" "$got"
+  got=$(printf 'a\nb\nc\n' | step "" next); check "step enter next" a "$got"
+  got=$(printf 'a\nb\nc\n' | step "" prev); check "step enter prev" c "$got"
+  got=$(printf 'a\n' | step a next); check "step lone window" "" "$got"
+  got=$(printf '' | step x next); check "step empty workspace" "" "$got"
+
+  # next_workspace: inside the range, at both ends, and skipping empty workspaces
+  got=$(next_workspace 2 next 5 "1 2 3"); check "ws 2 next" 3 "$got"
+  got=$(next_workspace 5 next 5 "1 2 5"); check "ws 5 next (ceiling)" "" "$got"
+  got=$(next_workspace 1 prev 5 "1 2 3"); check "ws 1 prev (floor)" "" "$got"
+  got=$(next_workspace 5 next 7 "5 6"); check "ws 5 next (raised)" 6 "$got"
+  got=$(next_workspace 2 next 5 "1 2 4"); check "ws 2 next (skips 3)" 4 "$got"
+  got=$(next_workspace 4 next 5 "1 2 4"); check "ws 4 next (5 empty)" "" "$got"
+  got=$(next_workspace 4 prev 5 "1 4"); check "ws 4 prev (skips 2,3)" 1 "$got"
+  got=$(next_workspace 3 next 5 ""); check "ws 3 next (none occupied)" "" "$got"
+
+  ((fail)) && return 1
+  echo "ok"
+}
+
+case ${1:-} in
+  next | prev) rotate "$1" ;;
+  self-check) self_check ;;
+  *)
+    echo "usage: ${0##*/} next|prev|self-check" >&2
+    exit 2
+    ;;
+esac

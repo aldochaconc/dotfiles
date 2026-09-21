@@ -37,12 +37,24 @@ o.bind("SUPER + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = t
 -- Focus ---------------------------------------------------------------------
 
 -- by direction, hjkl
-o.bind("SUPER + H", "Move window focus left", hl.dsp.focus({ direction = "l" }))
-o.bind("SUPER + J", "Move window focus down", hl.dsp.focus({ direction = "d" }))
-o.bind("SUPER + K", "Move window focus up", hl.dsp.focus({ direction = "u" }))
-o.bind("SUPER + L", "Move window focus right", hl.dsp.focus({ direction = "r" }))
+--
+-- These go through hypr-focus-or-rotate, which falls through to the
+-- neighbouring workspace when no window lies that way. Hyprland's movefocus
+-- stops at the edge and has no option to carry the focus across
+-- (hyprwm/Hyprland#11874), so the decision is made in the script: it moves the
+-- focus, then compares the focused window before and after, and rotates only
+-- when nothing moved.
+--
+-- All four rotate, up and down included, so the keys behave alike; the
+-- animation slides horizontally whichever one crossed.
+local focus_or_rotate = os.getenv("HOME") .. "/.local/bin/hypr-focus-or-rotate"
+o.bind("SUPER + H", "Move window focus left", hl.dsp.exec_cmd(focus_or_rotate .. " l"))
+o.bind("SUPER + J", "Move window focus down", hl.dsp.exec_cmd(focus_or_rotate .. " d"))
+o.bind("SUPER + K", "Move window focus up", hl.dsp.exec_cmd(focus_or_rotate .. " u"))
+o.bind("SUPER + L", "Move window focus right", hl.dsp.exec_cmd(focus_or_rotate .. " r"))
 
--- by direction, arrows
+-- by direction, arrows. These keep Hyprland's movefocus, which stops at the
+-- edge: the same four moves without the workspace crossing.
 o.bind("SUPER + LEFT", "Focus on left window", hl.dsp.focus({ direction = "l" }))
 o.bind("SUPER + RIGHT", "Focus on right window", hl.dsp.focus({ direction = "r" }))
 o.bind("SUPER + UP", "Focus on above window", hl.dsp.focus({ direction = "u" }))
@@ -73,13 +85,8 @@ o.bind("SUPER + CTRL + RIGHT", "Move window right", hl.dsp.window.move({ directi
 o.bind("SUPER + CTRL + UP", "Move window up", hl.dsp.window.move({ direction = "u" }))
 o.bind("SUPER + CTRL + DOWN", "Move window down", hl.dsp.window.move({ direction = "d" }))
 
--- swap window, hjkl
-o.bind("SUPER + SHIFT + H", "Swap window to the left", hl.dsp.window.swap({ direction = "l" }))
-o.bind("SUPER + SHIFT + J", "Swap window down", hl.dsp.window.swap({ direction = "d" }))
-o.bind("SUPER + SHIFT + K", "Swap window up", hl.dsp.window.swap({ direction = "u" }))
-o.bind("SUPER + SHIFT + L", "Swap window to the right", hl.dsp.window.swap({ direction = "r" }))
-
--- swap window, arrows
+-- swap window, arrows. SUPER + SHIFT + hjkl is not a second row for this: SHIFT is the
+-- launcher modifier on this machine, and hjkl movement lives on SUPER + CTRL.
 o.bind("SUPER + SHIFT + LEFT", "Swap window to the left", hl.dsp.window.swap({ direction = "l" }))
 o.bind("SUPER + SHIFT + RIGHT", "Swap window to the right", hl.dsp.window.swap({ direction = "r" }))
 o.bind("SUPER + SHIFT + UP", "Swap window up", hl.dsp.window.swap({ direction = "u" }))
@@ -137,6 +144,13 @@ o.bind("SUPER + ALT + SHIFT + TAB", "Previous window in group", hl.dsp.group.pre
 o.bind("SUPER + ALT + mouse_down", "Next window in group", hl.dsp.group.next())
 o.bind("SUPER + ALT + mouse_up", "Previous window in group", hl.dsp.group.prev())
 
+-- rotate windows by wheel, crossing into the neighbouring workspace at either end.
+-- cyclenext wraps inside the workspace and never leaves it, so the traversal goes through
+-- hypr-window-rotate, which orders windows by position rather than focus history.
+local window_rotate = os.getenv("HOME") .. "/.local/bin/hypr-window-rotate"
+o.bind("SUPER + mouse_down", "Next window", window_rotate .. " next")
+o.bind("SUPER + mouse_up", "Previous window", window_rotate .. " prev")
+
 -- jump to a window by index
 for index = 1, 5 do
   o.bind("SUPER + ALT + code:" .. tostring(index + 9), "Switch to group window " .. index, hl.dsp.group.active({ index = index }))
@@ -164,22 +178,25 @@ o.bind("SUPER + SHIFT + TAB", "Previous workspace", rotate .. " prev")
 o.bind("SUPER + Prior", "Next workspace", rotate .. " next")
 o.bind("SUPER + Next", "Previous workspace", rotate .. " prev")
 
--- rotate, by wheel
-o.bind("SUPER + mouse_up", "Next workspace", rotate .. " next")
-o.bind("SUPER + mouse_down", "Previous workspace", rotate .. " prev")
+-- The wheel rotates windows, not workspaces: see the Windows section. Workspace rotation
+-- stays on TAB, the page keys, and the wheel over the bar's workspace widget.
 
--- layout. Cycles the active workspace between dwindle and scrolling, and saves the choice
--- to ~/.local/state/omarchy/workspace-layouts/<id>.lua, which default/hypr/workspace-layouts.lua
--- reloads at startup. A rule written there outranks general.layout, so a workspace left on
--- scrolling stays there across restarts.
+-- layout. Cycles the active workspace between master, dwindle and scrolling, and saves the
+-- choice to ~/.local/state/omarchy/workspace-layouts/<id>.lua, which
+-- default/hypr/workspace-layouts.lua reloads at startup. A rule written there outranks
+-- general.layout, so a workspace left on scrolling stays there across restarts.
 --
+-- master reserves a left area at master.mfact (0.55) and stacks the rest down the right.
 -- dwindle splits each new window off the focused one, Fibonacci-style. scrolling gives every
 -- window a full-height column of equal width at scrolling.column_width (0.49, two per screen)
--- and scrolls the rest off-screen rather than shrinking them. master is not in the cycle and
--- cannot produce equal columns: it always reserves a master area.
+-- and scrolls the rest off-screen rather than shrinking them.
+--
+-- hypr-workspace-layout-cycle rather than omarchy-hyprland-workspace-layout-toggle, which is
+-- two-way: it sends anything that is not dwindle to dwindle, so master, the default layout
+-- here, would be left on the first press with no key to return to it.
 --
 -- Omarchy binds this to SUPER + L, which is focus-right here.
-o.bind("SUPER + CTRL + TAB", "Toggle workspace layout", "omarchy-hyprland-workspace-layout-toggle")
+o.bind("SUPER + CTRL + TAB", "Cycle workspace layout", os.getenv("HOME") .. "/.local/bin/hypr-workspace-layout-cycle")
 
 -- Monitors ------------------------------------------------------------------
 
@@ -357,6 +374,11 @@ o.bind("SUPER + ALT + SHIFT + F", "File manager (cwd)", "thunar-cwd")
 -- editor
 o.bind("SUPER + SHIFT + N", "Editor", { omarchy = "editor" })
 
+-- music. Starts Spotify the first time and focuses it afterwards, which pulls workspace 6
+-- along (see the window rule in hyprland.lua). launch_sole matches on word boundaries, so
+-- the pattern is bare: anchoring it with ^...$ would never match.
+o.bind("SUPER + SHIFT + M", "Spotify", o.launch_sole("Spotify", "spotify"))
+
 -- messaging. Both live in the scratchpad (see the window rules in hyprland.lua). The key
 -- starts the app the first time and reveals the scratchpad on it afterwards; a window the
 -- app opened somewhere else is pulled into the scratchpad first, so neither one ever ends
@@ -364,6 +386,13 @@ o.bind("SUPER + SHIFT + N", "Editor", { omarchy = "editor" })
 local scratch = os.getenv("HOME") .. "/.local/bin/hypr-app-scratchpad"
 o.bind("SUPER + SHIFT + W", "WhatsApp", scratch .. " '^chrome-web\\.whatsapp\\.com__-Default$' 'omarchy-launch-webapp https://web.whatsapp.com/'")
 o.bind("SUPER + SHIFT + S", "Slack", scratch .. " '^slack$' 'uwsm-app -- /usr/bin/slack --gtk-version=3 -s'")
+
+-- herdr. A singleton that follows the workspace in front rather than living on one: the key
+-- brings the window to the focused workspace instead of switching the view to it. foot's
+-- own class is plain "foot", shared with every other terminal here, so --app-id gives this
+-- one a class of its own for the pattern to anchor on.
+local here = os.getenv("HOME") .. "/.local/bin/hypr-app-here"
+o.bind("SUPER + SHIFT + H", "herdr", here .. " '^herdr$' 'uwsm-app -- foot --app-id=herdr herdr'")
 
 -- Clipboard -----------------------------------------------------------------
 

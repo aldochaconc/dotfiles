@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Bring an app to the focused workspace, launching it first when it is not running.
+#
+# Usage: hypr-app-here <window-pattern> <launch-command>
+#
+#   hypr-app-here '^herdr$' 'foot --app-id=herdr herdr'
+#
+# One key per app, always the same outcome: after it runs, the app's single window is on
+# the workspace in front and has focus. The app is a singleton that follows the user rather
+# than a window living on a fixed workspace: the key never opens a second instance and
+# never switches the view away to wherever the window happened to be.
+#
+# This differs from omarchy-launch-or-focus, which focuses the window where it is and drags
+# the view to its workspace, and from hypr-app-scratchpad, which parks the window in
+# special:scratchpad and overlays it. Here the window is an ordinary tiled one.
+#
+# <window-pattern> is a regular expression tested against the window class first and the
+# title only if no class matches, case-insensitively. Anchor it (^herdr$) whenever the class
+# is known: a bare substring can match another app's title and act on the wrong window.
+set -euo pipefail
+
+pattern=${1:-}
+launch=${2:-}
+
+if [[ -z $pattern || -z $launch ]]; then
+  echo "Usage: hypr-app-here <window-pattern> <launch-command>" >&2
+  exit 1
+fi
+
+# Matching by class before title, and taking the oldest window of the match rather than
+# whichever one hyprctl happens to list first, keeps the target stable: an app with several
+# windows open resolves to the same one on every press.
+window=$(hyprctl clients -j | jq -c --arg p "$pattern" '
+  (map(select(.class | test($p; "i"))) | sort_by(.focusHistoryID) | first)
+  // (map(select(.title | test($p; "i"))) | sort_by(.focusHistoryID) | first)
+  // empty
+')
+
+# Nothing running yet. The new window opens on the focused workspace on its own.
+if [[ -z $window ]]; then
+  eval exec setsid $launch
+fi
+
+address=$(jq -r '.address' <<<"$window")
+workspace=$(jq -r '.workspace.name' <<<"$window")
+focused=$(hyprctl monitors -j | jq -r '.[] | select(.focused) | .activeWorkspace.name')
+
+# Hyprland takes Lua dispatchers here, not the classic "movetoworkspace ws,address:..."
+# string: that syntax is rejected outright by this version. follow = false keeps the view on
+# the current workspace, which is where the window is being moved to anyway.
+if [[ $workspace != "$focused" ]]; then
+  hyprctl dispatch "hl.dsp.window.move({ workspace = \"$focused\", window = \"address:$address\", follow = false })" >/dev/null
+fi
+
+hyprctl dispatch "hl.dsp.focus({ window = \"address:$address\" })" >/dev/null

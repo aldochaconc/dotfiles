@@ -45,6 +45,20 @@
 --   },
 -- })
 
+-- master on the left instead of dwindle's halving split: one big window holds the work and
+-- the rest stack down the right side. mfact 0.55 and orientation "left" are master's own
+-- defaults, so the layout line is the whole change.
+--
+-- This is the starting layout, not the only one. A workspace_rule outranks it, and
+-- SUPER + CTRL + TAB writes one per workspace under
+-- ~/.local/state/omarchy/workspace-layouts/<id>.lua, cycling master, dwindle and scrolling.
+-- A workspace with no file there uses this.
+hl.config({
+  general = {
+    layout = "master", -- default "dwindle"
+  },
+})
+
 -- decoration ----------------------------------------------------------------
 
 -- hl.config({

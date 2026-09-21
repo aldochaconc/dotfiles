@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Move the focus in a direction, or rotate to the neighbouring workspace when
+# nothing lies that way.
+#
+# Usage: hypr-focus-or-rotate l|r|u|d
+#        hypr-focus-or-rotate --self-check
+#
+# Hyprland's movefocus stops dead at the edge of a workspace: there is no
+# option to carry the focus across (hyprwm/Hyprland#11874), so the decision has
+# to be made outside, which is what this does. It asks Hyprland to move the
+# focus and compares the focused window before and after; when nothing moved,
+# the edge was real and the rotation takes over.
+#
+# Comparing addresses is what makes this reliable. Predicting whether a window
+# lies in a direction would mean reimplementing the layout's geometry, dwindle
+# and master included, and getting it wrong in exactly the cases that matter:
+# floating windows, fullscreen, a workspace spread over two monitors.
+#
+# All four directions rotate. Up and down have no workspace of their own, and
+# the animation slides horizontally whichever key was pressed, so j and k look
+# sideways when they cross. That is the cost of the four keys behaving alike.
+#
+# The rotation itself, its ceiling and its refusal to wrap belong to
+# hypr-workspace-rotate, which the bar and the 3-finger swipe already use.
+#
+# ponytail: no geometry, no cache, two hyprctl calls on the common path. A
+# dispatch that does nothing is cheap, and the alternative is a layout model
+# that has to be kept in step with Hyprland's.
+
+set -euo pipefail
+
+ROTATE="${HYPR_ROTATE:-$HOME/.local/bin/hypr-workspace-rotate}"
+
+# The direction each key rotates towards. Left and up go back, right and down
+# go forward, so a held key travels one way.
+rotation_for() {
+  case $1 in
+    l | u) printf 'prev' ;;
+    r | d) printf 'next' ;;
+  esac
+}
+
+focused() {
+  hyprctl activewindow -j 2>/dev/null | jq -r '.address // "none"'
+}
+
+self_check() {
+  local got
+  for dir in l u; do
+    got=$(rotation_for "$dir")
+    [[ $got == prev ]] || { echo "FAIL: $dir -> '$got', expected prev" >&2; return 1; }
+  done
+  for dir in r d; do
+    got=$(rotation_for "$dir")
+    [[ $got == next ]] || { echo "FAIL: $dir -> '$got', expected next" >&2; return 1; }
+  done
+  # An unknown direction rotates nowhere rather than guessing.
+  got=$(rotation_for x)
+  [[ -z $got ]] || { echo "FAIL: x -> '$got', expected nothing" >&2; return 1; }
+  echo "ok"
+}
+
+case ${1:-} in
+  l | r | u | d)
+    before=$(focused)
+    # Hyprland 0.56 parses dispatch arguments as Lua; the legacy
+    # "movefocus l" form fails with "')' expected near 'l'".
+    hyprctl dispatch "hl.dsp.focus({ direction = \"$1\" })" >/dev/null
+    [[ $(focused) != "$before" ]] && exit 0
+    # Focus did not move: either the edge, or a workspace holding one window.
+    exec "$ROTATE" "$(rotation_for "$1")"
+    ;;
+  --self-check)
+    self_check
+    ;;
+  *)
+    echo "usage: ${0##*/} l|r|u|d" >&2
+    exit 1
+    ;;
+esac

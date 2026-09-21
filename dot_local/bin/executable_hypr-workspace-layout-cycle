@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Cycle the active workspace between master, dwindle and scrolling.
+#
+# Replaces omarchy-hyprland-workspace-layout-toggle, which is a two-way dwindle<->scrolling
+# switch: anything that is not dwindle becomes dwindle, so a workspace on master leaves it
+# on the first press and no key brings it back. master is the default layout on this machine
+# (general.layout in hypr/looknfeel.lua), so it has to be in the cycle.
+#
+# The choice is written to ~/.local/state/omarchy/workspace-layouts/<id>.lua, which
+# default/hypr/workspace-layouts.lua reloads at startup, and a rule there outranks
+# general.layout. Removing the file returns the workspace to the default.
+#
+# The three differ in what they do with a new window: master gives it the left area at
+# master.mfact and stacks the rest down the right, dwindle splits it off the focused window
+# Fibonacci-style, scrolling gives it a full-height column at scrolling.column_width and
+# scrolls the others off-screen rather than shrinking them.
+set -euo pipefail
+
+workspace=$(hyprctl activeworkspace -j | jq -r '.id')
+
+# A special workspace reports a negative id and has no file of its own to write.
+[[ $workspace =~ ^[0-9]+$ ]] || exit 1
+
+current=$(hyprctl activeworkspace -j | jq -r '.tiledLayout')
+
+case "$current" in
+  master) next=dwindle ;;
+  dwindle) next=scrolling ;;
+  *) next=master ;;
+esac
+
+layouts_dir="$HOME/.local/state/omarchy/workspace-layouts"
+mkdir -p "$layouts_dir"
+printf 'hl.workspace_rule({ workspace = "%s", layout = "%s" })\n' "$workspace" "$next" >"$layouts_dir/$workspace.lua"
+
+# hyprctl eval takes the Lua form; the keyword fallback is the classic syntax for a
+# Hyprland that rejects it.
+hyprctl eval "hl.workspace_rule({ workspace = \"$workspace\", layout = \"$next\" })" >/dev/null 2>&1 ||
+  hyprctl keyword workspace "$workspace, layout:$next"
+
+omarchy-notification-send -g 󱂬 "Workspace layout set to $next"
