@@ -50,6 +50,10 @@ require("default.hypr.toggles")
 o.window("^(slack)$", { workspace = "special:scratchpad silent" })
 o.window("^(chrome-web\\.whatsapp\\.com__-Default)$", { workspace = "special:scratchpad silent" })
 
+-- The vault lives on workspace 5, so notes are always in the same place whatever else is
+-- open. No "silent": Obsidian is launched to be used, so the workspace comes along.
+o.window("^(md\\.obsidian\\.Obsidian)$", { workspace = "5" })
+
 -- Window rules Omarchy applies by default (default/hypr/windows.lua, Omarchy 4.0.4-1), for
 -- reference. A rule written in this file runs after them; for the same window and property
 -- the later rule wins.
