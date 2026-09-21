@@ -52,6 +52,8 @@ Files are copied, never symlinked: deleting or moving this repo leaves `~/.confi
 | `dot_local/bin/` | `hypr-workspace-rotate`; `battery-brownout-logger` (one battery sample per second, fsynced, so the last line survives a hard power cut; its user service is in `dot_config/systemd/user/`); `theme-preview-shot [theme]` composes the switcher preview (nvim, btop, fastfetch, Nautilus) and writes `preview.png` |
 | `dot_config/omarchy/hooks/theme-set.d/moon-sync.hook` | after `omarchy theme set moon`: aether's files (`colors.toml`, `icons.theme`, `backgrounds/`) into this repo, the repo's (`unlock.png`, `preview.png`) back into HOME, `preview-unlock.png` regenerated, Slack theme string in `~/.local/state/omarchy/slack-theme.txt` |
 | `dot_config/omarchy/hooks/font-set.d/gsettings-sync.hook` | after `omarchy font set`: syncs `org.gnome.desktop.interface monospace-font-name`, which Omarchy never writes, so GTK/Electron apps without their own font setting stop falling back to Adwaita Mono |
+| `dot_config/Code/User/settings.json` | VS Code: watcher, search and explorer exclusions so the home directory can be the workspace; monospace family pinned for editor and integrated terminal; Python venv auto-activation off |
+| `vscode-extensions.txt` | VS Code extensions installed by `bootstrap.sh`; the editor itself comes from `packages.txt`, its theme from Omarchy |
 | `dot_config/mise/config.toml` | toolchains (`node`, `go`, `claude`, `codex`); `bootstrap.sh` runs `mise install` |
 | `packages.txt`, `packages-aur.txt` | packages on top of the Omarchy base |
 | `themes.txt` | themes reinstalled from git; `aether`-generated themes are per machine |
