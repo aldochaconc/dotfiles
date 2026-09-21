@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+# post-update.d hook, sudo already live. omarchy-settings owns
+# /usr/share/plymouth/themes/omarchy/{logo.png,omarchy.script} and neither is in its backup list,
+# so a package update restores the stock logo and colours.
+#
+# The boot and login screen is deliberately independent of the active Omarchy theme: tux on solid
+# black, white text. A theme change must not move it, and removing a theme must not break this
+# hook, so both the logo and the two colours live here and in branding/, never in a theme
+# directory. Running this file by hand is the manual step after a fresh install (README.md).
+logo=$HOME/.config/omarchy/branding/boot-logo.png
+plymouth=/usr/share/plymouth/themes/omarchy
+state=$HOME/.local/state/omarchy/plymouth-boot.colors
+bg="#000000"
+fg="#ffffff"
+[[ -f $logo ]] || exit 0
+if ! cmp -s "$logo" "$plymouth/logo.png" ||
+   ! grep -q 'SetBackgroundTopColor(0.000, 0.000, 0.000)' "$plymouth/omarchy.script" ||
+   [[ $(cat "$state" 2>/dev/null) != "$bg $fg" ]]; then
+  omarchy plymouth set "$bg" "$fg" "$logo"
+  mkdir -p "$(dirname "$state")" && echo "$bg $fg" >"$state"
+fi

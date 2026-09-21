@@ -15,12 +15,13 @@ about this machine's displays and GPU, plus the Google Drive MCP path, empty if 
 Before `chezmoi apply` it asks for three secrets once (GitHub token, Google Drive OAuth id and
 secret) and stores them in the system keyring; `~/.claude/settings.json` is rendered from there.
 
-One manual step after that, once per machine (sudo): the boot and login screen, tux from the `moon`
-theme (`unlock.png`) on solid black, text in the theme foreground. The same file runs as a
-`post-update.d` hook and reapplies when an Omarchy update restores the stock logo or the palette moves.
+One manual step after that, once per machine (sudo): the boot and login screen, tux on solid black
+with white text. It is deliberately independent of the active theme, so the logo and both colours
+live in `branding/` and in the hook itself. The same file runs as a `post-update.d` hook and
+reapplies when an Omarchy update restores the stock logo.
 
 ```sh
-~/.config/omarchy/hooks/post-update.d/plymouth-moon.hook
+~/.config/omarchy/hooks/post-update.d/plymouth-boot.hook
 ```
 
 Without a TTY, answer the prompts on the command line; `--promptBool` is keyed by the prompt text:
@@ -46,8 +47,8 @@ Files are copied, never symlinked: deleting or moving this repo leaves `~/.confi
 
 | Path | Target |
 |---|---|
-| `dot_config/hypr/` | `~/.config/hypr/` (`bindings.lua`, `monitors.lua` template) |
-| `dot_config/omarchy/` | shell, hooks, branding (`about.txt`/`screensaver.txt` are what `omarchy branding` edits), theme `moon` (palette generated with aether from the moon wallpapers, no per-app overrides, tux `unlock.png`, 7 wallpapers in `backgrounds/`, screenshot `preview.png`) |
+| `dot_config/hypr/` | `~/.config/hypr/`: `bindings.lua` (every binding on the machine, Omarchy's are off), `hyprland.lua` (`omarchy_default_bindings = false`, window rules at the end), `monitors.lua` template; `looknfeel.lua`, `input.lua` and `autostart.lua` are Omarchy's defaults commented out (baseline 4.0.4-1), a map of what can be changed: a line is active only when it changes something, with the default in a trailing comment |
+| `dot_config/omarchy/` | shell, hooks, branding (`about.txt`/`screensaver.txt` are what `omarchy branding` edits; `boot-logo.png` is the Plymouth logo, theme-independent), theme `moon` (palette generated with aether from the moon wallpapers, no per-app overrides, tux `unlock.png`, 7 wallpapers in `backgrounds/`, screenshot `preview.png`) |
 | `dot_config/uwsm/env-hyprland` | `AQ_DRM_DEVICES`; only applied when `hybrid_gpu` is true |
 | `dot_local/bin/` | `hypr-workspace-rotate`; `battery-brownout-logger` (one battery sample per second, fsynced, so the last line survives a hard power cut; its user service is in `dot_config/systemd/user/`); `theme-preview-shot [theme]` composes the switcher preview (nvim, btop, fastfetch, Nautilus) and writes `preview.png` |
 | `dot_config/omarchy/hooks/theme-set.d/moon-sync.hook` | after `omarchy theme set moon`: aether's files (`colors.toml`, `icons.theme`, `backgrounds/`) into this repo, the repo's (`unlock.png`, `preview.png`) back into HOME, `preview-unlock.png` regenerated, Slack theme string in `~/.local/state/omarchy/slack-theme.txt` |
