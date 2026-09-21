@@ -15,6 +15,8 @@ Self-check: python3 session-register.py --selftest
 """
 import json
 import re
+import shutil
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +24,7 @@ from pathlib import Path
 HOME = Path.home()
 CFG = HOME / ".claude"
 SECTION = "# Replying"
+RTK_MAP = ("gain", "discover", "proxy", "recall")
 
 
 def read_json(path, default=None):
@@ -69,6 +72,27 @@ def open_findings(root):
         return 0, None
     dates = sorted(l.split("|")[1].strip() for l in rows)
     return len(rows), dates[0]
+
+
+def rtk_state(run=None):
+    """Return None when the rtk map holds, or a reason string when it does not.
+
+    Two distinct failures: the binary is gone, so the Bash filter hook is dead for the
+    whole session; or the binary is there but a meta command the map documents no longer
+    exists. The map lives in ~/.claude/RTK.md and only names commands the hook never
+    generates, so a drift here is a doc to fix, not a broken session.
+    """
+    if run is None:
+        if shutil.which("rtk") is None:
+            return "AUSENTE, el hook de filtrado no corre"
+        try:
+            run = subprocess.run(["rtk", "--help"], capture_output=True, text=True,
+                                 timeout=5).stdout
+        except (OSError, subprocess.SubprocessError):
+            return "no responde"
+    if any(re.search(rf"^\s+{c}\s", run, re.M) is None for c in RTK_MAP):
+        return "mapa desincronizado, revisar ~/.claude/RTK.md"
+    return None
 
 
 def names(pattern, root, depth_file="SKILL.md"):
@@ -120,6 +144,10 @@ def build_banner(cwd, rules_lines, rules_error):
     lines.append(f"  hooks de usuario: {events}")
     check = CFG / "hooks" / "register-check.py"
     lines.append(f"  verificacion de markdown: {'activa' if check.is_file() else 'AUSENTE'}")
+    rtk = rtk_state()
+    if rtk is not None:
+        lines.append(f"  rtk: {rtk}")
+        ok = False
 
     us = names("skills", CFG / "skills")
     ua = names("agents", CFG / "agents")
@@ -228,6 +256,12 @@ def selftest():
     assert "reglas de habla: OK" in banner, banner
     banner, ok = build_banner("", 0, "sección ausente")
     assert not ok and "FALLO" in banner, banner
+
+    full = "Commands:\n  gain  x\n  discover  x\n  proxy  x\n  recall  x\n"
+    assert rtk_state(full) is None, "complete map should pass"
+    assert rtk_state(full.replace("  recall  x\n", "")) == \
+        "mapa desincronizado, revisar ~/.claude/RTK.md"
+    assert "recall" in " ".join(RTK_MAP) and rtk_state("Commands:\n  ls  x\n") is not None
     print("selftest ok")
 
 

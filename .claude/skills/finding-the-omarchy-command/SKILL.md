@@ -5,12 +5,12 @@ description: Use when changing anything on this Omarchy machine (GPU mode, displ
 
 # Finding the Omarchy command
 
-## Overview
+## Wrapper over tool
 
 Omarchy wraps the low-level tool and also handles what the tool does not know about:
 hooks, systemd drop-ins, state files, config regeneration. Calling the tool directly
-leaves those behind. The wrapper is the source of truth for side effects; the tool is
-only the last step of it.
+leaves those behind. The wrapper decides every side effect; the tool only runs the last
+step of it.
 
 ## Recipe
 
@@ -27,7 +27,7 @@ only the last step of it.
 5. Verify with the command that shows the effect, not the file
    (`supergfxctl -g`, `xdg-settings get`, `hyprctl monitors`, `systemctl status`).
 
-## Why the tool alone fails here
+## Cost of the direct call
 
 | Direct call | What it leaves behind |
 |---|---|

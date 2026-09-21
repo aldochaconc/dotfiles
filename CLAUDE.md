@@ -4,12 +4,19 @@ Omarchy customizations applied with chezmoi. This repo is the chezmoi source (`s
 files are copied into `$HOME`, never symlinked. Edited in place → `chezmoi re-add <file>`;
 edited here → `chezmoi diff`, then `chezmoi apply`.
 
+Decisions no rule surface owns are logged in [`adr.md`](adr.md). A lesson from a session belongs
+in the surface that owns it, `Rules of this machine` below or a skill, and reaches `adr.md` only
+when no surface owns it and it has happened twice.
+
 ## Rules of this machine
 
 - Every Hyprland keybinding lives in `dot_config/hypr/bindings.lua`. Omarchy's defaults are off
   (`omarchy_default_bindings = false` in `hyprland.lua`): a key not in that file does nothing.
 - `.claude/settings.json` is an allowlist by tool. A tool missing there prompts once; add it as
   `Bash(<tool>:*)`, never as the literal command line.
+- Deleting a file already applied to `$HOME`: `chezmoi destroy <target>` removes it from the
+  source state, from `$HOME` and from chezmoi's state in one step. A bare `rm` on an applied
+  file is undone by the next `chezmoi apply`, which restores it from the source state.
 - No secret enters the repo. `~/.claude/settings.json` renders them from the system keyring
   (`chezmoi secret keyring get --service claude --user <name>`).
 - Omarchy's own tree (`/usr/share/omarchy`) is read-only; overrides go in `~/.config`.
@@ -82,6 +89,18 @@ edited here → `chezmoi diff`, then `chezmoi apply`.
 | Hyprland Lua files, shell.json, hyprsunset, tmux | `omarchy refresh {hyprland,shell,hyprsunset,tmux}` |
 | Everything Omarchy owns in `$HOME` | `omarchy reinstall configs`; packages too: `omarchy reinstall` |
 
-`refresh hyprland` overwrites `bindings.lua`, `monitors.lua` and `hyprland.lua`: after it, `chezmoi apply` restores the versioned ones.
-`omarchy nvim {setup,refresh}` and `omarchy reinstall configs` run `xdg-mime default nvim.desktop` on 17 text types:
-after them, `chezmoi apply --force ~/.config/mimeapps.list` restores `code` (`omarchy default editor` never touches MIME).
+`refresh hyprland` overwrites all seven files under `hypr/`: `.luarc.json`, `autostart.lua`,
+`bindings.lua`, `input.lua`, `looknfeel.lua`, `hyprland.lua`, `monitors.lua`. It also copies
+`toggles/flags.lua` into `~/.local/state/omarchy/toggles/hypr/`, outside chezmoi's reach.
+After it, `chezmoi apply` restores the versioned files. A toggle state reset by that copy is
+not restored by chezmoi and has to be redone by hand.
+
+`omarchy font set` never writes `org.gnome.desktop.interface monospace-font-name`: GTK/Electron
+apps without their own font setting (Chromium, Slack, Obsidian) fall back to that gsetting, which
+otherwise stays at its GNOME default. `hooks/font-set.d/gsettings-sync.hook` re-resolves the active
+font with `fc-match` and syncs it after every `omarchy font set`; an already-running app needs a
+restart to pick up the new gsetting, since GTK reads it once at startup.
+
+`omarchy nvim {setup,refresh}` and `omarchy reinstall configs` run `xdg-mime default nvim.desktop`
+on 17 text types. After them, `chezmoi apply --force ~/.config/mimeapps.list` restores `code`
+(`omarchy default editor` never touches MIME).

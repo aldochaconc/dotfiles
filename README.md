@@ -10,8 +10,9 @@ git clone <this repo> ~/dotfiles
 ~/dotfiles/bootstrap.sh
 ```
 
-`bootstrap.sh` installs the extra packages, sets zsh as the login shell, runs `chezmoi init --apply` (three yes/no questions
-about this machine's displays and GPU, plus the Google Drive MCP path, empty if none), sets the Omarchy defaults and the kept web apps.
+`bootstrap.sh` installs the extra packages, sets zsh as the login shell and runs
+`chezmoi init --apply` (three yes/no questions about this machine's displays and GPU, plus the
+Google Drive MCP path, empty if none). It then sets the Omarchy defaults and the kept web apps.
 Before `chezmoi apply` it asks for three secrets once (GitHub token, Google Drive OAuth id and
 secret) and stores them in the system keyring; `~/.claude/settings.json` is rendered from there.
 

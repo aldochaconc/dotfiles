@@ -77,13 +77,31 @@ Anything under `~/.config`, or about Hyprland, Omarchy, terminals, themes or dis
 `omarchy` first, then the project's CLAUDE.md for the rules of that repository. A crash, a core
 dump or a "Process crashed" notification: `diagnose-crash`.
 
+# Shell
+
+One action per `Bash` call. A permission rule is matched against the whole command line, so a
+concatenated `rm -f tsconfig.tsbuildinfo && npm run type-check` prompts as a deletion and hides
+what is being deleted behind the rest of the line. Setup, check and effect go in separate calls.
+
+Deleting a tracked file in a git repository: `git rm <path>`, never `rm`. It records the deletion
+in the index; a bare `rm` leaves it for a later `git add -A` to catch. `tracked-rm.py` blocks the
+`rm` form and prints the `git rm` equivalent.
+
+`rm` on an untracked file runs without a prompt only under `~/Work`, `~/dotfiles` and
+`/tmp/claude-`, and only when the path is written absolute: a permission rule matches the literal
+command line, not the path the shell resolves from the current directory.
+
 # Git
 
-No commit, amend or push unless the user asks for that action. Changes are never assumed ready.
-A command that discards work (`reset --hard`, `checkout` over a path, `clean -f`, `stash drop`,
-force-push) is never run to fix a problem this session caused. State the mistake and what running
-it would discard, then wait: ownership of the mistake is not authorization to erase evidence of
-it. A rule listed under `ask` in permissions exists for the user to decide, not for a plausible
-reason to decide it here.
+Work stops at staged. The commit message is handed over as text, and the commit is the user's
+to run. A question about what is ready, what could be committed or how the tree looks is a
+question: only an imperative naming the action authorizes it. The same holds for amend, push
+and a pull request body.
+
+Changes are never assumed ready. A command that discards work (`reset --hard`, `checkout` over
+a path, `clean -f`, `stash drop`, force-push) is never run to fix a problem this session caused.
+State the mistake and what running it would discard, then wait: ownership of the mistake is not
+authorization to erase evidence of it. A rule listed under `ask` in permissions reserves that
+decision for the user, however plausible the reason to take it here.
 
 @RTK.md
