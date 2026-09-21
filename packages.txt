@@ -14,7 +14,9 @@ gparted
 gvfs-afc
 libgepub
 libgsf
+libinput-tools
 libopenraw
+libva-utils
 ntfs-3g
 nvidia-prime
 obsidian
