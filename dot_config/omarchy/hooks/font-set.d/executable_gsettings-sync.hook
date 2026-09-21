@@ -1,0 +1,23 @@
+#!/bin/bash
+# font-set.d hook: Omarchy runs it after `omarchy font set <font-name>`, with the snake-cased name
+# as $1. GTK/Electron apps (VS Code, Chromium, Slack, Obsidian) that don't set their own monospace
+# font fall back to org.gnome.desktop.interface monospace-font-name. Omarchy writes color-scheme,
+# gtk-theme and icon-theme in omarchy-theme-set-gnome, and font sizes in omarchy-display-text-size,
+# but no Omarchy command writes monospace-font-name; without this, that gsetting stays at its GNOME
+# default (Adwaita Mono) regardless of the font chosen here. Re-resolving with fc-match instead of
+# parsing $1 keeps this correct even when the font changed by another path (a fontconfig edit, a
+# fresh install before any `omarchy font set`).
+#
+# chezmoi owns this file. On a machine without this repo the equivalent is:
+#   omarchy hook install font-set <this-file>
+family=$(fc-match --format='%{family}\n' monospace | cut -d, -f1)
+[[ -n $family ]] || exit 0
+
+# Size comes from GTK's own interface font, the same value omarchy-display-text-size reads to
+# quantize text-scaling-factor. Hardcoding a size here would drift the moment that command runs.
+size=$(gsettings get org.gnome.desktop.interface font-name 2>/dev/null)
+size=${size%\'}
+size=${size##* }
+[[ $size =~ ^[0-9]+$ ]] || size=11
+
+gsettings set org.gnome.desktop.interface monospace-font-name "$family $size"

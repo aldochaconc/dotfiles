@@ -62,5 +62,8 @@
     "**/node_modules": true
   },
   "terminal.external.linuxExec": "foot",
-  "python.terminal.activateEnvironment": false
+  "python.terminal.activateEnvironment": false,
+  "python-envs.terminal.autoActivationType": "off",
+  "editor.fontFamily": "'JetBrainsMono Nerd Font', monospace",
+  "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font', monospace"
 }
