@@ -54,6 +54,40 @@ o.window("^(chrome-web\\.whatsapp\\.com__-Default)$", { workspace = "special:scr
 -- open. No "silent": Obsidian is launched to be used, so the workspace comes along.
 o.window("^(md\\.obsidian\\.Obsidian)$", { workspace = "5" })
 
+-- Music sits on workspace 6, behind the five the bar shows, so it is never in the way of
+-- the workspaces in rotation. No "silent", same reasoning as Obsidian: SUPER + SHIFT + M
+-- is pressed to look at Spotify, so the workspace comes along.
+-- Class is "Spotify", not the "spotify" its desktop file declares as StartupWMClass.
+-- Album art and player artwork are the content, so the 0.985/0.96 default opacity goes,
+-- the same treatment Omarchy gives vlc and mpv.
+o.window("^(Spotify)$", { workspace = "6" })
+o.window("^(Spotify)$", { tag = "-default-opacity", opacity = "1 1" })
+
+-- Settings and file-picking GUIs, opened to do one thing and closed again. Thunar replaces
+-- Nautilus here (see the file-manager bindings); Aether themes the desktop; OmenSpace is
+-- the HP hardware panel.
+--
+-- Omarchy's floating-window tag is deliberately not used: it carries size = { 875, 600 }
+-- from default/hypr/apps/system.lua, and that tag rule outranks a later size rule matched
+-- on class, so the window opens at 875x600 whatever is written here. float, center and
+-- size are set directly instead, one property per rule, the way system.lua writes them.
+--
+-- 875x600 is too small for all three: Thunar's image preview pane squeezes the file list,
+-- and both panels ship layouts taller than 600, which turns into scrolling. A fraction of
+-- the monitor rather than a pixel count never exceeds the screen, on this 1920x1080 or on
+-- anything else, so no clamp is needed; Omarchy sizes its webcam overlay the same way.
+local floating_panels = "^(thunar|Aether|org\\.hp\\.OmenSpace)$"
+
+o.window(floating_panels, { float = true })
+o.window(floating_panels, { size = { "(monitor_w*0.8)", "(monitor_h*0.85)" } })
+o.window(floating_panels, { center = true })
+
+-- SQL grids, ER diagrams and syntax highlighting are read through the window, so the
+-- 0.985/0.96 default opacity goes. Same treatment Omarchy gives vlc, mpv and kdenlive.
+-- Workspace 7 keeps a long-running database session out of the five the bar shows, next
+-- to Spotify on 6.
+o.window("^(DBeaver)$", { workspace = "7", tag = "-default-opacity", opacity = "1 1" })
+
 -- Window rules Omarchy applies by default (default/hypr/windows.lua, Omarchy 4.0.4-1), for
 -- reference. A rule written in this file runs after them; for the same window and property
 -- the later rule wins.
