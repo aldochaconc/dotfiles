@@ -13,9 +13,6 @@
           "verticalFormat": "HH\n—\nmm"
         },
         {
-          "id": "omarchy.keyboard-layout"
-        },
-        {
           "id": "omarchy.weather"
         },
         {
@@ -40,10 +37,6 @@
           ]
         },
         {
-          "alwaysShow": true,
-          "id": "wian47.removable-drives"
-        },
-        {
           "id": "omarchy.agents"
         },
         {
@@ -59,8 +52,15 @@
           "id": "omarchy.monitor"
         },
         {
+          "alwaysShow": true,
+          "id": "wian47.removable-drives"
+        },
+        {
           "id": "omarchy.power",
           "showPercentage": false
+        },
+        {
+          "id": "omarchy.keyboard-layout"
         }
       ]
     },

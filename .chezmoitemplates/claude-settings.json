@@ -203,8 +203,12 @@
       "Bash(rm -f ~/dotfiles/:*)",
       "Bash(rm /tmp/claude-:*)",
       "Bash(rm -f /tmp/claude-:*)",
+      "Bash(curl -fsS:*)",
       "Bash(curl -fsSL:*)",
+      "Bash(curl -s:*)",
       "Bash(curl -sI:*)",
+      "Bash(curl -sL:*)",
+      "WebFetch",
       "WebSearch"
     ],
     "ask": [
