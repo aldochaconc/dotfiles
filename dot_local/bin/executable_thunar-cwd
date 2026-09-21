@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Open Thunar in the current working directory of the active terminal.
+#
+# Usage: thunar-cwd
+#
+# Bound to SUPER + ALT + SHIFT + F in hypr/bindings.lua. Omarchy ships
+# omarchy-launch-nautilus-cwd for the same purpose, hardcoded to nautilus:
+# there is no `omarchy default file-manager` to point it elsewhere, so the
+# binding calls this instead.
+#
+# The directory comes from omarchy-cmd-terminal-cwd, which is file-manager
+# agnostic: it reads the focused window's pid and resolves the shell's cwd
+# (through the kitty socket when that is the terminal). It prints nothing when
+# the focused window is not a terminal, and Thunar then opens at $HOME rather
+# than failing.
+#
+# ponytail: a script rather than an inline command in bindings.lua, because the
+# command substitution would have to survive Lua, uwsm-app and Hyprland's
+# exec_cmd; three layers of quoting for one line of work.
+
+cwd=$(omarchy-cmd-terminal-cwd)
+
+exec setsid uwsm-app -- thunar "${cwd:-$HOME}"

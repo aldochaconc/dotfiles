@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Reveal an app in the scratchpad, launching it first when it is not running.
+#
+# Usage: hypr-app-scratchpad <window-pattern> <launch-command>
+#
+#   hypr-app-scratchpad '^slack$' 'uwsm-app -- /usr/bin/slack'
+#
+# One key per app, always the same outcome: after it runs, the app's window is in the
+# scratchpad, the scratchpad is showing, and that window has focus. Pressing the key again
+# changes nothing, and SUPER + S hides the scratchpad as usual.
+#
+# The point is that the window never sits on an ordinary workspace covering the work in
+# front of it. An app that opens its window there anyway, or that was dragged out by hand,
+# is pulled back in rather than left where it landed, so the app cannot drift into a state
+# the key does not handle. That is what the window rules in hypr/hyprland.lua do at startup;
+# this handles every press after that.
+#
+# <window-pattern> is a regular expression tested against the window class first and the
+# title only if no class matches, case-insensitively. Anchor it (^slack$) whenever the class
+# is known: a bare substring can match another app's title and act on the wrong window.
+set -euo pipefail
+
+pattern=${1:-}
+launch=${2:-}
+
+if [[ -z $pattern || -z $launch ]]; then
+  echo "Usage: hypr-app-scratchpad <window-pattern> <launch-command>" >&2
+  exit 1
+fi
+
+# Matching by class before title, and taking the oldest window of the match rather than
+# whichever one hyprctl happens to list first, keeps the target stable: an app with several
+# windows open resolves to the same one on every press.
+window=$(hyprctl clients -j | jq -c --arg p "$pattern" '
+  (map(select(.class | test($p; "i"))) | sort_by(.focusHistoryID) | first)
+  // (map(select(.title | test($p; "i"))) | sort_by(.focusHistoryID) | first)
+  // empty
+')
+
+# Nothing to reveal yet. The window rule in hypr/hyprland.lua puts the new window straight
+# into the scratchpad, so the next press finds it there.
+if [[ -z $window ]]; then
+  eval exec setsid $launch
+fi
+
+address=$(jq -r '.address' <<<"$window")
+workspace=$(jq -r '.workspace.name' <<<"$window")
+
+# Hyprland takes Lua dispatchers here, not the classic "movetoworkspace ws,address:..."
+# string: that syntax is rejected outright by this version.
+if [[ $workspace != "special:scratchpad" ]]; then
+  hyprctl dispatch "hl.dsp.window.move({ workspace = \"special:scratchpad\", window = \"address:$address\", follow = false })" >/dev/null
+fi
+
+# toggle_special flips, so firing it while the scratchpad is already up would hide the
+# window this script was asked to reveal. The focused monitor names the special workspace it
+# is showing, or an empty string when it is showing none.
+showing=$(hyprctl monitors -j | jq -r '.[] | select(.focused) | .specialWorkspace.name // ""')
+
+if [[ $showing != "special:scratchpad" ]]; then
+  hyprctl dispatch "hl.dsp.workspace.toggle_special(\"scratchpad\")" >/dev/null
+fi
+
+hyprctl dispatch "hl.dsp.focus({ window = \"address:$address\" })" >/dev/null

@@ -1,0 +1,21 @@
+-- Extra autostart processes on this machine.
+--
+-- Omarchy's own autostart (default/hypr/autostart.lua) runs on hyprland.start and cannot be
+-- switched off from here; a user file only adds processes. It is listed as plain text, not
+-- as code, because an uncommented copy would launch each process twice. What it runs:
+--
+--   systemctl --user import-environment $(env | cut -d'=' -f 1)
+--   dbus-update-activation-environment --systemd --all
+--   omarchy-launch-shell
+--   omarchy-provision-first-run
+--   omarchy-powerprofiles-init
+--   omarchy-hyprland-monitor-watch          (through o.launch, uwsm-app)
+--   udiskie --automount --no-notify --no-tray (through o.launch, uwsm-app)
+--   sleep 2 && omarchy-hook post-boot        (hooks in ~/.config/omarchy/hooks/post-boot.d/)
+--
+-- Baseline: Omarchy 4.0.4-1.
+-- Live default: /usr/share/omarchy/default/hypr/autostart.lua
+--
+-- A process added here starts once per Hyprland session:
+--
+--   o.launch_on_start("my-service")

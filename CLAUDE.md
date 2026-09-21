@@ -20,6 +20,13 @@ when no surface owns it and it has happened twice.
 - No secret enters the repo. `~/.claude/settings.json` renders them from the system keyring
   (`chezmoi secret keyring get --service claude --user <name>`).
 - Omarchy's own tree (`/usr/share/omarchy`) is read-only; overrides go in `~/.config`.
+- The file manager is Thunar, for its image preview side pane. Omarchy has no
+  `omarchy default file-manager`: `omarchy-launch-nautilus` hardcodes the app, so the two
+  bindings in `hypr/bindings.lua` name Thunar directly and `dot_local/bin/thunar-cwd` replaces
+  `omarchy-launch-nautilus-cwd`. `nautilus` and `nautilus-python` stay in
+  `omarchy-base.packages`, so `omarchy reinstall pkgs` brings them back and the two
+  nautilus-python extensions with them; `dot_config/Thunar/uca.xml` carries the same two
+  actions for Thunar and is unaffected.
 
 ## Toolbelt
 

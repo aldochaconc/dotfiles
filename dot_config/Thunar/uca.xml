@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+<!--
+  Thunar custom actions, replacing the two nautilus-python extensions Omarchy ships
+  (localsend.py and transcode.py in ~/.local/share/nautilus-python/extensions). Thunar has
+  no Python extension API, so each one becomes a context-menu action calling the Omarchy
+  binary the extension called.
+
+  omarchy share file takes any number of paths, so LocalSend uses %F (the whole selection).
+  omarchy transcode takes `[input] [format] [resolution]` positionally, so a second selected
+  file would silently land in the format argument: that action uses %f and stays on one file.
+  transcode.py looped over the selection to work around the same limit; one file per invocation
+  is the honest version of that, and Thunar hides a %f action when several files are selected.
+-->
+<action>
+	<icon>localsend</icon>
+	<name>Send via LocalSend</name>
+	<unique-id>omarchy-localsend</unique-id>
+	<command>omarchy share file %F</command>
+	<description>Send the selection with LocalSend</description>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<audio-files/>
+	<directories/>
+	<image-files/>
+	<other-files/>
+	<text-files/>
+	<video-files/>
+</action>
+<action>
+	<icon>media-playback-start</icon>
+	<name>Transcode</name>
+	<unique-id>omarchy-transcode</unique-id>
+	<command>omarchy-launch-floating-terminal-with-presentation "omarchy-transcode %f"</command>
+	<description>Transcode the selected images or videos</description>
+	<patterns>*</patterns>
+	<startup-notify/>
+	<image-files/>
+	<video-files/>
+</action>
+</actions>

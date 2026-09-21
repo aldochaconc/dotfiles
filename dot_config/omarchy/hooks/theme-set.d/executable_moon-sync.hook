@@ -3,8 +3,8 @@
 # aether owns colors.toml, icons.theme and backgrounds/ of the moon theme and rewrites them on
 # Apply; the repo owns unlock.png and preview.png. Each side goes where it belongs: aether's files
 # into the chezmoi source, the repo's files back into HOME if aether dropped them,
-# preview-unlock.png regenerated from the current palette, and the Slack custom theme string
-# written for pasting. Committing stays manual.
+# preview-unlock.png regenerated from the current palette, the GTK3 widget rules THPM's variables
+# cannot carry, and the Slack custom theme string written for pasting. Committing stays manual.
 [[ $1 == moon ]] || exit 0
 theme=$HOME/.config/omarchy/themes/moon
 state=$HOME/.local/state/omarchy
@@ -23,6 +23,83 @@ if [[ -n $fg && -f $theme/unlock.png ]]; then
   PATH="$shim:$PATH" omarchy plymouth preview "#000000" "$fg" "$theme/unlock.png" "$theme/preview-unlock.png" >/dev/null 2>&1 &&
     chezmoi add "$theme/preview-unlock.png" 2>/dev/null || true
   rm -rf "$shim"
+fi
+
+# GTK3 widget colors. THPM's gtk-css-compat writes ~/.config/gtk-{3.0,4.0}/thpm-theme.css from
+# colors.toml, and 90-thpm runs before this hook (the runner globs theme-set.d in lexicographic
+# order). That file is enough for GTK4: libadwaita reads @define-color window_bg_color and the
+# rest by name. GTK3 does not. Adwaita-dark's gtk.css is one @import of a resource compiled into
+# libgtk3, which carries its colors as literals and never reads @theme_bg_color, so redefining
+# those names changes nothing. Thunar and xarchiver stay Adwaita grey.
+#
+# The repair is explicit rules rather than variables. ~/.config/gtk-3.0/gtk.css loads at
+# GTK_STYLE_PROVIDER_PRIORITY_USER (800), above the theme's own 200, so these win.
+#
+# Appended to THPM's file, between markers, so a re-run replaces the block instead of stacking
+# copies: idempotent whether it runs after a palette change, a theme switch, or twice in a row.
+# THPM rewrites the file wholesale on each theme set, which drops the block; this puts it back.
+gtk3=$HOME/.config/gtk-3.0/thpm-theme.css
+if [[ -f $gtk3 ]]; then
+  bg=$(color background)
+  fg=$(color foreground)
+  base=$(color dark_background)
+  panel=$(color darker_background)
+  border=$(color lighter_background)
+  # Selection uses accent, not the palette's `selection`: on this theme selection is #1a1a1a and
+  # selection_foreground #010000, 1.21:1, unreadable. selection_foreground is authored against
+  # accent (11.14:1), which is the pair the rest of the theme uses. Hover keeps `selection`,
+  # where the text stays the normal foreground and the contrast holds.
+  sel=$(color accent)
+  sel_fg=$(color selection_foreground)
+  hover=$(color selection)
+  dim=$(color muted)
+
+  # sed over the marked range first, so a block from an earlier run never survives.
+  sed -i '/^\/\* moon-gtk3-start \*\//,/^\/\* moon-gtk3-end \*\//d' "$gtk3"
+
+  cat >>"$gtk3" <<EOF
+/* moon-gtk3-start */
+/* Written by moon-sync.hook: GTK3 ignores the @define-color names above. */
+window, dialog, .background { background-color: $bg; color: $fg; }
+headerbar, .titlebar, toolbar, .toolbar { background-color: $panel; color: $fg; border-color: $border; }
+.sidebar, placessidebar, .sidebar-item { background-color: $panel; color: $fg; }
+treeview.view, iconview, textview, .view { background-color: $base; color: $fg; }
+/* The container carries the background; each cell stays transparent, so an icon is not a tile
+   with its own block of colour. Only the selected cell paints, rounded and padded so the
+   highlight sits behind the label with air around it rather than edge to edge. */
+iconview:not(:selected), iconview .cell:not(:selected) { background-color: transparent; }
+treeview.view:selected, treeview.view:selected:focus,
+.view:selected, .view:selected:focus { background-color: $sel; color: $sel_fg; }
+iconview:selected, iconview .cell:selected {
+  background-color: $sel; color: $sel_fg; border-radius: 6px; padding: 4px;
+}
+entry, spinbutton, searchbar { background-color: $base; color: $fg; border-color: $border; }
+button { background-color: $border; color: $fg; border-color: $border; }
+button:hover { background-color: $hover; }
+/* Thunar's menus are classic GtkMenu, not popovers, and every menuitem needs its own colour:
+   without one Adwaita's own white shows through on the item under the pointer. On this palette
+   darker_background equals background, so the menu takes lighter_background to read as a surface
+   sitting above the window instead of merging into it. */
+menu, .menu, .context-menu, popover, .popup, menu > arrow {
+  background-color: $border; color: $fg; border: 1px solid $border;
+}
+menu menuitem, .menu menuitem, .context-menu menuitem, popover modelbutton {
+  background-color: transparent; color: $fg;
+}
+menu menuitem:hover, .menu menuitem:hover, .context-menu menuitem:hover,
+popover modelbutton:hover { background-color: $sel; color: $sel_fg; }
+menu menuitem:disabled, .menu menuitem:disabled { color: $dim; }
+menu separator, .menu separator { background-color: $bg; }
+menubar, menubar > menuitem { background-color: $panel; color: $fg; }
+menubar > menuitem:hover { background-color: $sel; color: $sel_fg; }
+notebook > header, notebook > header > tabs > tab { background-color: $panel; color: $dim; }
+notebook > header > tabs > tab:checked { color: $fg; }
+scrollbar { background-color: $bg; }
+scrollbar slider { background-color: $border; }
+statusbar, .statusbar, paned > separator { background-color: $panel; color: $dim; }
+label:disabled, .dim-label { color: $dim; }
+/* moon-gtk3-end */
+EOF
 fi
 
 # Slack custom theme, in Slack's field order: column background, menu hover, active item,
