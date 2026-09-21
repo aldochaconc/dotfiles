@@ -17,6 +17,8 @@ libgsf
 libopenraw
 ntfs-3g
 nvidia-prime
+obsidian
+perl-image-exiftool
 shfmt
 spotify
 supergfxctl
