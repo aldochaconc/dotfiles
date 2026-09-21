@@ -108,6 +108,16 @@
           }
         ],
         "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/gate-skill-writes.py",
+            "statusMessage": "Checking a skill write…",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit|Bash"
       }
     ],
     "SessionStart": [
