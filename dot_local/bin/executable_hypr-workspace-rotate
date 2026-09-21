@@ -74,7 +74,9 @@ case ${1:-} in
   next | prev)
     target=$(target_for "$(hyprctl activeworkspace -j | jq -r '.id')" "$1" "$(ceiling)")
     if [[ -n $target ]]; then
-      hyprctl dispatch workspace "$target"
+      # Hyprland 0.56 parses dispatch arguments as Lua: the legacy "workspace 2" form
+      # fails with "')' expected near '2'". Same call the bar widget makes.
+      hyprctl dispatch "hl.dsp.focus({ workspace = \"$target\" })"
     fi
     ;;
   self-check)

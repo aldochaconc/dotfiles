@@ -27,7 +27,7 @@
           "id": "omarchy.menu"
         },
         {
-          "id": "omarchy.workspaces"
+          "id": "local.workspaces"
         }
       ],
       "right": [
@@ -35,8 +35,13 @@
           "hidden": [],
           "id": "omarchy.tray",
           "pinned": [
-            "omenspace_tray"
+            "omenspace_tray",
+            "Slack_status_icon_1"
           ]
+        },
+        {
+          "alwaysShow": true,
+          "id": "wian47.removable-drives"
         },
         {
           "id": "omarchy.agents"
