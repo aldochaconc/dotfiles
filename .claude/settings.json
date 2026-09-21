@@ -147,6 +147,7 @@
       "Bash(git rebase:*)",
       "Bash(git reset:*)",
       "Bash(rm -rf:*)",
+      "Bash(pkexec:*)",
       "Bash(sudo:*)"
     ],
     "deny": [

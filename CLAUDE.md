@@ -20,6 +20,16 @@ when no surface owns it and it has happened twice.
 - No secret enters the repo. `~/.claude/settings.json` renders them from the system keyring
   (`chezmoi secret keyring get --service claude --user <name>`).
 - Omarchy's own tree (`/usr/share/omarchy`) is read-only; overrides go in `~/.config`.
+- A command needing root runs as `pkexec <command>`, which raises polkit's graphical prompt.
+  Plain `sudo` fails from an agent session with "a terminal is required to read the password":
+  there is no tty to type it into. `pkexec` is the answer, never a reason to stop.
+  Ask first, every time: state the command and what it changes, and run it once the user
+  agrees. The user answers polkit's prompt on screen, which the agent cannot see; a call that
+  returns "Request dismissed" or times out was not authorised, and is reported rather than
+  retried.
+  A command that manages its own elevation is wrapped whole, not replaced: `omarchy pkg add`
+  calls `sudo pacman` internally but takes the `pacman` branch directly under `EUID == 0`, so
+  `pkexec omarchy pkg add <pkg>` works while `pkexec pacman -S <pkg>` bypasses Omarchy.
 - The file manager is Thunar, for its image preview side pane. Omarchy has no
   `omarchy default file-manager`: `omarchy-launch-nautilus` hardcodes the app, so the two
   bindings in `hypr/bindings.lua` name Thunar directly and `dot_local/bin/thunar-cwd` replaces
