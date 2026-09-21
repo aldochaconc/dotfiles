@@ -1,7 +1,7 @@
 [Default Applications]
 text/plain=code.desktop
 text/english=code.desktop
-text/html=code.desktop
+text/html=chromium.desktop
 text/xml=code.desktop
 application/xml=code.desktop
 text/x-makefile=code.desktop
@@ -20,3 +20,7 @@ application/x-shellscript=code.desktop
 application/json=code.desktop
 x-scheme-handler/claude-cli=claude-code-url-handler.desktop
 x-scheme-handler/aether=li.oever.aether.url-handler.desktop
+x-scheme-handler/http=chromium.desktop
+x-scheme-handler/https=chromium.desktop
+x-scheme-handler/about=chromium.desktop
+x-scheme-handler/unknown=chromium.desktop
