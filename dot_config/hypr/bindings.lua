@@ -125,9 +125,11 @@ o.bind("SUPER + ALT + RIGHT", "Move window to group on right", hl.dsp.window.mov
 o.bind("SUPER + ALT + UP", "Move window to group on top", hl.dsp.window.move({ into_group = "u" }))
 o.bind("SUPER + ALT + DOWN", "Move window to group on bottom", hl.dsp.window.move({ into_group = "d" }))
 
--- cycle within the group, by key
-o.bind("SUPER + CTRL + TAB", "Next window in group", hl.dsp.group.next())
-o.bind("SUPER + CTRL + SHIFT + TAB", "Previous window in group", hl.dsp.group.prev())
+-- cycle within the group, by key. Omarchy cycles groups on SUPER + ALT + TAB; this pair
+-- duplicated it on a key Omarchy gives to "Former workspace", and the wheel and
+-- SUPER + ALT + 1..5 below cover the same dispatchers. Freed for the layout toggle.
+-- o.bind("SUPER + CTRL + TAB", "Next window in group", hl.dsp.group.next())
+-- o.bind("SUPER + CTRL + SHIFT + TAB", "Previous window in group", hl.dsp.group.prev())
 o.bind("SUPER + ALT + TAB", "Next window in group", hl.dsp.group.next())
 o.bind("SUPER + ALT + SHIFT + TAB", "Previous window in group", hl.dsp.group.prev())
 
@@ -165,6 +167,19 @@ o.bind("SUPER + Next", "Previous workspace", rotate .. " prev")
 -- rotate, by wheel
 o.bind("SUPER + mouse_up", "Next workspace", rotate .. " next")
 o.bind("SUPER + mouse_down", "Previous workspace", rotate .. " prev")
+
+-- layout. Cycles the active workspace between dwindle and scrolling, and saves the choice
+-- to ~/.local/state/omarchy/workspace-layouts/<id>.lua, which default/hypr/workspace-layouts.lua
+-- reloads at startup. A rule written there outranks general.layout, so a workspace left on
+-- scrolling stays there across restarts.
+--
+-- dwindle splits each new window off the focused one, Fibonacci-style. scrolling gives every
+-- window a full-height column of equal width at scrolling.column_width (0.49, two per screen)
+-- and scrolls the rest off-screen rather than shrinking them. master is not in the cycle and
+-- cannot produce equal columns: it always reserves a master area.
+--
+-- Omarchy binds this to SUPER + L, which is focus-right here.
+o.bind("SUPER + CTRL + TAB", "Toggle workspace layout", "omarchy-hyprland-workspace-layout-toggle")
 
 -- Monitors ------------------------------------------------------------------
 
