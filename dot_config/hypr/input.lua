@@ -114,28 +114,43 @@
 -- o.window("com.mitchellh.ghostty", { scroll_touchpad = 0.2 })
 
 -- gestures ------------------------------------------------------------------
--- The 3-finger swipe is Hyprland's built-in workspace_swipe, not an hl.gesture binding:
--- it is on by default and needs no line here to work. Its default create_new = true has
--- no ceiling, so a swipe past the last workspace keeps creating new ones. Turning it off
--- makes the swipe stop at the highest existing workspace, which is the bound
--- hypr-workspace-rotate already enforces for SUPER + scroll and SUPER + TAB. Both paths
--- then agree, and neither creates workspace 6..10 by accident.
+-- The 3-finger swipe is NOT on by default: in Hyprland 0.56 the swipe is an explicit
+-- `gesture` binding, and `gestures.workspace_swipe` is no longer an option (getoption
+-- reports "no such option"). Omarchy ships the equivalent line commented out in
+-- config/hypr/input.lua. Without a binding here the swipe does nothing. The other
+-- gestures.workspace_swipe_* options do still exist and still apply to it.
 --
--- workspace_swipe_forever stays false: at the last workspace a further swipe is a no-op
--- rather than wrapping to 1, matching target_for() in hypr-workspace-rotate, which
--- returns nothing at the edge.
+-- The swipe uses the built-in `workspace` action, not hypr-workspace-rotate, and that
+-- is a deliberate reversal of the earlier arrangement here.
+--
+-- exec_cmd runs a shell script once, when the gesture ends. That is discrete by
+-- construction: nothing can drive a script per millimetre of finger travel, so the
+-- workspaces only ever jumped after the fingers lifted, with no sense of the motion.
+-- The built-in action is continuous, moving the workspaces with the fingers and
+-- snapping on release, which is the whole point of a swipe.
+--
+-- Cost, accepted: no built-in swipe setting expresses the bar's 1..5 ceiling.
+-- create_new = false stops at the last *occupied* workspace, so the swipe reaches less
+-- far than the bar draws when 4 and 5 are empty; create_new = true would reach them but
+-- never stop, creating 6..10 past the end. Stopping short is the smaller error, since it
+-- creates nothing that has to be cleaned up.
+--
+-- SUPER + TAB and SUPER + scroll still go through hypr-workspace-rotate and still reach
+-- exactly 1..5, so the ceiling survives on the paths that can express it. Only the swipe
+-- trades it for the drag.
+hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
+-- These tune the built-in action above, so unlike before they now take effect.
+-- create_new = false is the bound that replaces the script's: without it the swipe runs
+-- off the end creating 6..10. forever = false makes a swipe at the last workspace a
+-- no-op rather than wrapping to 1, matching target_for() in hypr-workspace-rotate,
+-- which returns nothing at the edge.
 hl.config({
   gestures = {
     workspace_swipe_create_new = false, -- default true
-    -- workspace_swipe_forever = false,
+    workspace_swipe_forever = false, -- default false, pinned: it is the edge behaviour
   },
 })
-
--- An explicit hl.gesture binding is only needed to change fingers or direction, or to run
--- something other than the built-in swipe.
--- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Gestures/
--- hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 -- Enable touchpad gestures for moving focus (helpful on scrolling layout).
 -- hl.gesture({ fingers = 3, direction = "left", action = function() hl.dispatch(hl.dsp.focus({ direction = "l" })) end })

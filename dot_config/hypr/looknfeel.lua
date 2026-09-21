@@ -128,6 +128,13 @@
 -- hl.animation({ leaf = "workspaces", enabled = false })
 -- hl.animation({ leaf = "specialWorkspace", enabled = true, speed = 3, bezier = "easeOutQuint", style = "slidevert" })
 
+-- Omarchy ships workspaces disabled, so a 3-finger swipe cut between workspaces with
+-- nothing on screen showing the direction. "slide" makes the outgoing and incoming
+-- workspace travel horizontally, which is the motion the swipe already describes.
+-- speed is in deciseconds, and higher is faster: 6 is ~250ms, quick enough to keep up
+-- with the fingers while still showing which way the workspaces travelled.
+hl.animation({ leaf = "workspaces", enabled = true, speed = 6, bezier = "easeOutQuint", style = "slide" })
+
 -- dwindle -------------------------------------------------------------------
 
 -- hl.config({
