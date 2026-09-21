@@ -34,12 +34,6 @@
         "source": "github"
       }
     },
-    "karpathy-skills": {
-      "source": {
-        "repo": "forrestchang/andrej-karpathy-skills",
-        "source": "github"
-      }
-    },
     "ponytail": {
       "source": {
         "repo": "DietrichGebert/ponytail",
