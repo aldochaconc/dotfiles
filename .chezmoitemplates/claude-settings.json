@@ -136,6 +136,15 @@
           }
         ],
         "matcher": "Write|Edit|MultiEdit|Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/writing-loaded.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit"
       }
     ],
     "SessionStart": [
