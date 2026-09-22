@@ -121,21 +121,12 @@
       {
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/one-action-per-call.py",
-            "type": "command"
-          }
-        ],
-        "matcher": "Bash"
-      },
-      {
-        "hooks": [
-          {
             "command": "python3 ~/.claude/hooks/gate-skill-writes.py",
             "statusMessage": "Checking a skill write…",
             "type": "command"
           }
         ],
-        "matcher": "Write|Edit|MultiEdit|Bash"
+        "matcher": "Write|Edit|MultiEdit"
       },
       {
         "hooks": [

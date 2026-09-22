@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse(Write|Edit|MultiEdit|Bash): a skill edit waits for a human.
+"""PreToolUse(Write|Edit|MultiEdit): a skill edit waits for a human.
 
 A `SKILL.md` is configuration every future session reads, so a rule entering one is never
 silent. No permission surface covers an edit to a skill file before it is staged, which left
@@ -20,42 +20,28 @@ the form `- ... because ...`; measured against every skill in this repository it
 because these skills are written as prose and tables. A number that is always zero is not
 evidence, so the prompt asks unconditionally instead.
 
-`Bash` is covered because the edit tools are not the only way to write a file. A redirect,
-`cp`, `mv`, `tee`, `sed -i` or a heredoc naming a skill path all landed unprompted while this
-hook watched only the edit tools. The shell test is lexical: the command says where the bytes
-go and not what they say, and a writing form plus a skill path is enough to ask.
+`Bash` was covered here once and is not any more. Deciding whether a shell line writes is a
+judgement a regex cannot make: bash resolves a redirect while parsing, and a pattern over the
+raw line only guesses. Three rounds of patching proved it, each closing one case and leaving
+the family open — `2>&1`, then a `>` inside quotes, then `2>/dev/null` on a plain `ls`. Every
+false positive taught the agent to route around the gate, which is how a `for` loop came to
+redirect into five skill files under one confirmation.
+
+The edit tools carry the path as a field, so the test here is exact.
+
+A shell write to a skill file is therefore not gated, and nothing mechanical closes that: a
+`deny` rule matches the command line as text, which is the same guessing in another layer.
+What closes it is the incentive. `Write` and `Edit` are allowed under the work paths, so the
+correct tool now costs no confirmation where it used to cost two, and the Shell section of
+CLAUDE.md says prose is written with them. The cheap path and the right path are the same one.
 
 Self-check: python3 gate-skill-writes.py --selftest
 """
 import json
 import os
-import re
 import sys
 from pathlib import Path
 
-SKILL_IN_CMD = re.compile(r"SKILL\.md|/skills/")
-# A command that can create or overwrite a file. Deliberately conservative: the write
-# primitive and the skill path are matched anywhere in the command, not as one token,
-# because an indirection separates them. `target=...SKILL.md; printf x > "$target"`,
-# `F=...; echo y >> $F` and a `for` over a glob all wrote a skill unprompted while the
-# two had to be adjacent. The cost is a command that reads a skill and writes something
-# else, which asks without needing to.
-# `git` is absent: destructive-git.py owns it, and a checkout restoring a skill is that
-# hook's call. Still uncovered, and lexical detection cannot reach it: a command that
-# names neither `SKILL.md` nor `/skills/`, such as an external script.
-WRITE_PRIMITIVE = re.compile(
-    # `>>?` with no whitespace requirement: bash takes `printf x>path` and `x>>path`,
-    # and a pattern demanding a space after the operator let both through. `2>&1` and
-    # `>=` are excluded so a redirected stderr or a comparison is not a write.
-    r">>?(?![&=])"
-    r"|\b(cp|mv|install|tee|rsync|truncate)\b"
-    r"|\bsed\b[^|;&]*-i"
-    r"|\b(rm|unlink)\b"
-    # The parenthesis is what separates a call from prose: `Path(p).write_text(x)` is a
-    # write and `"testing write_text function"` is not. Requiring the path inside the
-    # parens fails, because `Path('...SKILL.md').write_text('x')` puts it before them.
-    r"|\bwrite_text\(|\bwriteFileSync\(|\bopen\([^)]*['\"][wa]"
-)
 ASK_EDIT = (
     "`{where}`, read by every future session.{what}\n\n"
     "State what this write does to the rules: for each rule entering or changing, its line as "
@@ -63,38 +49,10 @@ ASK_EDIT = (
     "moves bytes, a rename or a reformat, say that instead. The six actions are in "
     "`skill-growth`."
 )
-ASK_BASH = (
-    "A shell command writes to a skill file. A command shows where bytes go and not what they "
-    "say.\n\nIf this adds or changes a rule: state its line, the surface that takes it, and the "
-    "observation that pays for it. If it only moves bytes, a rename or a reformat, say that "
-    "instead."
-)
 UNATTENDED_NOTE = (
     "\n\nUnattended run (CLAUDE_UNATTENDED set): the write is denied instead of prompting. "
     "Record the line and the surface it targets, and leave it for the human."
 )
-
-
-def unquoted(cmd):
-    """The command with redirect characters inside quotes neutralised.
-
-    `grep "^>" file` reads a skill and writes nothing, but the redirect pattern found the
-    `>` and the gate asked on a diff. A redirect operator only redirects outside quotes, so
-    `<` and `>` are blanked there. Only those two: blanking the whole quoted run would hide
-    `python3 -c "Path(...).write_text(x)"`, which is a real write carried entirely inside
-    quotes, and that call must still be caught.
-    """
-    out, quote = [], None
-    for c in cmd:
-        if quote:
-            out.append(" " if c in "<>" else c)
-            if c == quote:
-                quote = None
-        else:
-            if c in "'\"":
-                quote = c
-            out.append(c)
-    return "".join(out)
 
 
 def is_skill(path):
@@ -137,13 +95,6 @@ def main(event=None, env=None):
     tool = event.get("tool_name") or ""
     ti = event.get("tool_input") or {}
 
-    if tool == "Bash":
-        cmd = ti.get("command") or ""
-        if not (SKILL_IN_CMD.search(cmd) and WRITE_PRIMITIVE.search(unquoted(cmd))):
-            return 0
-        emit(*decision(ASK_BASH, env))
-        return 0
-
     if tool not in {"Write", "Edit", "MultiEdit"}:
         return 0
     path = ti.get("file_path") or ""
@@ -184,7 +135,8 @@ def selftest():
     def bash(cmd, env=None):
         return run({"tool_name": "Bash", "tool_input": {"command": cmd}}, env)
 
-    # gated: any skill file, by any edit tool
+    # gated: any skill file, by any edit tool. Bash is not this hook's surface any more:
+    # a `deny` permission rule refuses a shell write to a skill path before it runs.
     assert edit("/x/.claude/skills/writing/SKILL.md") == "ask"
     assert edit("/x/.claude/skills/writing/SKILL.md", "Edit") == "ask"
     assert edit("/x/.claude/skills/writing/SKILL.md", "MultiEdit") == "ask"
@@ -194,50 +146,24 @@ def selftest():
     assert edit("/x/CLAUDE.md") is None
     assert run({"tool_name": "Read", "tool_input": {"file_path": "/x/.claude/skills/a/SKILL.md"}}) is None
 
+    # Every Bash line passes, whether it writes a skill or only reads one. The three the
+    # lexical test used to get wrong are kept as the reason the surface was dropped.
     for cmd in [
         "echo x > .claude/skills/writing/SKILL.md",
-        "cat <<'EOF' > .claude/skills/a/SKILL.md\nx\nEOF",
         "cp /tmp/x.md .claude/skills/a/SKILL.md",
-        "mv /tmp/x.md .claude/skills/a/SKILL.md",
-        "sed -i 's/a/b/' .claude/skills/a/SKILL.md",
-        "tee .claude/skills/a/SKILL.md < /tmp/x",
-        "rm .claude/skills/a/SKILL.md",
-        "python3 -c \"Path('.claude/skills/a/SKILL.md').write_text('x')\"",
-        # a redirect with no space, which bash accepts
-        "printf x>.claude/skills/a/SKILL.md",
-        "echo y>>.claude/skills/a/SKILL.md",
-        # indirections that separate the primitive from the path
-        'target=.claude/skills/a/SKILL.md; printf x > "$target"',
-        "F=.claude/skills/a/SKILL.md; echo y >> $F",
-        "for f in .claude/skills/*/SKILL.md; do echo x > $f; done",
-        # the sibling reference file, which the edit path also gates
-        "cat /tmp/new > .claude/skills/a/references/log.md",
-        # a glob the upstream literal `SKILL.md` test missed
-        "echo x > .claude/skills/a/S*.md",
-    ]:
-        assert bash(cmd) == "ask", cmd
-    for cmd in [
         "cat .claude/skills/writing/SKILL.md",
-        "grep -n rule .claude/skills/writing/SKILL.md",
-        "wc -l .claude/skills/*/SKILL.md",
-        "echo x > src/index.ts",
-        "cp a.ts b.ts",
-        "git checkout .claude/skills/writing/SKILL.md",
-        # a redirected stderr is not a write to the skill it reads
-        "node check.js .claude/skills/a/SKILL.md 2>&1 | tail -3",
-        # a `>` or `<` inside quotes is data: diffing two skill versions writes nothing
+        "ls ~/.claude/skills/ 2>/dev/null | grep -v synced",
         'diff a/SKILL.md b/SKILL.md | grep "^>" | head -10',
-        "diff a/SKILL.md b/SKILL.md | grep '^<' | head -10",
-        'grep ">" .claude/skills/a/SKILL.md',
+        "node check.js .claude/skills/a/SKILL.md 2>&1 | tail -3",
     ]:
         assert bash(cmd) is None, cmd
 
-    assert bash("echo x > .claude/skills/a/SKILL.md", {"CLAUDE_UNATTENDED": "1"}) == "deny"
-    assert bash("echo x > .claude/skills/a/SKILL.md", {"CLAUDE_UNATTENDED": "  "}) == "ask"
     v, t = decision("R", {"CLAUDE_UNATTENDED": "1"})
     assert v == "deny" and UNATTENDED_NOTE in t
+    assert decision("R", {"CLAUDE_UNATTENDED": "  "})[0] == "ask"
+    assert edit("/x/.claude/skills/a/SKILL.md") == "ask"
 
-    print("selftest ok: 7 path + 2 name + 7 tool + 25 shell + 3 verdict")
+    print("selftest ok: 7 path + 2 name + 7 tool + 6 shell + 3 verdict")
     return 0
 
 
