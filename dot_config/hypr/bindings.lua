@@ -374,6 +374,10 @@ o.bind("SUPER + SHIFT + C", "Calculator", "omacalc")
 o.bind("XF86Calculator", "Calculator", "omacalc")
 o.bind("SUPER + SHIFT + A", "Agent", "omarchy-agent --pick")
 o.bind("SUPER + SHIFT + P", "Transcode", "omarchy-transcode")
+-- plugin browser. dot_local/bin symlinks it and omarchy-plugin-audit into PATH, pointing at
+-- the checkout plugins.txt installs. The app-id is spelled out because `{ tui = ... }` derives
+-- org.omarchy.<basename>, which the float rule in default/hypr/apps/system.lua does not list.
+o.bind("SUPER + SHIFT + X", "Plugin browser", "omarchy-launch-tui --app-id=TUI.float omarchy-plugin-browser")
 
 -- vault. Obsidian is single instance: a second launch hands over to the running process and
 -- exits, so a plain launch announces itself and no window appears. launch_sole focuses the
