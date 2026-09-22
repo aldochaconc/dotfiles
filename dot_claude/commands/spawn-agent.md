@@ -59,7 +59,14 @@ pane about three fifths of the width.
    agent works the same repository and wrong otherwise.
 
 3. **Start Claude with its name.** `herdr agent start <name> --kind claude --pane <pane> --
-   -n <name>`.
+   -n <name> --dangerously-skip-permissions`.
+
+   The permission mode is set at launch and is not stored in settings, so a pane started without
+   the flag comes up asking. What it asks about includes messages from other sessions: a pane in
+   the default mode holds them for the user to approve, and they expire unanswered. Measured on
+   2026-09-22, after four panes were restarted without it: three peer messages were lost, one
+   refused and two expired. The hooks still run in this mode, since a hook decides on its own
+   rather than through the permission layer.
 
    The `-n` is what `ListAgents` reports and what `SendMessage` addresses. Without it Claude
    builds a name from the basename of the working directory and peers cannot address the pane by
