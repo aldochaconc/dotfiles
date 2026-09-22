@@ -6,8 +6,9 @@ permission rule matches the whole command line: `rm -f tsconfig.tsbuildinfo && n
 type-check` prompts as a deletion and hides what is being deleted behind the rest of the line.
 The rule existed and was not followed, so this hook states the split.
 
-Exit 2 with the calls written out, never a plain block: there is an allowed form and naming it
-is what makes the next attempt correct.
+`permissionDecision: "ask"` with the calls written out, not exit 2. Chaining is a style rule,
+not a danger: the command is legal and the user may have a reason, so the decision is theirs.
+tracked-rm.py and destructive-git.py exit 2 because there the alternative form is mandatory.
 
 What does NOT match is the point of the file. `&&` inside one action is the common case and a
 hook that flags it is worse than no hook, so a chain passes when:
@@ -107,14 +108,16 @@ def main(event=None):
     found = effects(command)
     if not found:
         return 0
-    print(
-        "One action per Bash call (CLAUDE.md, Shell). This line chains distinct effects: "
-        + ", ".join(found)
-        + ".\n\nA permission rule matches the whole command line, so the first effect is "
-        "hidden behind the rest. Send each as its own call, in order.",
-        file=sys.stderr,
-    )
-    return 2
+    print(json.dumps({"hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": "ask",
+        "permissionDecisionReason": (
+            "One action per Bash call (CLAUDE.md, Shell). This line chains distinct effects: "
+            + ", ".join(found)
+            + ". A permission rule matches the whole command line, so the first effect is "
+            "hidden behind the rest and prompts as something else. Send each as its own "
+            "call, in order, unless this line has to run as one.")}}))
+    return 0
 
 
 def selftest():
@@ -147,8 +150,17 @@ def selftest():
     def run(cmd):
         return main({"tool_name": "Bash", "tool_input": {"command": cmd}})
 
-    assert run("rm -f x && npm run build") == 2
-    assert run("git add a && git add b") == 0
+    import io, contextlib
+
+    def verdict(cmd):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            main({"tool_name": "Bash", "tool_input": {"command": cmd}})
+        out = buf.getvalue().strip()
+        return json.loads(out)["hookSpecificOutput"]["permissionDecision"] if out else None
+
+    assert verdict("rm -f x && npm run build") == "ask"
+    assert verdict("git add a && git add b") is None
     assert main({"tool_name": "Read", "tool_input": {}}) == 0
 
     print("selftest ok: 3 chained + 13 single + 3 verdict")
