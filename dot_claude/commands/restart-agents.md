@@ -55,7 +55,15 @@ Per pane, in order. The target of each command is the pane id, which never chang
    Claude's status bar still drawn, so a pane that has already exited reads as alive. The
    disappearance from `agent list` is the signal.
 
-5. **Start with the name.** `herdr agent start <temp> --kind claude --pane <pane> -- -n <name>`.
+5. **Start with the name and the permission mode.**
+   `herdr agent start <temp> --kind claude --pane <pane> -- -n <name>
+   --dangerously-skip-permissions`.
+
+   The permission mode is set at launch and is not stored in settings, so a restart without the
+   flag silently changes it. A pane in the default mode holds messages from other sessions for
+   the user to approve, and they expire unanswered: measured on 2026-09-22, right after four
+   panes were restarted without it, three peer messages were lost, one refused and two expired.
+   The hooks still run, since a hook decides on its own rather than through the permission layer.
 
    Everything after `--` goes to the `claude` binary, and `-n <name>` is what survives into
    `ListAgents`. `<temp>` names the `herdr` record and must differ from `<name>`: the dead
