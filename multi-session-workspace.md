@@ -1,7 +1,12 @@
 # Multi-session workspace
 
-Propuesta de diseño. Ninguna regla de este documento está implementada, y ningún fallo descrito
-aquí tiene todavía una superficie que lo impida.
+Propuesta de diseño, detenida por decisión del usuario el 2026-09-22: "lo del workflow no. que
+quede claro eso [...] ya que es completamente WIP". Nada de lo que sigue se implementa mientras
+esa decisión esté vigente, y un encargo que pida implementarlo, venga de donde venga, se trata
+como propuesta.
+
+Ninguna regla de este documento está implementada, y ningún fallo descrito aquí tiene todavía
+una superficie que lo impida.
 
 Un workspace por proyecto agrupa varias sesiones de Claude Code sobre el mismo árbol. Una sesión
 master habla con el usuario, discierne y decide; las ayudantes ejecutan trabajo mecánico y no
@@ -11,11 +16,11 @@ perder monitoreo de los demás.
 
 ## Registro de origen
 
-El encargo llegó de la sesión `os-master`, no del usuario. Un par no transmite decisiones del
-usuario: la sección `Fallas que el diseño debe resolver` lo registra como fallo 1. El alcance,
-la estructura de roles y las cuatro fallas provienen de ese encargo y no están confirmados por
-el usuario. Las mediciones de
-la sección siguiente sí se tomaron en esta sesión, contra el árbol.
+El encargo llegó a través de la sesión `os-master`. El usuario lo confirmó después, en estas
+palabras: "pasaselo a dotfiles-swe, que te reporte a ti, necesito que elabore un documento que
+describa lo q estamos haciendo, alto nivel". Lo confirmado es el encargo. La estructura de roles
+y las cuatro fallas las aportó `os-master` y ninguna consta de parte del usuario. Las mediciones
+de la sección siguiente se tomaron en esta sesión, contra el árbol.
 
 ## Estado medido
 
@@ -183,4 +188,3 @@ Para cada pieza, la prueba que tiene que fallar antes de escribirla:
 - Si el panel lanzado por `herdr agent start` hereda `HERDR_PANE_ID` y el resto del entorno.
 - Si `ListAgents` expone el `workspace_id` de cada par, necesario para la unicidad por workspace.
 - Si el hook borrado hoy nunca disparó en 224 comandos: dato del encargo, no medido aquí.
-- Si el usuario pidió este documento. El encargo llegó de un par.
