@@ -283,7 +283,13 @@
       "MultiEdit(/tmp/claude-**)",
       "Read(~/Work/**)",
       "Read(~/dotfiles/**)",
-      "Read(/tmp/claude-**)"
+      "Read(/tmp/claude-**)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit:*)",
+      "Bash(git mv:*)",
+      "Bash(git stash push:*)",
+      "Bash(git restore --staged:*)"
     ],
     "ask": [
       "Bash(rm -rf:*)",

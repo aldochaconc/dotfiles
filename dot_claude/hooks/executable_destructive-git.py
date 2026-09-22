@@ -16,6 +16,16 @@ Self-check: python3 destructive-git.py --selftest
 import json
 import re
 import sys
+from pathlib import Path
+
+# A hook runs from wherever Claude Code invokes it, so the sibling module is reached by this
+# file's own directory. A missing hookaudit disables recording and blocks nothing differently.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    from hookaudit import record
+except ImportError:
+    def record(*_a, **_k):
+        return False
 
 PATTERNS = [
     (re.compile(r"\bgit\s+reset\b[^|;&\n]*--hard\b"), "git reset --hard"),
@@ -39,6 +49,7 @@ def main():
     found = hits(command)
     if not found:
         return 0
+    record("destructive-git", "block", command)
     print("BLOCKED: destructive git command, no exception from this session:", file=sys.stderr)
     for why in found:
         print(f"  {why}", file=sys.stderr)

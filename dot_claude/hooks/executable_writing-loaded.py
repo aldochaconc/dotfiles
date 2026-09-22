@@ -23,6 +23,16 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
+
+# A hook runs from wherever Claude Code invokes it, so the sibling module is reached by this
+# file's own directory. A missing hookaudit disables recording and blocks nothing differently.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    from hookaudit import record
+except ImportError:
+    def record(*_a, **_k):
+        return False
 
 PROSE = (".md", ".py")
 # Two ways a skill loads, and a gate that knows only one is a gate that fires on a loaded
@@ -74,12 +84,18 @@ def main(event=None):
         return 0
     if loaded(event.get("transcript_path") or ""):
         return 0
+    record("writing-loaded", "block", f"{event.get('tool_name')} {path}")
     print(REASON, file=sys.stderr)
     return 2
 
 
 def selftest():
     import tempfile
+
+    # The block path records, and left alone the fixtures below would land in the real
+    # verdict log and inflate the counts it exists to answer.
+    global record
+    record = lambda *_a, **_k: False
 
     for p in ["/x/CLAUDE.md", "/x/.claude/skills/a/SKILL.md", "/x/hooks/gate.py"]:
         assert is_prose(p), p
