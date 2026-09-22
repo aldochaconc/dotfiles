@@ -57,6 +57,20 @@ each optional only when the diff makes it obvious:
 No "context and motivation" heading, no restated title as a first sentence, no closing line
 grading the change.
 
+Nothing names the agent, the session, the machine or the person: a `Claude-Session` trailer, a
+session URL, a `Co-Authored-By` naming the agent, a login name, a hostname, an absolute path
+under the home directory, an email address, the work organisation, a private project. This
+holds for a commit body as much as for a pull request body.
+
+Part 1 already makes the code the subject, and these lines still get written, because the
+pressure on each comes from outside the text. The environment supplies the session lines
+through a reminder that asks for them to be appended. The rest comes from a path or a name
+copied out of a tool result: `~` replaces the home path, `$USER` the login name, and a private
+name is described rather than spelled.
+
+The Git section of the instructions file carries the same rule, because a commit body gets
+written in sessions that never load this skill.
+
 ## Before the first line
 
 | # | Clear before writing | Cost of skipping it |
@@ -155,4 +169,5 @@ a row nobody closes shows its age at every start.
 | 2026-09-21 | doc | gap | The same plan published a five-row table in which four rows carried a date and a point count and left `Foco` and `Entregas` empty. B11 governs two values in one cell and the index governs a column that cannot be filled; neither reaches a table whose body is blank in most rows. | gap: no register row or gate matches a table published with most of its cells empty |
 | 2026-09-22 | spoken reply | Address, Metadiscourse, Epiphonema, Evaluative intensification | Nine instances in one spoken reply, with the skill already loaded in the session. Loading it is not applying it: the register was never checked against the text before it shipped. | the register is verified against every reply, not once per session when the skill loads |
 | 2026-09-22 | spoken reply | gap | Second occurrence in one session of the spoken mode taken as licence for conversational prose. The first was answered by restating the register; the defect returned in the next spoken turn, so restating it is not the repair. | the delivery mode fixes the shape and never the register: `Spoken reply` above names what changes, and nothing in it relaxes a row |
+| 2026-09-22 | commit body | gap | Two commit messages shipped to the user with a `Claude-Session` line carrying the session URL, appended because an environment reminder asks for it. The same family was corrected on 2026-09-20 (`Co-Authored-By`), and that correction produced a log row and no rule, so the second occurrence had nothing to fail against. The register governs how a sentence reads and never what a text is forbidden to contain, which is why neither occurrence matched a row. | gap: no gate asks what a text must not carry. A1 and A2 verify that a count and a path are correct, not that a path belongs in the text at all |
 | 2026-09-21 | doc | B2 | An audit reported eighteen defects inside a section that restated three earlier sections in a different key, and repaired every one of them. B2 ("whether the document should exist") was never asked of the section, because the audit procedure starts at reading the text and naming register rows. Repairing a redundant section's prose makes it read well enough to survive. | in an audit, ask B2 and B6 of each section before naming a single register row in it; a section whose facts all stand elsewhere is reported as redundant, not repaired |
