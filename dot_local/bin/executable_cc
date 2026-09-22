@@ -1,0 +1,115 @@
+#!/usr/bin/env bash
+# Launch Claude Code with a name that peers can address, derived rather than typed.
+#
+# Without -n, Claude builds its name from the basename of the working directory plus a random
+# suffix: dotfiles-9e, dotfiles-a2. Two sessions in one project get unrelated names, and a
+# session restarted later comes back under a third, so nothing can address it by the name it
+# had. The name is what SendMessage routes on, which makes a generated one a broken address.
+#
+# The rule here is the one measured on 2026-09-22: the first live session of a project keeps the
+# plain project name and coordinates; a second takes a numbered suffix. Inside a herdr pane the
+# pane already carries identity, so the name comes from the pane record and this only fills the
+# gap when that record has none.
+#
+# Usage:  cc [claude args...]        name derived
+#         cc -n <name> [args...]     name respected, nothing derived
+#
+# Self-check: cc --selftest
+set -uo pipefail
+
+SOCK_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/cc-socks"
+
+# A name has to satisfy herdr's rule, which is stricter than Claude's: it starts with a
+# lowercase letter and carries lowercase letters, digits, - or _. A directory named with
+# capitals, dots or a leading digit would otherwise produce a name herdr later refuses.
+sanitize() {
+  local raw="${1,,}"
+  raw="${raw//[^a-z0-9_-]/-}"
+  raw="${raw##-}"
+  [[ $raw =~ ^[a-z] ]] || raw="s-$raw"
+  printf '%s' "${raw:0:32}"
+}
+
+# Live peer sessions, by name. Claude Code keeps one socket per session under cc-socks, named
+# by PID and carrying nothing else, so the names come from herdr's records instead. A machine
+# without herdr has no registry at all and every name reads as free, which is the right
+# fallback: a collision then costs a suffix, and refusing to launch costs the session.
+live_names() {
+  command -v herdr >/dev/null 2>&1 || return 0
+  herdr agent list 2>/dev/null \
+    | python3 -c 'import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+for a in d.get("result", {}).get("agents", []):
+    for k in ("name", "terminal_title_stripped"):
+        v = a.get(k)
+        if v:
+            print(v)' 2>/dev/null
+}
+
+# The project name, then the first free suffix. The bare name means this is the only session of
+# the project and the one that coordinates it; -2 onward report to it.
+pick_name() {
+  local base
+  base="$(sanitize "$(basename "$PWD")")"
+  local taken
+  taken="$(live_names)"
+
+  if ! grep -qxF "$base" <<<"$taken"; then
+    printf '%s' "$base"
+    return
+  fi
+  local n=2
+  while grep -qxF "$base-$n" <<<"$taken" && ((n < 100)); do
+    ((n++))
+  done
+  printf '%s-%s' "$base" "$n"
+}
+
+main() {
+  # An explicit -n is the user's decision and is never second-guessed.
+  for arg in "$@"; do
+    case "$arg" in
+      -n|--name) exec claude "$@" ;;
+    esac
+  done
+  exec claude -n "$(pick_name)" "$@"
+}
+
+selftest() {
+  local fail=0
+  check() {
+    local got want
+    got="$(sanitize "$1")"; want="$2"
+    [[ $got == "$want" ]] || { printf 'FAIL sanitize %s: want %s, got %s\n' "$1" "$want" "$got"; fail=1; }
+  }
+  check "dotfiles" "dotfiles"
+  check "Work" "work"
+  check "my.project" "my-project"
+  check "2fa-tool" "s-2fa-tool"          # a name cannot start with a digit
+  check "a_b-c" "a_b-c"                  # underscore and hyphen both survive
+  check "$(printf 'x%.0s' {1..40})" "$(printf 'x%.0s' {1..32})"  # truncated to 32
+
+  # pick_name against a stubbed registry, so the test never depends on what is running.
+  live_names() { printf 'dotfiles\ndotfiles-2\n'; }
+  local got
+  got="$(cd /tmp && pick_name)"
+  [[ $got == "tmp" ]] || { printf 'FAIL free name: want tmp, got %s\n' "$got"; fail=1; }
+  got="$(cd "$HOME/dotfiles" 2>/dev/null && pick_name)"
+  [[ $got == "dotfiles-3" ]] || { printf 'FAIL taken name: want dotfiles-3, got %s\n' "$got"; fail=1; }
+
+  live_names() { printf ''; }
+  got="$(cd "$HOME/dotfiles" 2>/dev/null && pick_name)"
+  [[ $got == "dotfiles" ]] || { printf 'FAIL empty registry: want dotfiles, got %s\n' "$got"; fail=1; }
+
+  ((fail)) || printf 'selftest ok: 6 sanitize + 3 pick\n'
+  return $fail
+}
+
+if [[ ${1:-} == --selftest ]]; then
+  selftest
+else
+  main "$@"
+fi
