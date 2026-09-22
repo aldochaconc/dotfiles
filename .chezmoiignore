@@ -2,6 +2,7 @@
 README.md
 CLAUDE.md
 adr.md
+multi-session-workspace.md
 bootstrap.sh
 packages.txt
 packages-aur.txt
