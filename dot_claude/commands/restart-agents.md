@@ -25,6 +25,11 @@ sets the `herdr` side alone: run by itself after a restart, the pane reads corre
 `herdr agent list` while peers still see a generated name such as `dotfiles-a2`. Both records
 have to be written, which is why the procedure has a rename step even though `-n` is passed.
 
+Without `-n`, Claude builds its own name from the basename of the working directory plus a
+suffix: two panes under `~/dotfiles` restarted without it on 2026-09-22 came back as
+`dotfiles-9e` and `dotfiles-a2`, and two panes under separate work directories each took their
+own basename. The generated name never agrees with the `herdr` record because it never reads it.
+
 ## Procedure
 
 Per pane, in order. The target of each command is the pane id, which never changes.
@@ -37,31 +42,44 @@ Per pane, in order. The target of each command is the pane id, which never chang
    and one line on what to resume. Its context dies with the process, so what is not written to
    disk is gone. A session that does not answer is reported to the user, who decides.
 
-3. **Exit.** `herdr agent prompt <pane> "/exit"`. Confirmed when `herdr agent read <pane>`
-   returns `agent_not_found`: the pane is now at its shell prompt, which is what step 4 needs.
+3. **Exit.** `herdr agent prompt <pane> "/exit"`.
 
    `herdr agent send-keys <pane> ctrl+d` does not close it. Measured: the call returns `ok` and
    the agent stays alive.
 
-4. **Start with the name.** `herdr agent start <temp> --kind claude --pane <pane> -- -n <name>`.
+4. **Wait for the pane to free.** `herdr agent list` until the `pane_id` is gone from it. The
+   exit is not immediate, and `agent start` on a pane still closing fails with
+   `agent_pane_busy: is not an available shell`.
+
+   `herdr agent read` does not answer this. In that interval it returns the shell prompt with
+   Claude's status bar still drawn, so a pane that has already exited reads as alive. The
+   disappearance from `agent list` is the signal.
+
+5. **Start with the name.** `herdr agent start <temp> --kind claude --pane <pane> -- -n <name>`.
 
    Everything after `--` goes to the `claude` binary, and `-n <name>` is what survives into
-   `ListAgents`. `<temp>` names the `herdr` record and must differ from `<name>`: `herdr` still
-   holds the record of the agent that just died, so reusing the real name fails with
-   `agent_name_taken`. A pane id is not a legal value either: a name starts with a lowercase
+   `ListAgents`. `<temp>` names the `herdr` record and must differ from `<name>`: the dead
+   agent's name is still reserved, so reusing the real one fails with `agent_name_taken`. Step 4
+   waits for the pane to leave `agent list` and this reserves the name past that point, which is
+   why both are needed. A pane id is not a legal value either: a name starts with a lowercase
    letter and carries lowercase letters, digits, `-` or `_`.
 
-5. **Sync the `herdr` record.** `herdr agent rename <pane> <name>`.
+6. **Sync the `herdr` record.** `herdr agent rename <pane> <name>`.
 
-6. **Verify in `ListAgents`, never in `herdr agent list`.** The second reads the `herdr` record,
-   which step 5 just wrote and which tells nothing about what peers see. Only `ListAgents`
+7. **Verify in `ListAgents`, never in `herdr agent list`.** The second reads the `herdr` record,
+   which step 6 just wrote and which tells nothing about what peers see. Only `ListAgents`
    answers whether the session can be addressed by name.
+
+A pane that came back under a generated name is repaired by running the procedure again over it,
+at no cost beyond the restart: the `/exit` reaches whichever agent is running in the pane, which
+is the one to close.
 
 ## Scope
 
-A master restarts the panes of its own workspace. `herdr agent list` gives the `workspace_id`
-of each pane; a pane in another workspace belongs to that workspace's master and is delegated by
-message rather than restarted here.
+An agent restarts the panes of its own workspace. `herdr agent list` gives the `workspace_id` of
+every pane, and a pane in another workspace is delegated by message to an agent running there
+rather than restarted from here: the agent coordinating a workspace is the one started first in
+it, and it is the one that knows what its panes are holding.
 
 This session never restarts itself: the process running the command is the one that would die.
 The user restarts it, or it is left running and reported.
