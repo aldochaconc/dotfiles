@@ -7,3 +7,11 @@
 # no sudo or pkexec, no mkfs or dd. Filesystem repair goes through UDisks2 and is offered
 # only after a failed check, authorised by volume UUID rather than by /dev path.
 https://github.com/Wian47/omarchy-removable-drives.git
+#
+# Plugin Browser: browse the marketplace and audit a plugin in a bwrap sandbox before
+# enabling it. Reviewed at 0.2.2, commit 18ffd2e, the commit the marketplace verified:
+# bounded catalog download, the scanner never executes plugin code. Installed for its two
+# CLI tools, which dot_local/bin symlinks and SUPER+SHIFT+X launches. Its bar widget is
+# disabled: the button passes execDetached an environment holding PATH alone, so the
+# terminal opens with no XDG_RUNTIME_DIR and never reaches the compositor.
+https://github.com/OmarchyFans/omarchy-fans-plugin-browser.git
