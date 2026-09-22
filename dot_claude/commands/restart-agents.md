@@ -76,10 +76,15 @@ is the one to close.
 
 ## Scope
 
-An agent restarts the panes of its own workspace. `herdr agent list` gives the `workspace_id` of
-every pane, and a pane in another workspace is delegated by message to an agent running there
-rather than restarted from here: the agent coordinating a workspace is the one started first in
-it, and it is the one that knows what its panes are holding.
+An agent restarts the panes of its own workspace, which is the one in `$HERDR_WORKSPACE_ID`.
+`herdr agent list` carries every pane of every workspace and the `workspace_id` of each, so the
+set to restart is the panes matching that variable. A pane outside it is delegated by message to
+an agent running there rather than restarted from here: the agent coordinating a workspace is
+the one started first in it, and it is the one that knows what its panes are holding.
+
+The variable is read rather than the focused workspace assumed. `herdr pane layout` without a
+target returns the layout of whichever workspace the user is looking at, and a command that
+reads focus acts on panes belonging to someone else.
 
 This session never restarts itself: the process running the command is the one that would die.
 The user restarts it, or it is left running and reported.

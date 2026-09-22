@@ -34,12 +34,26 @@ pane about three fifths of the width.
 
 ## Procedure
 
-1. **Read the layout.** `herdr pane layout` gives the pane count, each rectangle and the
+1. **Read the layout of this session's own workspace.**
+   `herdr pane layout --pane "$HERDR_PANE_ID"` gives the pane count, each rectangle and the
    `workspace_id`. The pane to split and the direction follow from the table above.
+
+   The `--pane` is what makes the read correct. Without it `herdr pane layout` returns the
+   layout of the *focused* workspace, which is whichever one the user is looking at and not the
+   one the calling session lives in. Measured on 2026-09-22: a session in one workspace read
+   back the three panes of another. A spawn computed from that layout opens in the wrong
+   workspace or fails.
+
+   An empty `HERDR_PANE_ID` means the session is not running in a herdr pane at all, and there
+   is no workspace to spawn into: the command stops and says so.
 
 2. **Split.** `herdr pane split <target> --direction <dir> --ratio <r> --cwd <path> --no-focus`
    plus one `--env` per variable below. `--no-focus` keeps the conversation where it is; a
    spawn that steals focus interrupts the person who asked for it.
+
+   `<target>` is always written out. The pane argument is optional and a split without it falls
+   back to the focused pane, which carries the same defect as step 1: the focused pane can sit
+   in another workspace.
 
    Without `--cwd` the new pane inherits the current working directory, which is right when the
    agent works the same repository and wrong otherwise.
