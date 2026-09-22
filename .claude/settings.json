@@ -137,7 +137,12 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:wiki.hypr.land)",
       "WebFetch(domain:wiki.hyprland.org)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(omarchy-launch-or-focus:*)",
+      "Bash(omarchy-launch-or-focus-tui:*)",
+      "Bash(uwsm:*)",
+      "Bash(uwsm-app:*)",
+      "Bash(playerctl:*)"
     ],
     "ask": [
       "Bash(curl:*)",
