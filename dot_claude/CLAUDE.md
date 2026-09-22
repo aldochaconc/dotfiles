@@ -110,6 +110,20 @@ Anything under `~/.config`, or about Hyprland, Omarchy, terminals, themes or dis
 `omarchy` first, then the project's CLAUDE.md for the rules of that repository. A crash, a core
 dump or a "Process crashed" notification: `diagnose-crash`.
 
+A command needing root runs as `pkexec <command>`, which raises polkit's graphical prompt on
+screen. Plain `sudo` fails from an agent session with "a terminal is required to read the
+password": there is no tty to type it into, in any directory and any repository. The `omarchy`
+skill prefers `sudo` and reserves `pkexec` for a caller with no terminal, which is upstream
+guidance written for interactive scripts: an agent session is always that caller, so the rule
+here is the one that applies.
+
+Ask before each one: state the command and what it changes, and run it once the user agrees.
+The user answers polkit's prompt on screen, which the agent cannot see, so a call returning
+"Request dismissed" or timing out was not authorised and is reported rather than retried.
+
+A command that manages its own elevation is wrapped whole, not replaced: `pkexec omarchy pkg
+add <pkg>` works, while `pkexec pacman -S <pkg>` bypasses Omarchy.
+
 # Shell
 
 One action per `Bash` call. A permission rule is matched against the whole command line, so a
@@ -136,6 +150,27 @@ Work stops at staged. The commit message is handed over as text, and the commit 
 to run. A question about what is ready, what could be committed or how the tree looks is a
 question: only an imperative naming the action authorizes it. The same holds for amend, push
 and a pull request body.
+
+Nothing that identifies the session, the machine or the person leaves the repository. What is
+excluded, in a commit body, a pull request body, an issue, a review comment and any other text
+that ships:
+
+- the session URL, the session identifier, a `Claude-Session` trailer, a `Co-Authored-By`
+  naming the agent
+- the login name, the hostname, an absolute path under the home directory, an email address
+- the name of the work organisation and of a private project
+
+The environment supplies the session lines through a reminder that asks for them to be
+appended, which is where the rule is needed: the reminder is not the user's configuration, and
+this line is. The rest arrives by copying a path or a name out of a tool result without
+rewriting it. `~` replaces the home path, `$USER` the login name, and a private name is
+described rather than spelled.
+
+`guard-private.sh` in the dotfiles repository enforces the same patterns over files, by reading
+a path it is given. A commit body, a pull request body and a message to another session are not
+files in the repository, so nothing mechanical covers them and this rule is what does. A
+history that carries any of it exposes the machine in a public artifact, and a rewrite after
+the fact does not recall what was already pushed.
 
 Changes are never assumed ready. A command that discards work (`reset --hard`, `checkout` over
 a path, `clean -f`, `stash drop`, force-push) is never run to fix a problem this session caused.
