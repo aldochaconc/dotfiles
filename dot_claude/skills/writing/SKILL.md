@@ -61,7 +61,7 @@ grading the change.
 
 | # | Clear before writing | Cost of skipping it |
 |---|---|---|
-| B1 | Surface, one of: reply, comment, docblock, doc, spec, skill, pull request body, commit body, tracker item, product copy | the surface fixes the rules and the language: instructions and config in English, replies in Spanish, product copy in the product's language and exempt from the register |
+| B1 | Surface, one of: reply, spoken reply, comment, docblock, doc, spec, skill, pull request body, commit body, tracker item, product copy | the surface fixes the rules and the language: instructions and config in English, replies in Spanish, product copy in the product's language and exempt from the register |
 | B2 | Whether the document should exist | one that restates code, or duplicates a rule the reader already has, does not get written |
 | B3 | What the reader can see | a text written for someone who read the conversation is unreadable to everyone else |
 | B4 | Every count: what claim it is the evidence for, and whether it was measured in this session. A count that supports no claim is deleted rather than measured | a count from memory reads like a measured one, and a decorative count rots unnoticed because nothing depended on it |
@@ -88,6 +88,32 @@ grading the change.
 | A6 | Documentation surface of every touched file corrected | read against the new behaviour |
 | A7 | Mechanical gate run where one exists | `register-check.py` on markdown, run by hand; a project adds its own gate for code comments where it has one |
 | A8 | File read top to bottom, against the tree | the step that catches what nothing else does |
+
+## Spoken reply
+
+A surface, not an exemption. It starts at `/voice` in the transcript and holds until the user
+types again; the register applies to every sentence of it, and the rows it draws are the ones
+the reader cannot see coming: `Address`, `Epiphonema` and `Evaluative intensification` all
+sound like speech and are what a spoken answer reaches for first.
+
+What changes is the shape, because the listener has no screen and no way back.
+
+| Written | Spoken |
+|---|---|
+| a table of facts | the same facts as sentences, in the table's order, one fact per sentence |
+| `file.ts:429`, a SHA, a flag | the file by name, the count, what changed; the identifier only when the user has to type it |
+| a labeled list of options | the options in sentences, numbered aloud: `uno`, `dos`, `tres` |
+| `AskUserQuestion` | the question as the last thing said, then silence |
+| a fact the tool output already carries | said once, because there is no output on screen to read |
+
+`AskUserQuestion` renders in the terminal and never reaches a listener, so a spoken turn does
+not call it. A decision is put as numbered options in the reply itself and the turn ends there.
+This is the one place the `Deciding` section of the instructions file is answered in prose, and
+the reason is mechanical: a tool the user cannot see cannot carry a question.
+
+The reply is said once, from the first fact to the last, with nothing held back for a follow-up
+the listener would have to ask for. A listener cannot scroll, so an omission is a fact lost,
+not a fact deferred.
 
 ## Audit of existing prose
 
@@ -127,4 +153,6 @@ a row nobody closes shows its age at every start.
 | 2026-09-20 | reply | Metadiscourse, Process narration | The permanent index in `CLAUDE.md` was lost to a `git reset --hard` mid-session, rebuilt from memory once without diffing it against the file, lost again unnoticed, then absent for several turns. Two of those turns opened a parenthetical announcing the reply's own form and closed by stating a negative the tool output already showed, both rows the index names. Verification checked HOME against the repo, which agreed on both sides being wrong, never the file against what it should contain. | after restoring a file lost to a destructive command, diff the restored content against what was written earlier in the same conversation, not only HOME against the repo |
 | 2026-09-21 | doc | gap | A weekly plan shipped two lines whose whole content was `pendiente de definir`, each announcing a quantity (a margin, a second project's point budget) that the document never gave. A declared hole reads as content: the line occupies the slot a fact would, and nothing marks it as missing. Not `Epistemic hedging`, which covers a claim made without basis, not the absence of the claim. | gap: no register row matches a placeholder standing where a fact belongs |
 | 2026-09-21 | doc | gap | The same plan published a five-row table in which four rows carried a date and a point count and left `Foco` and `Entregas` empty. B11 governs two values in one cell and the index governs a column that cannot be filled; neither reaches a table whose body is blank in most rows. | gap: no register row or gate matches a table published with most of its cells empty |
+| 2026-09-22 | spoken reply | Address, Metadiscourse, Epiphonema, Evaluative intensification | Nine instances in one spoken reply, with the skill already loaded in the session. Loading it is not applying it: the register was never checked against the text before it shipped. | the register is verified against every reply, not once per session when the skill loads |
+| 2026-09-22 | spoken reply | gap | Second occurrence in one session of the spoken mode taken as licence for conversational prose. The first was answered by restating the register; the defect returned in the next spoken turn, so restating it is not the repair. | the delivery mode fixes the shape and never the register: `Spoken reply` above names what changes, and nothing in it relaxes a row |
 | 2026-09-21 | doc | B2 | An audit reported eighteen defects inside a section that restated three earlier sections in a different key, and repaired every one of them. B2 ("whether the document should exist") was never asked of the section, because the audit procedure starts at reading the text and naming register rows. Repairing a redundant section's prose makes it read well enough to survive. | in an audit, ask B2 and B6 of each section before naming a single register row in it; a section whose facts all stand elsewhere is reported as redundant, not repaired |
