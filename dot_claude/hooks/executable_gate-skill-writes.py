@@ -42,6 +42,16 @@ import os
 import sys
 from pathlib import Path
 
+# A hook runs from wherever Claude Code invokes it, so the sibling module is reached by this
+# file's own directory rather than the working one. A missing hookaudit disables recording
+# and changes no verdict: see the module docstring on why logging never fails a gate.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    from hookaudit import record
+except ImportError:
+    def record(*_a, **_k):
+        return False
+
 ASK_EDIT = (
     "`{where}`, read by every future session.{what}\n\n"
     "State what this write does to the rules: for each rule entering or changing, its line as "
@@ -103,13 +113,20 @@ def main(event=None, env=None):
 
     what = (" This creates the file, so every rule in it is new."
             if not Path(path).exists() else "")
-    emit(*decision(ASK_EDIT.format(where=skill_name(path), what=what), env))
+    verdict, text = decision(ASK_EDIT.format(where=skill_name(path), what=what), env)
+    record("gate-skill-writes", verdict, f"{tool} {path}")
+    emit(verdict, text)
     return 0
 
 
 def selftest():
     import io
     import contextlib
+
+    # The selftest exercises the ask path, which records. Left alone it would write its
+    # fixtures into the real verdict log and inflate the counts the log exists to answer.
+    global record
+    record = lambda *_a, **_k: False
 
     for p in ["/x/.claude/skills/documenting/SKILL.md",
               "/x/.claude/skills/writing/references/log.md",

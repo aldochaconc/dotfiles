@@ -21,6 +21,16 @@ import re
 import shlex
 import subprocess
 import sys
+from pathlib import Path
+
+# A hook runs from wherever Claude Code invokes it, so the sibling module is reached by this
+# file's own directory. A missing hookaudit disables recording and blocks nothing differently.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+try:
+    from hookaudit import record
+except ImportError:
+    def record(*_a, **_k):
+        return False
 
 # A path is only worth a git query when the command actually deletes it. `rm` inside a quoted
 # string, a variable name ending in "rm", or `git rm` itself must not match.
@@ -72,6 +82,7 @@ def main():
     if not hits:
         return 0
 
+    record("tracked-rm", "block", command)
     print("BLOCKED: rm on a git-tracked file. Use git rm, which records the deletion in the index:",
           file=sys.stderr)
     print(f"  git rm {' '.join(shlex.quote(p) for p in hits)}", file=sys.stderr)
