@@ -75,6 +75,28 @@ UNATTENDED_NOTE = (
 )
 
 
+def unquoted(cmd):
+    """The command with redirect characters inside quotes neutralised.
+
+    `grep "^>" file` reads a skill and writes nothing, but the redirect pattern found the
+    `>` and the gate asked on a diff. A redirect operator only redirects outside quotes, so
+    `<` and `>` are blanked there. Only those two: blanking the whole quoted run would hide
+    `python3 -c "Path(...).write_text(x)"`, which is a real write carried entirely inside
+    quotes, and that call must still be caught.
+    """
+    out, quote = [], None
+    for c in cmd:
+        if quote:
+            out.append(" " if c in "<>" else c)
+            if c == quote:
+                quote = None
+        else:
+            if c in "'\"":
+                quote = c
+            out.append(c)
+    return "".join(out)
+
+
 def is_skill(path):
     """A SKILL.md anywhere, plus its sibling reference files under the same skill."""
     p = str(path)
@@ -117,7 +139,7 @@ def main(event=None, env=None):
 
     if tool == "Bash":
         cmd = ti.get("command") or ""
-        if not (SKILL_IN_CMD.search(cmd) and WRITE_PRIMITIVE.search(cmd)):
+        if not (SKILL_IN_CMD.search(cmd) and WRITE_PRIMITIVE.search(unquoted(cmd))):
             return 0
         emit(*decision(ASK_BASH, env))
         return 0
@@ -203,6 +225,10 @@ def selftest():
         "git checkout .claude/skills/writing/SKILL.md",
         # a redirected stderr is not a write to the skill it reads
         "node check.js .claude/skills/a/SKILL.md 2>&1 | tail -3",
+        # a `>` or `<` inside quotes is data: diffing two skill versions writes nothing
+        'diff a/SKILL.md b/SKILL.md | grep "^>" | head -10',
+        "diff a/SKILL.md b/SKILL.md | grep '^<' | head -10",
+        'grep ">" .claude/skills/a/SKILL.md',
     ]:
         assert bash(cmd) is None, cmd
 
@@ -211,7 +237,7 @@ def selftest():
     v, t = decision("R", {"CLAUDE_UNATTENDED": "1"})
     assert v == "deny" and UNATTENDED_NOTE in t
 
-    print("selftest ok: 7 path + 2 name + 7 tool + 22 shell + 3 verdict")
+    print("selftest ok: 7 path + 2 name + 7 tool + 25 shell + 3 verdict")
     return 0
 
 
