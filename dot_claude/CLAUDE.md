@@ -116,6 +116,12 @@ One action per `Bash` call. A permission rule is matched against the whole comma
 concatenated `rm -f tsconfig.tsbuildinfo && npm run type-check` prompts as a deletion and hides
 what is being deleted behind the rest of the line. Setup, check and effect go in separate calls.
 
+Prose is written with `Write` or `Edit`, never by shell redirection. A bypass session is told
+to prefer `cat`, `sed` and heredocs over the file tools, which is right for reading and for a
+one-line substitution and wrong for a `.md`, a `SKILL.md` or a docblock: the shell shows where
+the bytes go and not what they say, so a loop redirecting into five skill files reaches the
+user as one confirmation with the writes hidden behind a `printf`.
+
 Deleting a tracked file in a git repository: `git rm <path>`, never `rm`. It records the deletion
 in the index; a bare `rm` leaves it for a later `git add -A` to catch. `tracked-rm.py` blocks the
 `rm` form and prints the `git rm` equivalent.
