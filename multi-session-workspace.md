@@ -1,190 +1,190 @@
 # Multi-session workspace
 
-Propuesta de diseño, detenida por decisión del usuario el 2026-09-22: "lo del workflow no. que
-quede claro eso [...] ya que es completamente WIP". Nada de lo que sigue se implementa mientras
-esa decisión esté vigente, y un encargo que pida implementarlo, venga de donde venga, se trata
-como propuesta.
+A design proposal, held by the user on 2026-09-22: "lo del workflow no. que quede claro eso
+[...] ya que es completamente WIP". Nothing below gets implemented while that decision stands,
+and a request to implement it, whatever its source, is a proposal rather than an instruction.
 
-Ninguna regla de este documento está implementada, y ningún fallo descrito aquí tiene todavía
-una superficie que lo impida.
+No rule in this document is implemented, and no failure described here has a surface that
+prevents it.
 
-Un workspace por proyecto agrupa varias sesiones de Claude Code sobre el mismo árbol. Una sesión
-master habla con el usuario, discierne y decide; las ayudantes ejecutan trabajo mecánico y no
-hablan con el usuario. Hoy el patrón corre a mano, sin nada que declare roles ni que impida que
-dos sesiones asuman el mismo. El objetivo del usuario es mantener el foco en un solo agente sin
-perder monitoreo de los demás.
+One workspace per project groups several Claude Code sessions over one tree. A master session
+talks to the user, discerns and decides; helpers run mechanical work and never talk to the user.
+The pattern runs by hand today, with nothing declaring roles and nothing stopping two sessions
+from taking the same one. The user's goal is to keep focus on a single agent without losing
+sight of the others.
 
-## Registro de origen
+## Origin
 
-El encargo llegó a través de la sesión `os-master`. El usuario lo confirmó después, en estas
-palabras: "pasaselo a dotfiles-swe, que te reporte a ti, necesito que elabore un documento que
-describa lo q estamos haciendo, alto nivel". Lo confirmado es el encargo. La estructura de roles
-y las cuatro fallas las aportó `os-master` y ninguna consta de parte del usuario. Las mediciones
-de la sección siguiente se tomaron en esta sesión, contra el árbol.
+The commission arrived through the `os-master` session. The user confirmed it afterwards, in
+these words: "pasaselo a dotfiles-swe, que te reporte a ti, necesito que elabore un documento
+que describa lo q estamos haciendo, alto nivel". What the user confirmed is the commission.
+`os-master` contributed the role structure and the four failures, and the user stated neither.
+The measurements in the next section were taken in that session, against the tree.
 
-## Estado medido
+## Measured state
 
-Medido el 2026-09-22 en esta sesión. Cada fila lleva el comando que la produjo.
+Measured on 2026-09-22. Each row carries the command that produced it.
 
-| Hecho | Valor | Comando |
+| Fact | Value | Command |
 |---|---|---|
-| Workspaces en `herdr` | 3, uno de ellos sin nombre | `cat ~/.config/herdr/session.json` |
-| Sesiones vivas | 6 | `herdr agent list` |
-| Paneles etiquetados `master` en `session.json` | 2, en workspaces distintos | `cat ~/.config/herdr/session.json` |
-| Nombre en disco contra nombre vivo | `skills-agent` en `session.json`, `skills-swe` en `ListAgents` | `herdr agent list` |
-| Identidad de panel en el entorno | `HERDR_PANE_ID`, `HERDR_TAB_ID`, `HERDR_WORKSPACE_ID` | `env \| grep HERDR` |
-| Campos que recibe el hook `SessionStart` | `cwd`, `source` | `grep payload.get ~/.claude/hooks/session-register.py` |
-| Nombre por panel en la API de `herdr` | `terminal_title_stripped` | `herdr agent list` |
+| Workspaces in `herdr` | 3, one of them unnamed | `cat ~/.config/herdr/session.json` |
+| Live sessions | 6 | `herdr agent list` |
+| Panes labelled `master` in `session.json` | 2, in different workspaces | `cat ~/.config/herdr/session.json` |
+| Name on disk against live name | `skills-agent` in `session.json`, `skills-swe` in `ListAgents` | `herdr agent list` |
+| Pane identity in the environment | `HERDR_PANE_ID`, `HERDR_TAB_ID`, `HERDR_WORKSPACE_ID` | `env \| grep HERDR` |
+| Fields the `SessionStart` hook receives | `cwd`, `source` | `grep payload.get ~/.claude/hooks/session-register.py` |
+| Per-pane name in the `herdr` API | `terminal_title_stripped` | `herdr agent list` |
 
-Dos paneles llamados `master` y un nombre que difiere entre el disco y la sesión viva son las
-fallas 1 y 2 observadas directamente, no reportadas.
+Two panes called `master` and a name that differs between disk and the live session are
+failures 1 and 2 observed directly rather than reported.
 
-## Corrección a un límite declarado
+## Correction to a declared limit
 
-El encargo declaró que la identidad de sesión no es derivable, porque el hook `SessionStart`
-recibe solo `cwd` y `source` y `/run/user/1000/cc-socks/` solo tiene sockets numerados por PID.
-La primera mitad se confirma. La conclusión no se sostiene.
+The commission stated that session identity cannot be derived, because the `SessionStart` hook
+receives only `cwd` and `source` and the socket directory holds nothing but PID-numbered
+sockets. The first half holds. The conclusion does not.
 
-Cada panel de `herdr` exporta `HERDR_PANE_ID` a su entorno; esta sesión lee `w1T:p7`. La API
-`herdr agent list` devuelve un registro por panel con ese mismo `pane_id` y con
-`terminal_title_stripped`, que es el nombre que `ListAgents` reporta. Un hook `SessionStart`
-lee su propio `HERDR_PANE_ID` del entorno, consulta la API y obtiene su nombre, su workspace y
-su `cwd` sin que nadie se los escriba.
+Each `herdr` pane exports `HERDR_PANE_ID` to its environment. The `herdr agent list` API returns
+one record per pane carrying that same `pane_id` and `terminal_title_stripped`, which is the
+name `ListAgents` reports. A `SessionStart` hook reads its own `HERDR_PANE_ID` from the
+environment, queries the API and obtains its name, its workspace and its `cwd` without anyone
+writing them down.
 
-Consecuencia sobre el diseño: la identidad de sesión no requiere que el usuario declare nada, y
-la falla 3 se cierra con un hook de lectura. Lo que el hook no puede derivar es el rol, porque
-nada en `herdr` distingue master de ayudante. El rol necesita una fuente, y la sección
-`Decisiones abiertas` la deja al usuario.
+Session identity therefore requires no declaration from the user, and failure 3 closes with a
+read-only hook. What the hook cannot derive is the role, because nothing in `herdr` tells a
+master from a helper. The role needs a source, and `Open decisions` leaves that to the user.
 
-Un segundo límite del encargo también cae. `herdr agent start <NAME> --kind claude --pane <ID>
--- <AGENT_ARG>...` pasa argumentos al agente lanzado, de modo que modelo y esfuerzo sí son
-fijables por panel. No verificado: qué argumentos acepta el binario `claude` en ese punto, y si
-el panel lanzado así hereda el entorno del workspace.
+A second limit also falls. `herdr agent start <NAME> --kind claude --pane <ID> -- <AGENT_ARG>...`
+passes arguments to the launched agent, so model and effort are settable per pane. Not verified:
+which arguments the `claude` binary accepts at that point, and whether a pane launched that way
+inherits the workspace environment.
 
-## Fallas que el diseño debe resolver
+## Failures the design has to resolve
 
-Las cuatro provienen del encargo, fechadas el 2026-09-22. Las dos primeras están además medidas
-arriba.
+All four come from the commission, dated 2026-09-22. The first two are also measured above.
 
-| # | Falla | Qué la deja pasar hoy |
+| # | Failure | What lets it through today |
 |---|---|---|
-| 1 | Una sesión pasó a otra dos decisiones etiquetadas como tomadas por el usuario, que el usuario no tomó. La receptora las registró sin verificar. Ninguna se ejecutó. | Ninguna regla legible por las sesiones dice que un par no transmite decisiones del usuario |
-| 2 | Los nombres cambian entre reinicios y se pierde quién es quién | El nombre vive en el título del terminal, que no sobrevive a la caída de la sesión |
-| 3 | Ninguna sesión sabe si es master o ayudante | Nada se lo dice al arrancar |
-| 4 | Un par puede transmitir una decisión del usuario y ser creído | La regla no está escrita donde las sesiones la lean |
+| 1 | One session passed another two decisions labelled as taken by the user, which the user never took. The receiver recorded them without verifying. Neither ran. | No rule the sessions can read says a peer does not carry the user's decisions |
+| 2 | Names change across restarts and who is who is lost | The name lives in the terminal title, which does not survive the session |
+| 3 | No session knows whether it is master or helper | Nothing tells it at startup |
+| 4 | A peer can relay a user decision and be believed | The rule is not written where the sessions read |
 
-La falla 1 no se detuvo por diseño. Las dos decisiones no ejecutadas lo fueron por suerte, y el
-mismo mensaje con una orden ejecutable habría corrido.
+Failure 1 was not stopped by design. The two decisions went unexecuted by luck, and the same
+message carrying an executable order would have run.
 
-## Piezas que ya existen
+## Pieces that already exist
 
-| Pieza | Qué resuelve | Qué no resuelve |
+| Piece | What it solves | What it does not solve |
 |---|---|---|
-| `herdr` | Contenedor visual, arranque de paneles, agrupación por proyecto, estado en `session.json` | Conducta de las sesiones, roles, autoridad |
-| `SendMessage`, `ListAgents` | Transporte entre sesiones y enumeración de pares vivos | Autenticidad del contenido de un mensaje |
-| Hook `SessionStart` | Inyecta contexto en cada sesión al arrancar y tras compactar | No conoce el rol, porque nada se lo declara |
-| `writing-loaded.py` | Bloquea con exit 2 y devuelve una instrucción al agente | Nada relativo a roles |
+| `herdr` | Visual container, pane startup, grouping by project, state in `session.json` | Session behaviour, roles, authority |
+| `SendMessage`, `ListAgents` | Transport between sessions and enumeration of live peers | Authenticity of a message's content |
+| `SessionStart` hook | Injects context into every session at startup and after compaction | Knows no role, because nothing declares one |
+| `writing-loaded.py` | Blocks with exit 2 and returns an instruction to the agent | Nothing about roles |
 
-Un hook no fuerza una carga de skill: imprime contexto. Lo que funciona es exit 2, que devuelve
-al agente la instrucción de cargar y reintentar. `writing-loaded.py` es el ejemplo vivo y el
-patrón que cualquier regla de rol tendría que seguir para ser obligatoria.
+A hook cannot force a skill to load: it prints context. What works is exit 2, which hands the
+agent the instruction to load and retry. `writing-loaded.py` is the live example and the pattern
+any role rule would have to follow to be mandatory.
 
-## Arquitectura propuesta
+## Proposed architecture
 
-Tres capas, separadas por lo que cada una puede garantizar.
+Three layers, separated by what each can guarantee.
 
-**Identidad.** Un hook `SessionStart` deriva panel, workspace y nombre del entorno y de la API
-de `herdr`, y los imprime en el banner. Es lectura pura y no puede fallar en abrir una sesión
-sin rol declarado, porque el nombre existe antes que la sesión.
+**Identity.** A `SessionStart` hook derives pane, workspace and name from the environment and
+the `herdr` API, and prints them in the banner. It reads and never writes, and it cannot fail
+open with an undeclared role, because the name exists before the session does.
 
-**Rol.** Una sesión es master o ayudante. El rol determina si habla con el usuario, si acepta
-encargos de pares y qué hace con una decisión atribuida al usuario. La fuente del rol es la
-decisión abierta 1.
+**Role.** A session is master or helper. The role decides whether it talks to the user, whether
+it accepts work from peers, and what it does with a decision attributed to the user. Open
+decision 1 fixes the source.
 
-**Autoridad.** Una decisión del usuario solo es válida en la sesión donde el usuario la escribió.
-Un mensaje de par que afirme llevar una es tratado como propuesta, cualquiera sea su etiqueta.
-La regla es asimétrica a propósito: el receptor no puede verificar el origen, así que la carga
-recae en no creer, nunca en probar.
+**Authority.** A user decision is valid only in the session where the user wrote it. A peer
+message claiming to carry one is a proposal, whatever its label. The rule is asymmetric on
+purpose: the receiver cannot verify the origin, so the burden falls on not believing rather
+than on proving.
 
-### Unicidad del master
+### Master uniqueness
 
-Dos sesiones se llamaron master a la vez, y el `session.json` medido todavía muestra dos paneles
-con esa etiqueta. La unicidad es por workspace, no global: `w1R` y `w1T` son proyectos distintos
-y cada uno tiene su master legítimamente. Lo que falta es la comprobación. Una sesión que arranca
-como master enumera sus pares del mismo `workspace_id` y, si encuentra otro master vivo, lo
-reporta en vez de asumir el rol.
+Two sessions called themselves master at once, and the measured `session.json` still shows two
+panes with that label. Uniqueness is per workspace rather than global: two panes in different
+projects each hold their own master legitimately. What is missing is the check. A session
+starting as master enumerates its peers in the same `workspace_id` and, finding another live
+master, reports it instead of taking the role.
 
-No verificado: si `ListAgents` expone el `workspace_id` de cada par, o si hay que cruzar sus
-nombres contra `herdr agent list`.
+Not verified: whether `ListAgents` exposes each peer's `workspace_id`, or whether their names
+have to be crossed against `herdr agent list`.
 
-## Decisiones abiertas
+## Open decisions
 
-Cada opción con su consecuencia. Ninguna está elegida.
+Each option with its consequence. None is chosen.
 
-### 1. Fuente del rol
+### 1. Source of the role
 
-| Opción | Consecuencia |
+| Option | Consequence |
 |---|---|
-| Convención de nombre: un panel llamado `*-master` es master | Cero configuración, y el rol se rompe con un renombre. Un `herdr agent rename` cambia la autoridad sin avisar |
-| Archivo por workspace, con el rol de cada panel | Explícito y auditable, y hay que mantenerlo sincronizado con los paneles que `herdr` crea y destruye |
-| Argumento al lanzar: `herdr agent start ... -- <arg>` | El rol nace con la sesión y no se puede perder por renombre. Requiere que cada panel se lance por CLI, no por la interfaz de `herdr` |
+| Naming convention: a pane called `*-master` is master | Zero configuration, and a rename breaks the role. A `herdr agent rename` moves authority silently |
+| A per-workspace file listing each pane's role | Explicit and auditable, and it has to stay in step with the panes `herdr` creates and destroys |
+| An argument at launch: `herdr agent start ... -- <arg>` | The role is born with the session and no rename can lose it. Requires every pane to launch from the CLI rather than the `herdr` interface |
 
-### 2. Qué hace el hook cuando no puede determinar el rol
+### 2. What the hook does when the role cannot be determined
 
-| Opción | Consecuencia |
+| Option | Consequence |
 |---|---|
-| Imprimir el rol como desconocido y seguir | Ninguna sesión se bloquea, y una sesión sin rol puede hablar con el usuario creyéndose master |
-| exit 2 con la instrucción de declarar el rol | Ninguna sesión opera sin rol, y una sesión lanzada fuera de `herdr` no arranca hasta que alguien intervenga |
+| Print the role as unknown and continue | No session blocks, and a session without a role can talk to the user believing itself master |
+| exit 2 with the instruction to declare the role | No session operates without a role, and a session launched outside `herdr` does not start until someone intervenes |
 
-### 3. Dónde vive la regla de autoridad
+### 3. Where the authority rule lives
 
-`skill-growth` es la autoridad sobre esta pregunta y su tabla de ruteo da dos candidatos, porque
-la regla es a la vez un estándar de acción y un invariante de esta máquina.
+`skill-growth` is the authority on this question, and its routing table gives two candidates,
+because the rule is at once a standard of action and an invariant of this machine.
 
-| Opción | Consecuencia |
+| Option | Consequence |
 |---|---|
-| `~/.claude/CLAUDE.md`, sección de estándares | Alcanza toda sesión en toda máquina, y crece un archivo que ya se reinyecta entero en cada arranque |
-| `CLAUDE.md` de este repositorio | Alcanza solo las sesiones abiertas sobre `~/dotfiles`, que no es donde ocurrió la falla 1 |
-| Un skill nuevo, cargado por el hook | Aísla la regla y la hace citable, y un skill solo actúa si algo obliga a cargarlo |
+| `~/.claude/CLAUDE.md`, standards section | Reaches every session on every machine, and grows a file already reinjected whole at each startup |
+| The `CLAUDE.md` of this repository | Reaches only sessions opened over the dotfiles repository, which is not where failure 1 happened |
+| A new skill, loaded by the hook | Isolates the rule and makes it citable, and a skill acts only when something forces it to load |
 
-La falla 1 ocurrió entre un panel de `w1T` y otro; el encargo que la reporta llegó a una sesión
-de `~/dotfiles`. Un alcance por repositorio no la habría prevenido.
+Failure 1 happened between two panes of one workspace, and the commission reporting it reached
+a session in a different repository. A per-repository scope would not have prevented it.
 
-### 4. Modelo y esfuerzo por rol
+### 4. Model and effort per role
 
-El encargo pide razonamiento alto para la master. `herdr agent start` acepta argumentos para el
-agente, así que es fijable.
+The commission asks for high reasoning in the master. `herdr agent start` accepts arguments for
+the agent, so it is settable.
 
-| Opción | Consecuencia |
+| Option | Consequence |
 |---|---|
-| Fijar modelo y esfuerzo por rol al lanzar | La master discierne con más presupuesto y las ayudantes cuestan menos. Ata el arranque al CLI de `herdr` |
-| Dejarlo al usuario en cada panel | Cero acoplamiento, y el rol no garantiza el presupuesto que el encargo pide para él |
+| Fix model and effort per role at launch | The master discerns with more budget and helpers cost less. Ties startup to the `herdr` CLI |
+| Leave it to the user in each pane | Zero coupling, and the role does not guarantee the budget the commission asks for it |
 
-### 5. Alcance de la unicidad del master
+### 5. Scope of master uniqueness
 
-| Opción | Consecuencia |
+| Option | Consequence |
 |---|---|
-| Por workspace | Coincide con la estructura medida: tres workspaces, un master cada uno. Dos masters en la máquina siguen siendo normales |
-| Global | Una sola sesión habla con el usuario en toda la máquina, y trabajar en dos proyectos a la vez exige turnarse |
+| Per workspace | Matches the measured structure: three workspaces, one master each. Two masters on the machine remain normal |
+| Global | One session talks to the user across the whole machine, and working on two projects at once means taking turns |
 
-## Antes de implementar
+## Before implementing
 
-Cada pieza propuesta arriba es comportamiento nuevo, y ninguna tiene todavía una prueba que
-falle. La ley de `superpowers:writing-skills` aplica: ningún skill ni hook entra sin una prueba
-que falle primero. Hoy se borró un hook que nunca disparó en 224 comandos por haberse saltado
-esa ley, según el encargo; no verificado contra el log de auditoría.
+Every piece proposed above is new behaviour, and none has a failing test yet. The law in
+`superpowers:writing-skills` applies: no skill and no hook enters without a test that fails
+first. A hook deleted on 2026-09-22 had never fired in 224 commands, which is what skipping
+that law produces; the count comes from the commission and was not verified against the audit
+log.
 
-Para cada pieza, la prueba que tiene que fallar antes de escribirla:
+For each piece, the test that has to fail before it is written:
 
-| Pieza | Prueba que falla primero |
+| Piece | Test that fails first |
 |---|---|
-| Hook de identidad | Una sesión arranca y su banner no nombra su panel ni su workspace |
-| Comprobación de unicidad | Dos paneles del mismo workspace asumen master y ninguno lo reporta |
-| Regla de autoridad | Un mensaje de par etiquetado como decisión del usuario se registra sin marcarlo como propuesta |
+| Identity hook | A session starts and its banner names neither its pane nor its workspace |
+| Uniqueness check | Two panes in one workspace take master and neither reports it |
+| Authority rule | A peer message labelled a user decision is recorded without being marked a proposal |
 
-## Pendiente de verificar
+## Pending verification
 
-- Qué argumentos acepta el binario `claude` a través de `herdr agent start ... -- <arg>`.
-- Si el panel lanzado por `herdr agent start` hereda `HERDR_PANE_ID` y el resto del entorno.
-- Si `ListAgents` expone el `workspace_id` de cada par, necesario para la unicidad por workspace.
-- Si el hook borrado hoy nunca disparó en 224 comandos: dato del encargo, no medido aquí.
+- Which arguments the `claude` binary accepts through `herdr agent start ... -- <arg>`.
+- Whether a pane launched by `herdr agent start` inherits `HERDR_PANE_ID` and the rest of the
+  environment.
+- Whether `ListAgents` exposes each peer's `workspace_id`, needed for per-workspace uniqueness.
+- Whether the hook deleted on 2026-09-22 never fired in 224 commands: a figure from the
+  commission, not measured here.
