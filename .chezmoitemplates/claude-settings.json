@@ -117,6 +117,15 @@
         "matcher": "Bash"
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/hooks/no-add-all.py"
+          }
+        ]
+      },
+      {
         "hooks": [
           {
             "command": "python3 ~/.claude/hooks/tracked-rm.py",
