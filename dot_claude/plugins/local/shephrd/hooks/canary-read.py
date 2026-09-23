@@ -55,6 +55,9 @@ def age_rows(records, now=None, stale=None):
             "age": age,
             "at_iso": r.get("at_iso") or "",
             "session_id": r.get("session_id") or "",
+            "repo": Path(r.get("repo") or "").name,
+            "branch": r.get("branch") or "",
+            "worktree": bool(r.get("worktree")),
         })
     rows.sort(key=lambda x: -x["age"])
     return rows
@@ -82,9 +85,15 @@ def main():
         print(f"no beats {where}. A pane with no beat has taken no turn since the hook was installed.")
         return
 
-    print(f"{'name':16} {'pane':10} {'role':7} {'last turn':>10}  master")
+    print(f"{'name':16} {'pane':10} {'role':7} {'last turn':>10}  {'where':28} master")
     for r in rows:
-        print(f"{r['name']:16} {r['pane']:10} {r['role']:7} {human(r['age']):>10}  {r['master']}")
+        where = r["repo"] or ""
+        if r["branch"]:
+            where += f"({r['branch']})"
+        if r["worktree"]:
+            where += " wt"
+        print(f"{r['name']:16} {r['pane']:10} {r['role']:7} {human(r['age']):>10}  "
+              f"{where[:28]:28} {r['master']}")
 
     print("\nOldest beat first. An old beat is not a fault on its own: a pane nobody has asked")
     print("anything is correctly quiet. It is a fault when something was sent and the beat did")
@@ -123,7 +132,22 @@ def selftest():
     unnamed = age_rows([{"session_id": "y", "at": now, "pane": "w1T:p1"}], now=now)
     assert unnamed[0]["name"] == "w1T:p1"
 
-    print("canary-read selftest: 13 checks passed")
+    # Location rides on the beat. The repository shows as its basename, since the full path
+    # would push the master off the line and carry the home directory with it.
+    loc = age_rows([{
+        "session_id": "z", "at": now, "pane": "w1T:p2",
+        "repo": "/home/x/Work/taylor", "branch": "bugfix/parser", "worktree": True,
+    }], now=now)[0]
+    assert loc["repo"] == "taylor", loc
+    assert loc["branch"] == "bugfix/parser"
+    assert loc["worktree"] is True
+
+    # A beat written before these fields existed reads as empty rather than failing.
+    old = age_rows([{"session_id": "w", "at": now, "pane": "w1T:p3"}], now=now)[0]
+    assert old["repo"] == ""
+    assert old["worktree"] is False
+
+    print("canary-read selftest: 18 checks passed")
 
 
 if __name__ == "__main__":

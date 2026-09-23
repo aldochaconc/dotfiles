@@ -41,10 +41,29 @@ register.
 | Elegant variation | `the repository`, then `the data layer`, then `the store`, for one class | none where the referent is an identifier | repeat the identifier |
 | Nominalization with copula | `the implementation is a reflection of the design`; a chained `permite` plus infinitive | a domain term that is nominal | the actor as subject, the action as verb |
 | Circumlocution | `a nivel de`, `en el marco de`, `en lo que respecta a` for a preposition | a phrase that names a layer the sentence is actually about | the preposition: `en` |
-| Mixed language | a specimen, term or value in one language inside a text committed to another | a code identifier, a glossary entry, a quotation reproduced verbatim | one language per text, specimens included |
+| Mixed language | a specimen, term or value in one language inside a text committed to another | a code identifier, a glossary entry, a quotation reproduced verbatim, a section whose language a template fixes | one language per text, specimens included |
 | Mixed register | a text asserts a target and a measurement of the tree without marking which is which, so a reader cannot tell a promise from a mistake | a target declared as one, and a measurement carrying the command that produced it | mark the register per section, or split the two into separate documents |
 
 ## Pull request body
+
+The repository fixes the skeleton and this skill governs the prose inside it. Read
+`.github/pull_request_template.md` before writing, and where one exists its sections, their
+order, their headings and their language are what the body has. Nothing below overrides it.
+
+Measured on 2026-09-23: four pull requests from one stack, and the only body missing all five
+of its repository's sections was the only one written from the three parts below. It carried
+none of the checkboxes and not the section the automated reviewers read.
+
+A template can fix the language per section, and that is not a register defect: one repository
+writes four sections in Spanish and a fifth in English because Codex and Graphite parse it. The
+`Mixed language` row governs a text choosing its own language, never a section the repository
+declared.
+
+What this skill still decides inside a templated body: the register of every sentence, a table
+where facts are parallel, a count that was measured against the tree, and the absence of the
+rows above.
+
+The three parts are the skeleton when the repository declares none.
 
 The title is the imperative alone: no gloss after a comma, no gerund trailing it. Three parts,
 each optional only when the diff makes it obvious:
@@ -54,7 +73,7 @@ each optional only when the diff makes it obvious:
 2. How to verify it: the command run or the check to run, not a restated diff.
 3. What is left open, as a labeled list: a risk, a follow-up, a `not verified: <what>`.
 
-No "context and motivation" heading, no restated title as a first sentence, no closing line
+With no template: no "context and motivation" heading, no restated title as a first sentence, no closing line
 grading the change.
 
 Nothing names the agent, the session, the machine or the person: a `Claude-Session` trailer, a
@@ -199,4 +218,5 @@ a row nobody closes shows its age at every start.
 | 2026-09-22 | spoken reply | gap | Second occurrence in one session of the spoken mode taken as licence for conversational prose. The first was answered by restating the register; the defect returned in the next spoken turn, so restating it is not the repair. | the delivery mode fixes the shape and never the register: `Spoken reply` above names what changes, and nothing in it relaxes a row |
 | 2026-09-22 | commit body | gap | Two commit messages shipped to the user with a `Claude-Session` line carrying the session URL, appended because an environment reminder asks for it. The same family was corrected on 2026-09-20 (`Co-Authored-By`), and that correction produced a log row and no rule, so the second occurrence had nothing to fail against. The register governs how a sentence reads and never what a text is forbidden to contain, which is why neither occurrence matched a row. | gap: no gate asks what a text must not carry. A1 and A2 verify that a count and a path are correct, not that a path belongs in the text at all |
 | 2026-09-22 | reply | gap | A coordinating session put a decision to the user as numbered prose options instead of `AskUserQuestion`. `Spoken reply` said what changes inside the spoken surface and never how a session tells which surface is active, so the absence of a `/voice` read as permission rather than as the default. A first repair tested how the user's message arrived, which is wrong for the same reason: dictation types into the transcript and leaves the reply on screen, so the input channel says nothing about the output one. | the surface is decided by where the reply comes out: `AskUserQuestion` unless `/voice` is visible above with nothing typed after it |
+| 2026-09-23 | pull request body | gap | `Pull request body` prescribed a three-part skeleton and a forbidden heading, which competed with the repository's own template rather than yielding to it. Measured across four pull requests from one stack: the three written by a session that read `.github/pull_request_template.md` carried all five of its sections, and the one written from this skill carried none, including the section automated reviewers parse. The section also forbade the exact heading the template opens with, and `Mixed language` flagged a template that fixes a section's language by design. | the repository fixes the skeleton and this skill governs the prose inside it; the three parts apply only where no template exists |
 | 2026-09-21 | doc | B2 | An audit reported eighteen defects inside a section that restated three earlier sections in a different key, and repaired every one of them. B2 ("whether the document should exist") was never asked of the section, because the audit procedure starts at reading the text and naming register rows. Repairing a redundant section's prose makes it read well enough to survive. | in an audit, ask B2 and B6 of each section before naming a single register row in it; a section whose facts all stand elsewhere is reported as redundant, not repaired |

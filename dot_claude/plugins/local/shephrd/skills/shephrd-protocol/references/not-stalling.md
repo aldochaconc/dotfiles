@@ -74,3 +74,34 @@ context with what already exists in the other pane.
 That decision is what keeps the other slaves correct. A choice the user makes in one pane can
 contradict the assumption another pane is working under, and the master is the only session
 positioned to see both.
+
+## Work found is work routed
+
+A finding is not an assignment to whoever found it. A master that repairs what it notices fills
+its own context with work any pane could have done, and the context it spends is the one holding
+the map of every other pane.
+
+Two questions decide where a finding goes, in this order.
+
+| Question | Answer | Where it goes |
+|---|---|---|
+| Was a pane already working on this? | yes | back to that pane, as one message |
+| Does the repair take more than a turn? | yes | a new pane opened for it, with `/spawn-agent` |
+| Neither | | the master does it |
+
+The first question outranks the second. A pane that was building the thing holds why it is the
+way it is, and a second pane repairing it in parallel produces two versions of one file. Handing
+it back costs one message; discovering the conflict costs both attempts.
+
+Measured on 2026-09-23: a master found that one pull request body did not follow the
+repository's template, offered the user three options, and put itself first. The session that
+wrote the other three bodies correctly had just restarted with fresh context and was not
+offered at all.
+
+What makes this hard to see is that the finding arrives already understood. The master has read
+the file and knows the repair, so doing it feels shorter than explaining it. The cost that is not
+felt is the context, which is spent for the rest of the session.
+
+A finding routed to a pane goes with what the pane needs to act: what is wrong, where, what was
+measured, and what the repair is if it is known. A message saying only that something is wrong
+makes that pane re-derive what the master already has.

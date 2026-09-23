@@ -3,16 +3,23 @@
 Every row was measured on 2026-09-22 in this machine's workspaces. What each one records is a
 failure that a plausible command produces.
 
-## Two name records
+## Three name records
 
-herdr keeps a name per pane. Claude Code registers its own session name, which is what
-`ListAgents` reports and what `SendMessage` addresses. They are separate records and they
-disagree by default.
+herdr keeps an agent name per pane and a label per pane, and Claude Code registers its own
+session name. Three records, written by three commands, disagreeing by default.
 
-| Command | Which record it writes |
-|---|---|
-| `claude -n <name>` | the Claude side, and the terminal title with it |
-| `herdr agent rename <pane> <name>` | herdr's side alone |
+| Command | Which record it writes | Read by |
+|---|---|---|
+| `claude -n <name>` | the Claude side, and the terminal title with it | `ListAgents`, `SendMessage` |
+| `herdr agent rename <pane> <name>` | herdr's agent record | `herdr agent list` |
+| `herdr pane rename <pane> <name>` | the pane label | the sidebar, `session.json`, `/shephrd` |
+
+Only the first is an address. The other two are what a person reads, and a pane missing its
+label shows as a number: measured on 2026-09-23, two panes carried none and one carried
+`skills-agent` while its session answered to `skills-swe`.
+
+`herdr tab rename <tab> <name>` is a fourth, one per workspace rather than per pane. A tab whose
+`label` equals its own number was never named, which is how all three tabs read on that date.
 
 Running the rename by itself after a restart leaves the pane reading correct in
 `herdr agent list` while peers still address a generated name.
