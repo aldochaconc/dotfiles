@@ -37,6 +37,12 @@ editing all three.
 - Deleting a file already applied to `$HOME`: `chezmoi destroy <target>` removes it from the
   source state, from `$HOME` and from chezmoi's state in one step. A bare `rm` on an applied
   file is undone by the next `chezmoi apply`, which restores it from the source state.
+- Moving a file within the source leaves the old target behind. `chezmoi apply` writes what the
+  source holds and never removes what it no longer holds, so a `git mv` produces two live copies
+  and the stale one keeps working. Measured on 2026-09-23: six commands moved into a plugin left
+  six files under `~/.claude/commands`, one of them a command whose name had been corrected, and
+  both spellings appeared in the session's command list. `chezmoi destroy` the old target after
+  the move, or delete the directory when the whole tree moved.
 - No secret enters the repo. `~/.claude/settings.json` renders them from the system keyring
   (`chezmoi secret keyring get --service claude --user <name>`).
 - Omarchy's own tree (`/usr/share/omarchy`) is read-only; overrides go in `~/.config`.
