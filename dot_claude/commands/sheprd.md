@@ -7,11 +7,10 @@ allowed-tools: ["Bash", "ListAgents", "SendMessage", "AskUserQuestion"]
 # Shepherd a tree
 
 One session per tree coordinates it: it talks to the user, decides, and asks the other panes for
-mechanical work. This command takes that role, and everything it needs comes from the working
-directory rather than from arguments.
+mechanical work. This command takes that role. It takes no arguments, reads the working
+directory and what was left around it, and asks the user what the reading means.
 
-Run once, right after opening a pane. What follows depends on what the directory turns out to be
-and on whether a session worked this tree before.
+Run once, right after opening a pane.
 
 ## Position
 
@@ -44,8 +43,14 @@ Measured on 2026-09-22: 57 transcripts for one directory, 7 for another.
 
 | Found | Action |
 |---|---|
-| a transcript for this directory | relaunch with `claude -c`, which continues the most recent conversation of this directory |
+| a transcript for this directory | the user is offered the summary of what it was, and chooses to resume it or to start fresh |
 | none | the tree is new to this machine and the session starts from the questions below |
+
+Resuming is offered rather than taken. A transcript proves a session existed here and says
+nothing about whether its thread is the one to continue, so what is shown is the summary from
+the handoff, or the last exchange of the transcript when there is no handoff, and the choice is
+the user's. Starting fresh on a tree that has a transcript is an ordinary answer, not a loss:
+the transcript stays where it is.
 
 The relaunch replaces the session in place: `herdr agent prompt <pane> "/exit"`, wait for the
 pane to leave `herdr agent list`, then `herdr agent start <temp> --kind claude --pane <pane> --
@@ -70,23 +75,47 @@ reported with its label, and starting Claude in it is `/spawn-agent`.
 ## Questions
 
 Every question this command has goes in one `AskUserQuestion` call, answered in one pass. The
-point is starting fast: a session that asks one thing per turn spends four turns before any work
-begins, and the answers do not depend on each other.
+point is starting fast: a session that asks one thing per turn spends three turns before any
+work begins.
 
-Asked only when the tree is new:
+The questions are ordered but not sequential. Question 1 frames the other two and the user reads
+all three before answering any, which is what makes one call enough.
+
+Asked when the tree is new, and when the user chooses to start fresh on a tree that has a
+transcript. A resumed session asks none of them: the thread it continues already carries the
+answers, and asking would be asking the user to repeat what is on disk.
 
 1. What this directory governs, as options built from what Position read. A directory holding
    repositories is offered as coordinating them, as one project among them, or as neither, and
    the options are written from what was found rather than from a fixed list.
 2. What this session is working on. No file answers it, and every later decision reads against it.
-3. Which helpers it needs, by role. Each becomes a `/spawn-agent` call, so asking once opens
-   them all instead of one per turn.
+3. Which helpers it needs. This is the last question because it reads against both answers
+   above, and it is the one with something to show.
 
-Question 1 is first because the other two read against its answer: which helpers make sense
-depends on whether the session coordinates several repositories or works inside one.
+Which helpers make sense depends on whether the session coordinates several repositories or
+works inside one, which is why question 3 comes after question 1 and reads with it.
 
-A tree that is not new asks nothing. The handoff and the transcript carry what the questions
-would have asked, and asking anyway would be asking the user to repeat what is already on disk.
+### Helpers
+
+`~/.config/herdr/session.json` keeps a `label` and a `cwd` per pane, and both survive the pane
+being closed. Measured on 2026-09-22: one workspace held three labelled panes and another held
+one labelled and two unlabelled, all with their directory recorded.
+
+The question therefore shows what was there rather than asking into nothing:
+
+| Offered | Built from |
+|---|---|
+| the panes that were open before, each with its label and directory | the stored panes for this workspace |
+| a name per helper, proposed from the repositories found below this directory | the `find` in Position |
+| a helper the user names and places | typed in, for work no reading predicted |
+| none | starting alone, and `/spawn-agent` opens one later |
+
+A stored pane with no label is offered by its directory, which is what distinguishes it. Its
+name is proposed the same way a new helper's is, since a pane that was never named has nothing
+to restore.
+
+Each answer becomes one `/spawn-agent` call, which is why the question is a multiple selection
+and not a count.
 
 ## Name
 
