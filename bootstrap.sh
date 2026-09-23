@@ -85,6 +85,9 @@ echo "==> claude code: marketplaces, then the plugins that resolve against them"
 # marketplace or a network failure would take the rest of the bootstrap with it under
 # `set -e`, and every step below this one is unrelated to Claude Code.
 while read -r source sparse; do
+  # A local marketplace is written as ~/... so the repository carries no login name. The tilde is
+  # not expanded inside quotes, and `claude plugin marketplace add` would be handed a literal.
+  source="${source/#\~/$HOME}"
   # shellcheck disable=SC2086 # sparse is a list of paths, word splitting is the point
   claude plugin marketplace add "$source" ${sparse:+--sparse $sparse} ||
     echo "WARN: marketplace $source failed; the settings template still declares it" >&2
