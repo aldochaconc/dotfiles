@@ -44,8 +44,11 @@ def age_rows(records, now=None, stale=None):
         age = now - float(r.get("at") or 0)
         if stale is not None and age < stale:
             continue
+        # A pane opened by hand has no HERDR_AGENT_NAME, which is most masters. The pane id
+        # names it instead, since that is what the reader can act on; falling back to the
+        # directory would name several panes the same thing.
         rows.append({
-            "name": r.get("name") or "(unnamed)",
+            "name": r.get("name") or r.get("pane") or "(no pane)",
             "pane": r.get("pane") or "(no pane)",
             "role": "slave" if (r.get("master") or "") else "master",
             "master": r.get("master") or "",
@@ -114,9 +117,13 @@ def selftest():
     # A record with no timestamp is maximally old rather than crashing the read.
     odd = age_rows([{"session_id": "x"}], now=now)
     assert odd[0]["age"] == now
-    assert odd[0]["name"] == "(unnamed)"
+    assert odd[0]["name"] == "(no pane)"
 
-    print("canary-read selftest: 12 checks passed")
+    # A pane with no agent name is named by its pane id, which is what a master looks like.
+    unnamed = age_rows([{"session_id": "y", "at": now, "pane": "w1T:p1"}], now=now)
+    assert unnamed[0]["name"] == "w1T:p1"
+
+    print("canary-read selftest: 13 checks passed")
 
 
 if __name__ == "__main__":

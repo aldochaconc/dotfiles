@@ -47,11 +47,25 @@ def beat(payload, env=None, now=None):
     }
 
 
+def beat_key(record):
+    """The file name a beat is written under.
+
+    A pane is what the reader watches, so the pane id is the key where there is one. Keying by
+    session id instead accumulates a file per session in one pane, and a pane that restarts or
+    compacts gets a new session id: measured on 2026-09-22, the first real run produced two
+    beats six minutes apart for pane w1T:p1, which the reader listed as two panes.
+
+    A session outside a pane keeps its session id, since it has no pane to be confused with.
+    """
+    pane = (record.get("pane") or "").strip()
+    return (pane.replace(":", "-") if pane else record["session_id"]) + ".json"
+
+
 def write(record, directory=None):
-    """Write one record, replacing the previous beat for that session."""
+    """Write one record, replacing the previous beat for that pane."""
     directory = Path(directory) if directory else DIR
     directory.mkdir(parents=True, exist_ok=True)
-    target = directory / f"{record['session_id']}.json"
+    target = directory / beat_key(record)
     tmp = target.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(record))
     tmp.replace(target)
@@ -95,6 +109,11 @@ def selftest():
     assert r2["master"] == ""
     assert r2["pane"] == ""
 
+    # The key is the pane, so a colon does not become a directory separator.
+    assert beat_key(r) == "w1R-p8.json"
+    assert beat_key({"session_id": "s", "pane": ""}) == "s.json"
+    assert beat_key({"session_id": "s"}) == "s.json"
+
     with tempfile.TemporaryDirectory() as d:
         p = write(r, d)
         assert p.exists()
@@ -105,7 +124,17 @@ def selftest():
         assert len(list(Path(d).glob("*.json"))) == 1
         assert not list(Path(d).glob("*.tmp"))
 
-    print("canary selftest: 12 checks passed")
+        # A new session in the same pane replaces the beat rather than adding one. This is the
+        # defect the first real run exposed: a restart or a compaction changes the session id.
+        write(beat({"session_id": "different"}, env, now=3000.0), d)
+        assert len(list(Path(d).glob("*.json"))) == 1
+        assert json.loads(p.read_text())["at"] == 3000.0
+
+        # A session with no pane still gets its own file.
+        write(beat({"session_id": "nopane"}, {}, now=4000.0), d)
+        assert len(list(Path(d).glob("*.json"))) == 2
+
+    print("canary selftest: 19 checks passed")
 
 
 if __name__ == "__main__":
