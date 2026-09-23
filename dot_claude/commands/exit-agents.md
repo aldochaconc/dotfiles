@@ -58,8 +58,8 @@ Per pane, in order. A pane that fails a check is reported and left running.
 
    Otherwise one message asks it to write, before exiting, a file under
    `~/.claude/handoff/<name>-<date>.md` holding what it did, what is unfinished, and what the
-   next session on that tree has to know. That directory is outside chezmoi, which is correct:
-   a summary is machine state and not configuration.
+   next session on that tree has to know. A summary is machine state rather than configuration,
+   so it is written where the machine keeps state and not into any repository.
 
    The directory is `handoff` and not `sessions`, because `~/.claude/sessions` belongs to Claude
    Code, which keeps ten files of its own there named by process id.
