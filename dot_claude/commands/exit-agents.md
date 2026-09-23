@@ -26,16 +26,23 @@ Per pane, in order. A pane that fails a check is reported and left running.
    This session never closes itself. The process running the command is the one that would die,
    and the user closes it.
 
-2. **Wait for the turn to end.** `agent_status` of `working` means the session is mid-operation.
-   `herdr agent wait <pane> --until idle --timeout <ms>` blocks until it settles, and the pane is
-   reported as still working when the timeout is reached rather than cut off.
+2. **Ask before waiting on a working session.** `agent_status` of `working` means the session is
+   mid-operation, and finishing that turn spends context the session will not have afterwards.
+   The choice is the user's, and it is asked with the figures in hand: the pane's name, what
+   `herdr agent read <pane>` shows for `ctx`, `5h` and `7d`, and the two outcomes.
 
-   The turn is never interrupted. A message sent to a working session is queued and delivered
-   when it settles, so nothing is lost by waiting, while an exit mid-turn discards whatever the
-   turn was producing.
+   | Answer | What happens |
+   |---|---|
+   | let it finish | `herdr agent wait <pane> --until idle`, no timeout. The turn runs to its end whatever it costs |
+   | close now | the exit is sent mid-turn and whatever the turn was producing is lost |
 
-   Every wait is bounded. Without `--timeout` the wait is indefinite, and a session that never
-   settles would hold the whole close open.
+   The wait is deliberately unbounded, because a timeout here would decide the same question by
+   expiry that the user just answered. A session reported as `idle` needs no question and no
+   wait.
+
+   The turn is not interrupted to ask: the question goes to the user, not to the session. A
+   message sent to a working session is queued and delivered when it settles, so nothing is lost
+   by waiting.
 
 3. **Check the tree.** `git -C <cwd> status --short` on the session's working directory. This is
    the loss that can be seen from outside without asking anyone, and it is the one that matters:
