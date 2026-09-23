@@ -95,12 +95,12 @@ pane about three fifths of the width.
    read-only.
 
 5. **Record the pair outside the process.**
-   `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/roster.py --write <pane> <name> <master>`.
+   `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py --write <pane> <name> <master>`.
 
    The `--env` of step 2 lives in the pane's process, and a restart replaces that process:
    `herdr agent start` takes no `--env` and creates no pane. Measured on 2026-09-23, two panes
    restarted with their threads intact came back with both variables empty, and a slave read as
-   a master. The roster survives that, and a session with an empty variable reads its own pane
+   a master. The pane registry survives that, and a session with an empty variable reads its own pane
    there before concluding it coordinates itself.
 
 6. **Label the pane.** `herdr pane rename <pane> <name>`, with the same name passed to `-n`.
