@@ -47,6 +47,12 @@ PATTERNS = [
     (re.compile(SEGMENT + r"git\s+checkout\b[^|;&\n]*\s(--\s|\.\s*$|\.$)"), "git checkout over a path"),
     (re.compile(SEGMENT + r"git\s+clean\b[^|;&\n]*-\w*f\w*"), "git clean -f"),
     (re.compile(SEGMENT + r"git\s+stash\s+(drop|clear)\b"), "git stash drop/clear"),
+    # `git restore` is `git checkout -- <path>` in the newer syntax and overwrites the file with
+    # no undo. `--staged` alone only unstages, leaving the working tree intact, so it is the
+    # `git reset HEAD` of that syntax and is not gated. Everything else is: the bare form
+    # defaults to `--worktree`, and `--staged --worktree` together do discard.
+    (re.compile(SEGMENT + r"git\s+restore\b(?![^|;&\n]*--staged(?![^|;&\n]*--worktree))"),
+     "git restore over a path"),
     (re.compile(SEGMENT + r"git\s+push\b[^|;&\n]*(--force\b|--force-with-lease\b|\s-f\b)"), "git push --force"),
 ]
 
@@ -136,6 +142,11 @@ def selftest():
         "git push --force",
         "git push origin main --force-with-lease",
         "git push -f origin main",
+        "git restore src/app.ts",
+        "git restore --worktree -- src/app.ts",
+        "git restore --staged --worktree -- src/app.ts",
+        "git restore --source=HEAD~1 -- src/app.ts",
+        "git restore .",
         'bash -c "git push --force"',
         "sh -c 'git reset --hard'",
         "cd /tmp\ngit push --force",
@@ -156,6 +167,9 @@ def selftest():
         "git push origin main",
         "git status",
         "git log --oneline",
+        # --staged alone unstages and leaves the working tree, so it destroys nothing.
+        "git restore --staged -- src/app.ts",
+        "git restore --staged .",
         # Prose that names a command instead of running one. The hook blocked all of these
         # before the anchor, including an instruction against the command it flagged.
         'herdr agent prompt w1R:p8 "no uses git push --force aqui"',
