@@ -46,7 +46,7 @@ kept for is exactly what the next run does again from disk.
 ## What the protocol requires
 
 Read `shephrd-protocol` before auditing, since it is the standard this measures against. In
-short: every session reports to its master at the end of every turn, a slave sends its blocking
+short: every session reports to its master at the end of every turn, a sheep sends its blocking
 questions to the master rather than to the user, and a master answers what it can rather than
 relaying everything.
 
@@ -88,9 +88,9 @@ any of the text.
 
 2. **Unanswered questions.** A message that asked something, with no reply in the recipient's
    transcript and no reply back in the sender's. Name both sides and how long it has been
-   waiting, since a slave that asked and got nothing is stopped.
+   waiting, since a sheep that asked and got nothing is stopped.
 
-3. **Questions that went the wrong way.** A slave that raised an `AskUserQuestion` instead of
+3. **Questions that went the wrong way.** A sheep that raised an `AskUserQuestion` instead of
    messaging its master. On a pane spawned since version 0.2.0 the hook denies this, so an
    instance means either an older pane or a session whose master is empty.
 

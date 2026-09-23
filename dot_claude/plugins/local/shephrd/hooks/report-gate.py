@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stop: a slave does not end a turn without reporting to its master.
+"""Stop: a sheep does not end a turn without reporting to its master.
 
 Writing a section headed "Report to <master>" reads exactly like reporting, and it is not: the
 text renders in a pane nobody is watching and the master receives nothing. Measured on
@@ -11,7 +11,7 @@ Prose cannot fix this, because the failure is the session believing it already c
 turn does not end. `Stop` with exit 2 returns the reason to the model and the turn continues,
 which is the one moment a missing report can still be sent.
 
-Only a slave is gated. A master reports to nobody, and a session with no `HERDR_AGENT_MASTER`
+Only a sheep is gated. A master reports to nobody, and a session with no `HERDR_AGENT_MASTER`
 ends its turns freely.
 
 The check is whether a `SendMessage` appears in this turn. It does not read who it went to or
@@ -98,7 +98,7 @@ def selftest():
     import tempfile
     from pathlib import Path
 
-    slave = {"HERDR_AGENT_MASTER": "lead"}
+    sheep = {"HERDR_AGENT_MASTER": "lead"}
 
     # A master is never gated.
     assert verdict({}, {})[0] is False
@@ -111,7 +111,7 @@ def selftest():
             '{"type":"assistant","message":{"content":[{"name":"SendMessage"}]}}\n'
         )
         assert sent_this_turn(str(sent)) is True
-        assert verdict({"transcript_path": str(sent)}, slave)[0] is False
+        assert verdict({"transcript_path": str(sent)}, sheep)[0] is False
 
         quiet = Path(d) / "quiet.jsonl"
         quiet.write_text(
@@ -121,14 +121,14 @@ def selftest():
         )
         # The send is from a previous turn, so it does not count for this one.
         assert sent_this_turn(str(quiet)) is False
-        block, reason = verdict({"transcript_path": str(quiet)}, slave)
+        block, reason = verdict({"transcript_path": str(quiet)}, sheep)
         assert block is True
         assert "lead" in reason
         assert "SendMessage" in reason
 
         # A second Stop for the same turn passes, so a session cannot be trapped.
         assert verdict(
-            {"transcript_path": str(quiet), "stop_hook_active": True}, slave
+            {"transcript_path": str(quiet), "stop_hook_active": True}, sheep
         )[0] is False
 
     # An unreadable transcript never blocks.

@@ -43,7 +43,7 @@ matches nothing and prompts on all of it, with the deletion hidden behind the re
 | setup `&&` check `&&` effect | three calls |
 
 What stays prompting is what should. `rm -rf` and `sudo` are listed under `ask` because the user
-reserves those, and a slave inherits that rather than escaping it: a pane running unwatched is a
+reserves those, and a sheep inherits that rather than escaping it: a pane running unwatched is a
 reason to write commands that do not need the prompt, never a reason to route around one. A
 command that genuinely needs the decision goes to the master with the rest.
 
@@ -71,7 +71,7 @@ made that changes the plan.
 The dialogue does not travel. The master needs the state and the decision; a transcript fills its
 context with what already exists in the other pane.
 
-That decision is what keeps the other slaves correct. A choice the user makes in one pane can
+That decision is what keeps the other sheep correct. A choice the user makes in one pane can
 contradict the assumption another pane is working under, and the master is the only session
 positioned to see both.
 

@@ -1,13 +1,13 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.8.0
+version: 0.9.0
 ---
 
 # shephrd protocol
 
-Sessions running in panes form a hierarchy of one master and its slaves. The master talks to the
-user. A slave talks to its master. This skill holds who may do what, and the commands that act on
+Sessions running in panes form a hierarchy of one master and its sheep. The master talks to the
+user. A sheep talks to its master. This skill holds who may do what, and the commands that act on
 panes live beside it as `/spawn-agent`, `/shephrd`, `/unattended`, `/restart-agents`,
 `/exit-agents` and `/agents-budget`.
 
@@ -25,7 +25,7 @@ on every pane it opens.
 | `HERDR_AGENT_MASTER` | Role | May reach the user | Reports to |
 |---|---|---|---|
 | empty | master | yes | nobody |
-| a name | slave | no | that name |
+| a name | sheep | no | that name |
 
 Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py`, which answers the pane, the
 name, the master and where each came from. It reads the variable first and falls back to
@@ -33,12 +33,12 @@ name, the master and where each came from. It reads the variable first and falls
 
 The fallback is what makes an empty variable readable. `--env` lives in the pane's process and a
 restart replaces it: `herdr agent start` takes no `--env` and creates no pane, so a restarted
-slave comes back with nothing and reads as a master. Measured on 2026-09-23 on two panes whose
+sheep comes back with nothing and reads as a master. Measured on 2026-09-23 on two panes whose
 threads resumed correctly.
 
 An empty master in both places means the session coordinates itself. A pane absent from the
 registry was opened by hand, or before the registry existed, and that is reported rather than
-assumed either way: taking the master role wrongly puts a slave in front of the user.
+assumed either way: taking the master role wrongly puts a sheep in front of the user.
 
 Today the hierarchy also travels in the text of each instruction, because a master writes "report
 to me" into the prompts it sends. That works and it is not a mechanism: a master that omits the
@@ -102,7 +102,7 @@ with sections for done, in flight and blocked, and its transcript carried one `S
 hours earlier.
 
 Prose does not repair that, because the failure is a session believing it already complied. So
-the turn does not end. `hooks/report-gate.py` runs on `Stop`, and when a slave is about to close a
+the turn does not end. `hooks/report-gate.py` runs on `Stop`, and when a sheep is about to close a
 turn with no `SendMessage` in it, the gate returns the reason instead of letting the turn finish:
 the report goes out and the turn ends after it.
 
@@ -115,21 +115,21 @@ A master is not gated, since it reports to nobody.
 
 ## Unattended
 
-A slave is unattended from its first turn. Nothing turns the mode on for it: a non-empty
+A sheep is unattended from its first turn. Nothing turns the mode on for it: a non-empty
 `HERDR_AGENT_MASTER` is the mode, because a pane that was spawned has nobody watching it and the
 person who would answer a question is sitting in front of the master. Waiting to be told costs
 the first question, which is the one that stalls the pane before anyone knows it opened.
 
 `/unattended` therefore exists for the master, which is attended by default and is told when the
 user leaves. A master may also run it on itself, and what it means there is the opposite of what
-it means in a slave.
+it means in a sheep.
 
 | Role | Default | What `/unattended` does |
 |---|---|---|
 | master | attended: the user is there | switches it to advancing alone and batching questions |
-| slave | unattended from the first turn | nothing; the mode is already on and cannot be turned off |
+| sheep | unattended from the first turn | nothing; the mode is already on and cannot be turned off |
 
-A slave does not leave the mode on its own. The user being back is a fact about the master's pane,
+A sheep does not leave the mode on its own. The user being back is a fact about the master's pane,
 not about this one, and only the master or the user says so.
 
 ### A master unattended
@@ -145,9 +145,9 @@ Two things break the batch and reach the user at once:
 
 - a destructive or irreversible decision, where waiting saves nothing because the work that
   follows would be built on the wrong branch
-- a blocked slave, which has stopped: every turn of waiting is a turn it does not spend
+- a blocked sheep, which has stopped: every turn of waiting is a turn it does not spend
 
-Answer a slave's question when the answer is available, and pass it on only when it is not.
+Answer a sheep's question when the answer is available, and pass it on only when it is not.
 Relaying every question unchanged makes the master a pipe and the mode pointless.
 
 No hook stops a master from asking, so the judgement is the only gate and a question on screen
@@ -169,11 +169,11 @@ its own context with work any pane could have done.
 measured case of a master that offered itself first.
 
 
-### A slave unattended
+### A sheep unattended
 
 `AskUserQuestion` is denied by a hook, not by this rule. `hooks/ask-gate.py` returns
 `permissionDecision: "deny"` for any session with a non-empty `HERDR_AGENT_MASTER`, because the
-written prohibition was measured failing: on 2026-09-22 a slave carrying it asked anyway and the
+written prohibition was measured failing: on 2026-09-22 a sheep carrying it asked anyway and the
 menu sat open in a pane nobody was looking at.
 
 A denial is not the end of the turn. The refusal comes back as a tool result naming the master and
@@ -185,13 +185,13 @@ Never run a command that waits on input either, which no hook covers: an interac
 pane nobody watches hangs until someone notices, and `pkexec` raises a dialog on a screen the user
 is not at.
 
-Reaching a decision the slave may not take runs three steps, in order.
+Reaching a decision the sheep may not take runs three steps, in order.
 
 1. **Check the master is alive.** `ListAgents` lists the running sessions. Waiting on a session
-   that is not there is waiting forever, and the escalation that would rescue the slave is written
+   that is not there is waiting forever, and the escalation that would rescue the sheep is written
    to run inside the master.
 
-   | Master in `ListAgents` | What the slave does |
+   | Master in `ListAgents` | What the sheep does |
    |---|---|
    | present | step 2 |
    | absent | stop, report the work as blocked and name the master as gone, and address the user directly |

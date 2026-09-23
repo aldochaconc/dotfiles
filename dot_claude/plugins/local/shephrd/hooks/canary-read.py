@@ -50,7 +50,7 @@ def age_rows(records, now=None, stale=None):
         rows.append({
             "name": r.get("name") or r.get("pane") or "(no pane)",
             "pane": r.get("pane") or "(no pane)",
-            "role": "slave" if (r.get("master") or "") else "master",
+            "role": "sheep" if (r.get("master") or "") else "master",
             "master": r.get("master") or "",
             "age": age,
             "at_iso": r.get("at_iso") or "",
@@ -110,7 +110,7 @@ def selftest():
     rows = age_rows(recs, now=now)
     assert [r["name"] for r in rows] == ["beta", "alpha", "gamma"], rows
     assert rows[0]["age"] == 600.0
-    assert rows[0]["role"] == "slave"
+    assert rows[0]["role"] == "sheep"
     assert rows[1]["role"] == "master"
 
     # alpha is 100s old and beta 600s, so a 200s threshold keeps only beta.

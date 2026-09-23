@@ -35,7 +35,7 @@ workspace to spawn into and no layout to read.
 An empty `HERDR_AGENT_NAME` means the pane was opened by hand rather than by `/spawn-agent`.
 Measured on 2026-09-22: the first pane of a workspace answered to `os-master` in `ListAgents`
 with `HERDR_AGENT_NAME` unset. A session spawning from there resolves its own name from
-`ListAgents` instead, since passing the empty value through would tell every slave it has no
+`ListAgents` instead, since passing the empty value through would tell every sheep it has no
 master.
 
 An empty `HERDR_AGENT_MASTER` means the session coordinates itself. In a pane known to have been

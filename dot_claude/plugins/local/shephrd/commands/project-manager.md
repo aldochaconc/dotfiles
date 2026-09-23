@@ -12,9 +12,13 @@ context is the one holding the map of every pane. Measured on 2026-09-23: a coor
 cost $0.426 per request against $0.273 for a pane with a fixed scope over the same number of
 requests, and the difference is accumulated context.
 
-This opens a pane for that work. It is a pane rather than an agent because two of its jobs are
-writes that outlive a turn: planning produces something later sessions read, and holding the
-boundaries means writing other panes' registry entries. An agent returns a report and dies.
+This opens a pane for that work, and what runs in it is a sheep like any other: it carries
+`HERDR_AGENT_MASTER`, it reports at the end of every turn, and it asks its master rather than the
+user. Tracking the work does not put it above the panes it tracks.
+
+It is a sheep rather than an agent because two of its jobs are writes that outlive a turn:
+planning produces something later sessions read, and holding the boundaries means writing other
+panes' registry entries. An agent returns a report and dies.
 
 `project-manager` is the name. Load `shephrd-protocol` first: this is `/spawn-agent` with a
 fixed role, and every step of that command applies.
@@ -80,9 +84,10 @@ command behind the measured one. Nobody else is looking for that.
 
 ## Scope collisions
 
-The pane reports an overlap and does not resolve it. Two panes carrying paths that intersect is
-a decision for the master, which names which one writes; a project manager that reassigns scope
-on its own moves work between panes that are mid-change.
+It reports an overlap and does not resolve it. Two panes carrying paths that intersect is a
+decision for the master, which names which one writes; a sheep that reassigns scope on its own
+moves work between panes that are mid-change, and this one holds the registry rather than the
+authority over it.
 
 An overlap where one side is read-only is the ordinary case and is not reported as a collision:
 a reviewer and a builder on the same files is how review works.
