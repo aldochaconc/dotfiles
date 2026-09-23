@@ -3,9 +3,9 @@
 
 `/spawn-agent` passes `HERDR_AGENT_NAME` and `HERDR_REPORTS_TO` with `--env` at split time,
 and those live in the pane's process. A restart replaces that process: `herdr agent start` takes
-no `--env` and creates no pane, so the variables are gone and the session reads as a reports_to.
+no `--env` and creates no pane, so the variables are gone and the session reads as a shephrd.
 Measured on 2026-09-23: two panes restarted with their threads intact came back with both empty,
-and the canary listed a sheep as a reports_to.
+and the canary listed a sheep as a shephrd.
 
 So the spawn also writes the pair to `~/.claude/panes/<pane>.json`, which survives the process.
 A session with an empty variable reads the file for its own pane before concluding it
@@ -22,7 +22,7 @@ that is running now, and the file may describe a pane that was reused for someth
 
 The canary's beat cannot serve as this record, though it carries the same two fields. A beat
 reports what the process holds at the end of a turn, so a restarted pane overwrites it with the
-empty values it lost: measured on 2026-09-23, `w1R-p8` reported a name and an empty reports_to while
+empty values it lost: measured on 2026-09-23, `w1R-p8` reported a name and an empty recipient while
 that pane was a sheep. The registry is written once by the spawn and is not touched by a restart.
 Two files, two owners.
 """
@@ -37,11 +37,11 @@ DIR = Path(os.environ.get("HOME", "/tmp")) / ".claude" / "panes"
 USAGE = (
     "usage:\n"
     "  panes.py                                          resolve this session's identity\n"
-    "  panes.py --write <pane> <name> [reports_to] [scope]   record one pane\n"
-    "  panes.py --write <pane> <name> \"\" <scope> --god  record the session the user watches\n"
+    "  panes.py --write <pane> <name> [reports-to] [scope] [--role R] [--god]\n"
     "\n"
-    "Every argument after --write is positional except --god, which is a flag. Scope is the\n"
-    "rest of the line, unquoted or quoted, and takes no flag of its own."
+    "Scope is the rest of the line after reports-to. --role takes god, shephrd, sheep or\n"
+    "watcher and is what the resolver trusts; without it the role is derived from reports-to,\n"
+    "which reads a shephrd reporting to a god as a sheep."
 )
 
 
@@ -55,10 +55,29 @@ def truthy(value):
     return (value or "").strip().lower() not in ("", "0", "false", "no")
 
 
-def role_of(reports_to, god=False):
-    """One of `god`, `shephrd` or `sheep`.
+def role_of(reports_to, god=False, declared=""):
+    """The role, declared where it was recorded and derived only where it was not.
 
-    A sheep answers to a reports_to. A shephrd answers to nobody and herds sheep.
+    Deriving it from `reports_to` alone collapses two different facts. A shephrd reports to the
+    god and is not a sheep for doing so: measured on 2026-09-23, a shephrd recorded with the god
+    as its recipient read back as a sheep, and the same reading would have called it a shephrd
+    had the field been left empty, which is the other half wrong.
+
+    So a spawn says which it opened. The derivation stays for a pane recorded before the field
+    existed, where `reports_to` is still the only evidence there is.
+    """
+    declared = (declared or "").strip().lower()
+    if declared in ("god", "shephrd", "sheep", "watcher"):
+        return declared
+    return _derive_role(reports_to, god)
+
+
+def _derive_role(reports_to, god=False):
+    """The role a pane's recipient implies, for a record that declares none.
+
+    A pane with someone above it reads as a sheep and one without as a shephrd, which is right
+    for every pane opened before the role was recorded and wrong for a shephrd that reports to a
+    god. That is what the declared role fixes; this is the fallback.
 
     A god is the session the user watches, and the only one they watch when everything runs
     unattended and they are reading from a phone. It is declared rather than inferred: a
@@ -75,7 +94,7 @@ def role_of(reports_to, god=False):
     return "sheep" if (reports_to or "").strip() else "shephrd"
 
 
-def write(pane, name, reports_to, scope=None, god=False, directory=None):
+def write(pane, name, reports_to, scope=None, god=False, role="", directory=None):
     """Record what a spawn declared for one pane. Returns the path, or None with no pane.
 
     `scope` is what this pane may touch, which a directory does not say: four panes sat on one
@@ -96,6 +115,7 @@ def write(pane, name, reports_to, scope=None, god=False, directory=None):
         "reports_to": (reports_to or "").strip(),
         "scope": (scope or "").strip(),
         "god": bool(god),
+        "role": (role or "").strip().lower(),
     }))
     tmp.replace(target)
     return target
@@ -104,7 +124,7 @@ def write(pane, name, reports_to, scope=None, god=False, directory=None):
 def read(pane, directory=None):
     """What was recorded for a pane. Empty fields when nothing was, or the file is unreadable."""
     blank = {"pane": (pane or "").strip(), "name": "", "reports_to": "", "scope": "",
-             "god": False}
+             "god": False, "role": ""}
     pane = (pane or "").strip()
     if not pane:
         return blank
@@ -120,6 +140,7 @@ def read(pane, directory=None):
         "reports_to": (d.get("reports_to") or "").strip(),
         "scope": (d.get("scope") or "").strip(),
         "god": bool(d.get("god")),
+        "role": (d.get("role") or "").strip().lower(),
     }
 
 
@@ -137,6 +158,7 @@ def resolve(env=None, directory=None):
     scope = ""
 
     god = truthy(env.get("HERDR_GOD"))
+    rec = {"role": ""}
 
     if pane:
         rec = read(pane, directory)
@@ -156,7 +178,7 @@ def resolve(env=None, directory=None):
         "reports_to": reports_to,
         "scope": scope,
         "god": god,
-        "role": role_of(reports_to, god),
+        "role": role_of(reports_to, god, rec.get("role", "")),
         "source": source,
     }
 
@@ -173,7 +195,7 @@ def main(argv=None):
         print(USAGE)
         return 0
     unknown = [a for a in argv
-               if a.startswith("-") and a not in ("--write", "--selftest", "--god")]
+               if a.startswith("-") and a not in ("--write", "--selftest", "--god", "--role")]
     if unknown:
         print(f"unknown argument: {unknown[0]}\n{USAGE}", file=sys.stderr)
         return 2
@@ -181,6 +203,11 @@ def main(argv=None):
     if "--write" in argv:
         god = "--god" in argv
         rest = [a for a in argv[argv.index("--write") + 1:] if a != "--god"]
+        role = ""
+        if "--role" in rest:
+            i = rest.index("--role")
+            role = rest[i + 1] if i + 1 < len(rest) else ""
+            rest = rest[:i] + rest[i + 2:]
         if not rest:
             print(USAGE, file=sys.stderr)
             return 2
@@ -188,7 +215,7 @@ def main(argv=None):
         name = rest[1] if len(rest) > 1 else ""
         reports_to = rest[2] if len(rest) > 2 else ""
         scope = " ".join(rest[3:]) if len(rest) > 3 else ""
-        target = write(pane, name, reports_to, scope, god)
+        target = write(pane, name, reports_to, scope, god, role)
         if target is None:
             print("no pane given", file=sys.stderr)
             return 2
@@ -262,6 +289,24 @@ def selftest():
     assert main(["--write"]) == 2
     assert main(["--write", ""]) == 2
 
+    # A declared role wins over the derivation, which is what a shephrd reporting to a god needs.
+    assert role_of("os-master", declared="shephrd") == "shephrd"
+    assert role_of("", declared="watcher") == "watcher"
+    # An unknown or empty declaration falls through to the derivation.
+    assert role_of("lead", declared="") == "sheep"
+    assert role_of("lead", declared="nonsense") == "sheep"
+    assert role_of("", declared="  GOD  ") == "god"
+
+    with tempfile.TemporaryDirectory() as d:
+        write("w2:p1", "tree-a", "os-master", "one tree", role="shephrd", directory=d)
+        assert read("w2:p1", d)["role"] == "shephrd"
+        r = resolve({"HERDR_PANE_ID": "w2:p1"}, d)
+        assert r["role"] == "shephrd", r
+        assert r["reports_to"] == "os-master"
+        # A record written before the field existed still resolves by derivation.
+        write("w2:p2", "worker", "tree-a", "", directory=d)
+        assert resolve({"HERDR_PANE_ID": "w2:p2"}, d)["role"] == "sheep"
+
     # The three roles, from the two things that decide them.
     assert role_of("") == "shephrd"
     assert role_of("lead") == "sheep"
@@ -294,7 +339,7 @@ def selftest():
     assert main(["--help"]) == 0
     assert main(["-h"]) == 0
 
-    print("panes selftest: 43 checks passed")
+    print("panes selftest: 54 checks passed")
 
 
 if __name__ == "__main__":
