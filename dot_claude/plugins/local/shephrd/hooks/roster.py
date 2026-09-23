@@ -11,6 +11,11 @@ So the spawn also writes the pair to `~/.claude/roster/<pane>.json`, which survi
 A session with an empty variable reads the file for its own pane before concluding it
 coordinates itself.
 
+The file carries a third field the environment never had: what the pane may touch. A directory
+does not say it, and on 2026-09-23 four panes sat on one repository and three were nested inside
+each other with nothing distinguishing their work. Nothing enforces it; it is what a session
+reads to know whether a file it is about to change belongs to someone else.
+
 The file is a record of what a spawn declared, not an authority. A pane whose environment says
 one thing and whose file says another trusts the environment: the variable was set by the spawn
 that is running now, and the file may describe a pane that was reused for something else.
@@ -35,8 +40,14 @@ def key(pane):
     return (pane or "").strip().replace(":", "-") + ".json"
 
 
-def write(pane, name, master, directory=None):
-    """Record what a spawn declared for one pane. Returns the path, or None with no pane."""
+def write(pane, name, master, scope=None, directory=None):
+    """Record what a spawn declared for one pane. Returns the path, or None with no pane.
+
+    `scope` is what this pane may touch, which a directory does not say: four panes sat on one
+    repository on 2026-09-23 with nothing distinguishing their work. It is free text, since the
+    unit varies between a path, a subtree and a branch, and it is for a human or a session to
+    read rather than for anything to enforce.
+    """
     pane = (pane or "").strip()
     if not pane:
         return None
@@ -48,6 +59,7 @@ def write(pane, name, master, directory=None):
         "pane": pane,
         "name": (name or "").strip(),
         "master": (master or "").strip(),
+        "scope": (scope or "").strip(),
     }))
     tmp.replace(target)
     return target
@@ -55,7 +67,7 @@ def write(pane, name, master, directory=None):
 
 def read(pane, directory=None):
     """What was recorded for a pane. Empty fields when nothing was, or the file is unreadable."""
-    blank = {"pane": (pane or "").strip(), "name": "", "master": ""}
+    blank = {"pane": (pane or "").strip(), "name": "", "master": "", "scope": ""}
     pane = (pane or "").strip()
     if not pane:
         return blank
@@ -69,6 +81,7 @@ def read(pane, directory=None):
         "pane": d.get("pane") or pane,
         "name": (d.get("name") or "").strip(),
         "master": (d.get("master") or "").strip(),
+        "scope": (d.get("scope") or "").strip(),
     }
 
 
@@ -83,29 +96,33 @@ def resolve(env=None, directory=None):
     name = (env.get("HERDR_AGENT_NAME") or "").strip()
     master = (env.get("HERDR_AGENT_MASTER") or "").strip()
     source = "env"
+    scope = ""
 
-    if pane and not (name and master):
+    if pane:
         rec = read(pane, directory)
+        # Scope has no environment variable: the roster is where it lives at all.
+        scope = rec["scope"]
         if not name and rec["name"]:
             name, source = rec["name"], "roster"
         if not master and rec["master"]:
             master, source = rec["master"], "roster"
 
-    return {"pane": pane, "name": name, "master": master, "source": source}
+    return {"pane": pane, "name": name, "master": master, "scope": scope, "source": source}
 
 
 def main(argv=None):
-    """`--write <pane> <name> [master]` records a pair; no arguments resolves this session."""
+    """`--write <pane> <name> [master] [scope]` records one; no arguments resolves this session."""
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--write" in argv:
         rest = argv[argv.index("--write") + 1:]
         if not rest:
-            print("usage: roster.py --write <pane> <name> [master]", file=sys.stderr)
+            print("usage: roster.py --write <pane> <name> [master] [scope]", file=sys.stderr)
             return 2
         pane = rest[0]
         name = rest[1] if len(rest) > 1 else ""
         master = rest[2] if len(rest) > 2 else ""
-        target = write(pane, name, master)
+        scope = " ".join(rest[3:]) if len(rest) > 3 else ""
+        target = write(pane, name, master, scope)
         if target is None:
             print("no pane given", file=sys.stderr)
             return 2
@@ -120,9 +137,9 @@ def selftest():
 
     with tempfile.TemporaryDirectory() as d:
         assert key("w1R:p8") == "w1R-p8.json"
-        assert write("", "n", "m", d) is None
+        assert write("", "n", "m", directory=d) is None
 
-        p = write("w1R:p8", "worker-a", "lead", d)
+        p = write("w1R:p8", "worker-a", "lead", directory=d)
         assert p.exists()
         assert read("w1R:p8", d)["master"] == "lead"
         assert read("w1R:p8", d)["name"] == "worker-a"
@@ -148,18 +165,38 @@ def selftest():
         assert r2["source"] == "env"
 
         # A master records an empty master, and that stays empty rather than being filled in.
-        write("w1T:p1", "os-master", "", d)
+        write("w1T:p1", "os-master", "", directory=d)
         assert resolve({"HERDR_PANE_ID": "w1T:p1"}, d)["master"] == ""
 
         # No pane at all: nothing to look up.
         assert resolve({}, d)["pane"] == ""
         assert resolve({})["source"] == "env"
 
+    with tempfile.TemporaryDirectory() as d:
+        # Scope rides with the pane and survives a restart, since no variable carries it.
+        write("w1R:p9", "pr-reviewer", "lead", "read-only: the four PR bodies", d)
+        assert read("w1R:p9", d)["scope"] == "read-only: the four PR bodies"
+        r = resolve({"HERDR_PANE_ID": "w1R:p9"}, d)
+        assert r["scope"] == "read-only: the four PR bodies", r
+        assert r["master"] == "lead"
+
+        # A pane recorded without one has no scope rather than a missing key.
+        write("w1T:p6", "worker", "lead", None, d)
+        assert read("w1T:p6", d)["scope"] == ""
+        # Scope is read even when the environment supplies both names.
+        full = resolve({
+            "HERDR_PANE_ID": "w1R:p9",
+            "HERDR_AGENT_NAME": "pr-reviewer",
+            "HERDR_AGENT_MASTER": "lead",
+        }, d)
+        assert full["scope"] == "read-only: the four PR bodies", full
+        assert full["source"] == "env"
+
     # The write path the spawn calls, checked for its argument handling rather than its target.
     assert main(["--write"]) == 2
     assert main(["--write", ""]) == 2
 
-    print("roster selftest: 16 checks passed")
+    print("roster selftest: 23 checks passed")
 
 
 if __name__ == "__main__":
