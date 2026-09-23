@@ -1,5 +1,5 @@
 {
-  "description": "Deny AskUserQuestion in a spawned pane, and leave a liveness beat at the end of every turn.",
+  "description": "Deny AskUserQuestion in a spawned pane, hold a turn that reports nothing to its master, and leave a liveness beat at the end of every turn.",
   "hooks": {
     "PreToolUse": [
       {
@@ -17,6 +17,11 @@
       {
         "matcher": "*",
         "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/report-gate.py",
+            "timeout": 5
+          },
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/canary.py",

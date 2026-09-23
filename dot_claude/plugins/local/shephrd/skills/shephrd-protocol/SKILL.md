@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.3.0
+version: 0.4.0
 ---
 
 # shephrd protocol
@@ -69,6 +69,26 @@ a pane that died.
 `herdr agent wait` is the case worth naming, since waiting is what it does: it goes to the
 background always, and a wait held in the foreground is a turn spent watching another session
 work.
+
+### A report is a message, not a section
+
+Text written into the reply under a heading naming the master reaches nobody. It renders in a pane
+that nobody is watching and the turn ends with the master knowing nothing, while the session has
+every impression of having reported. Measured on 2026-09-23: a session produced a full report
+with sections for done, in flight and blocked, and its transcript carried one `SendMessage` from
+hours earlier.
+
+Prose does not repair that, because the failure is a session believing it already complied. So
+the turn does not end. `hooks/report-gate.py` runs on `Stop`, and when a slave is about to close a
+turn with no `SendMessage` in it, the gate returns the reason instead of letting the turn finish:
+the report goes out and the turn ends after it.
+
+It checks that a message was sent and nothing about its content. That boundary divides two jobs.
+The hook runs on every turn of every pane, so it answers what a regex answers. Whether the
+reports are any good is a pattern across turns, and `traffic-auditor` reads it from the
+transcripts when someone asks, in its own context rather than the master's.
+
+A master is not gated, since it reports to nobody.
 
 ## Unattended
 

@@ -68,10 +68,23 @@ any of the text.
 
 ## What to check
 
-1. **Who sent and who did not.** Per live session, whether its transcript shows a `SendMessage`
-   in its recent turns. A session that has taken turns and sent nothing is the finding: silence
-   from a working session is indistinguishable from a dead one, which is what the rule exists to
-   prevent.
+1. **Whether a report was worth sending.** `report-gate.py` already guarantees a message left
+   the pane, so counting sends measures the hook rather than the traffic. What it cannot read is
+   the content, and that is this audit's first question.
+
+   | Report | Finding |
+   |---|---|
+   | names what was done, what is in flight and what is blocked | none |
+   | says a turn happened and nothing about it | a report that satisfies the gate and informs nobody |
+   | repeats the previous turn's report | the session is stalled and reporting as if it were not |
+   | omits work the transcript shows it did | the master is deciding against a partial picture |
+
+   The last one is the expensive finding and the reason to read both sides. A report that leaves
+   out a failed command or an abandoned approach costs the master a decision it would not have
+   taken.
+
+   A pane with no beat in `~/.claude/canary` and no send at all predates the hooks. Report that
+   as uninstrumented rather than as silent: the rule was never live there.
 
 2. **Unanswered questions.** A message that asked something, with no reply in the recipient's
    transcript and no reply back in the sender's. Name both sides and how long it has been

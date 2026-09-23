@@ -30,6 +30,7 @@ with it.
 |---|---|
 | `shephrd-protocol` skill | who may talk to the user, who reports to whom, what unattended means per role |
 | `ask-gate.py` hook | denies `AskUserQuestion` in a spawned pane, where nobody is watching to answer |
+| `report-gate.py` hook | holds a turn that a slave would end without reporting |
 | `canary.py` hook | writes a liveness beat at the end of every turn, so a stalled pane is visible |
 | `canary-read.py` | prints the beats oldest first |
 | `hierarchy-auditor` agent | which panes exist, which names reach them, which are stalled |
