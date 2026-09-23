@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al god", "who do I report to", or when working with HERDR_REPORTS_TO, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.17.0
+version: 0.18.0
 ---
 
 # shephrd protocol
@@ -140,9 +140,12 @@ work.
 
 ### The heartbeat a shephrd owes the god
 
-A shephrd sends the god a heartbeat every five of its own turns, unprompted, covering every
-session it holds: what moved, what is in flight, what is waiting. Five turns that advanced
-nothing says exactly that.
+A shephrd sends the god a heartbeat every five of its own turns, covering every session it
+holds: what moved, what is in flight, what is waiting. Five turns that advanced nothing says
+exactly that.
+
+It goes sooner when a session has gone quiet long enough to name, because a count alone reports
+nothing when the shephrd itself is the one waiting: a pane blocked on a dialog takes no turns.
 
 It is not a liveness check. The canary already answers who is taking turns; this answers whether
 the work is moving. `references/roles.md` holds why five turns rather than a clock.
