@@ -1,6 +1,6 @@
 ---
-description: Report what every agent pane has left of its context and of the account limits, and say which ones are close to stopping
-argument-hint: empty reports this workspace; all reports every workspace
+description: Report what every session has left of its context and of the account limits, read from the status line payload rather than the rendered bar
+argument-hint: empty reports every recorded session; stale <minutes> reports only readings older than that
 allowed-tools: ["Bash", "ListAgents"]
 ---
 
@@ -10,54 +10,63 @@ Two budgets run out and they run out differently. A session's context fills up a
 compacts, losing detail and continuing. The account limits are shared by every session at once,
 and when they go nothing runs anywhere.
 
-Both are read from the status bar of `herdr agent read <pane>`, which carries `ctx`, `5h` and
-`7d` and is readable while the pane is mid-turn. Verified on 2026-09-22 against a working pane:
-`Opus 5 | ctx:31% | 5h:24% | 7d:75%`.
+## Where the figures come from
 
-The reading costs this session context on every pass, which is why the report is asked for
-rather than watched. A loop watching the others would spend the coordinating session's own
-budget to report on everyone else's.
+Claude Code hands the status line script a JSON object on stdin every time the bar is redrawn,
+and that object is the only place `rate_limits.five_hour` and `rate_limits.seven_day` appear.
+Checked on 2026-09-22: no subcommand of the binary reports them, and no file under `~/.claude`
+carries them, including `policy-limits.json` and the dashboard cache.
+
+`~/.claude/statusline-command.sh` therefore keeps the object, one file per session at
+`~/.claude/budget/<session_id>.json`, with a `recorded_at` timestamp added. This command reads
+those files.
+
+It does not read the rendered bar. A bar is redrawn when its own session takes a turn, so
+scraping one reports what that pane last drew: measured across three panes of one workspace,
+`5h` read 24% in the pane that had just worked and 19% in one idle for minutes. The files carry
+the same staleness and say so, which a bar cannot.
 
 ## Thresholds
 
 | Figure | Report from | Why there |
 |---|---|---|
-| `ctx` | 80% | A compaction is close. It is survivable, so this is information, not a warning |
-| `5h` | 85% | Shared and near its end: whatever has to run in this window is decided now |
-| `7d` | 90% | The same, over a window that does not reset for days |
-
-A pane reading `ctx:–` has no figure yet, which is not zero. It is reported as unknown.
+| `context_window.used_percentage` | 80% | A compaction is close. It is survivable, so this is information rather than a warning |
+| `rate_limits.five_hour` | 85% | Shared and near its end: whatever has to run in this window is decided now |
+| `rate_limits.seven_day` | 90% | The same, over a window that does not reset for days |
 
 ## Procedure
 
-1. **Resolve the set.** `herdr agent list` carries every pane and its `workspace_id`. Without
-   arguments the set is the panes matching `$HERDR_WORKSPACE_ID`, this session's own included:
-   its budget counts as much as any other. With `all`, every pane of every workspace.
+1. **Read the records.** Every `~/.claude/budget/*.json`. The payload carries nineteen fields,
+   of which this report uses `session_id`, `session_name`, `cwd`, `model.display_name`, `cost`,
+   the three figures and `recorded_at`.
 
-2. **Read each status bar.** `herdr agent read <pane>`, taking the last lines. The figures are
-   whatever that bar carries, and a missing one is left empty rather than guessed: see
-   Staleness.
+   `session_name` is the name passed to `claude -n`, so the report names sessions the way
+   `SendMessage` addresses them without deriving anything. The rest of the payload, including
+   `transcript_path`, `effort` and `prompt_cache`, is kept in the file for whatever asks later.
 
-3. **Report.** One table: pane, name, `agent_status`, `ctx`, `5h`, `7d`. Sorted with the
-   closest to a threshold first, since that is the row the question is about.
+   An empty directory means no session has redrawn its status line since the recording was
+   added, which is reported as that rather than as zero usage.
 
-4. **Say what it means, in one line.** A figure over a threshold is named with what it costs:
-   a session near its context will compact and lose detail, and account limits near their end
-   stop every session at once. The account figure used for that line is the highest one read,
-   for the reason under Staleness. Nothing is closed or restarted from here; `/exit-agents` and
-   `/restart-agents` own those.
+2. **Age each one.** `recorded_at` against now. A record is as old as its session has been idle,
+   and an old record is not wrong: it is the last true reading for that session.
 
-## Staleness
+3. **Match to live sessions.** `ListAgents` and `herdr agent list` say which sessions are still
+   running. A record whose session has exited is left out; a running session with no record has
+   not redrawn its bar yet and is reported with empty figures.
 
-The account limits are shared, and the figures reported for them are not. A status bar is
-redrawn when its own session takes a turn, so an idle pane shows what was true at its last turn
-and not what is true now. Measured on 2026-09-22 across three panes of one workspace: `5h` read
-24% in the pane that had just worked and 19% in one idle for minutes, with `7d` at 75% and 74%.
+4. **Report.** One table: session name, directory, status, `ctx`, `5h`, `7d`, `cost`, age of the
+   reading. Sorted with the closest to a threshold first.
 
-The highest reading is therefore the least stale, and it is the one the account is actually at.
-Every row still carries its own figures, because the gap between them is what shows which rows
-are old.
+5. **Say what it means, in one line.** The account figures are shared, so the newest reading is
+   the one the account is actually at, whichever session produced it. A session near its context
+   limit will compact and lose detail. Nothing is closed or restarted from here; `/exit-agents`
+   and `/restart-agents` own those.
 
-A pane that has taken no turn yet carries no account figures at all: its bar reads
-`Opus 5 | ctx:– | dotfiles(main)`, with `5h` and `7d` simply absent rather than zero. The row is
-reported with those cells empty, which says the session has not spent anything since it started.
+## Scope
+
+A session that has taken no turn has no record at all: the fields are absent rather than zero,
+and the row is reported with those cells empty.
+
+The records accumulate one file per session id and are never cleaned by this command. A session
+id is not reused, so a directory that grows is a directory of sessions that have ended, and
+removing them is the user's.

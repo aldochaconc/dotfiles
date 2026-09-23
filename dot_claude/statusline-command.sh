@@ -1,5 +1,27 @@
 #!/usr/bin/env bash
+# Claude Code feeds this script a JSON object on stdin every time the status line is redrawn,
+# and that object is the only place the account figures appear: `rate_limits.five_hour` and
+# `rate_limits.seven_day` are published nowhere else, not by a subcommand and not in any state
+# file under ~/.claude. Reading them back off the rendered bar is screen scraping, and it
+# reports whatever a pane last drew rather than what is true.
+#
+# So the object is kept. One file per session under ~/.claude/budget, holding the payload plus
+# the time it arrived, which is what makes a stale reading legible as stale.
 input=$(cat)
+
+# Best effort and silent: a status line that fails or stalls is worse than one without a record.
+budget_record() {
+  local dir="$HOME/.claude/budget" id
+  id=$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null)
+  [ -n "$id" ] || return 0
+  mkdir -p "$dir" 2>/dev/null || return 0
+  printf '%s' "$input" \
+    | jq -c --arg at "$(date -Is)" '. + {recorded_at: $at}' \
+    > "$dir/$id.json.tmp" 2>/dev/null \
+    && mv "$dir/$id.json.tmp" "$dir/$id.json" 2>/dev/null
+  return 0
+}
+budget_record
 
 model=$(echo "$input" | jq -r '.model.display_name // "unknown"')
 
