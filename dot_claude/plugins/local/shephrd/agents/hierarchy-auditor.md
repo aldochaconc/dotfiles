@@ -73,8 +73,8 @@ Read `ListAgents` and `herdr agent list` always. Read a pane only when its statu
    restore without its session. Report it with its stored label and directory, which is what
    `/spawn-agent` would need.
 
-5. **Orphans.** A pane whose `HERDR_AGENT_MASTER` names a session absent from `ListAgents` is
-   waiting on a master that cannot answer. This is the one finding that has a deadline: the pane
+5. **Orphans.** A pane whose `HERDR_REPORTS_TO` names a session absent from `ListAgents` is
+   waiting on a god or shephrd that cannot answer. This is the one finding that has a deadline: the pane
    stays stopped until someone acts.
 
 ## Reading a pane's master
@@ -100,7 +100,7 @@ values it lost.
 ## Report
 
 One table, one row per pane: pane id, the name `ListAgents` gives, the name herdr gives, status,
-working directory, and the master it answers to or `unknown`.
+working directory, and the session above it answers to or `unknown`.
 
 Then the findings, most urgent first, each naming the pane and what it costs to leave alone. An
 orphaned pane and a stalled pane come before a name disagreement, because both are stopped and a

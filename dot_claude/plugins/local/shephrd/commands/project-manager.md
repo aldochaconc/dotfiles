@@ -13,7 +13,7 @@ cost $0.426 per request against $0.273 for a pane with a fixed scope over the sa
 requests, and the difference is accumulated context.
 
 This opens a pane for that work, and what runs in it is a sheep like any other: it carries
-`HERDR_AGENT_MASTER`, it reports at the end of every turn, and it asks its master rather than the
+`HERDR_REPORTS_TO`, it reports at the end of every turn, and it asks the session above it rather than the
 user. Tracking the work does not put it above the panes it tracks.
 
 It is a sheep rather than an agent because two of its jobs are writes that outlive a turn:
@@ -85,7 +85,7 @@ command behind the measured one. Nobody else is looking for that.
 ## Scope collisions
 
 It reports an overlap and does not resolve it. Two panes carrying paths that intersect is a
-decision for the master, which names which one writes; a sheep that reassigns scope on its own
+decision for the session above, which names which one writes; a sheep that reassigns scope on its own
 moves work between panes that are mid-change, and this one holds the registry rather than the
 authority over it.
 

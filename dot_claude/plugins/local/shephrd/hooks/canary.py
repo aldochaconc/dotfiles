@@ -26,26 +26,42 @@ from pathlib import Path
 DIR = Path(os.environ.get("HOME", "/tmp")) / ".claude" / "canary"
 
 
-def _master(env, registry_dir=None):
-    """The master this pane answers to, from the environment or the registry behind it.
+def _registry(env, registry_dir=None):
+    """This pane's registry record, or an empty one.
 
     Importing `panes` is avoided: a hook that fails on a missing sibling stops writing beats,
     and a beat is what makes a stalled pane visible. The file is read directly and any failure
-    leaves the field empty, which is what the variable alone would have given.
+    gives empty fields, which is what the variables alone would have given.
     """
-    value = (env.get("HERDR_AGENT_MASTER") or "").strip()
-    if value:
-        return value
     pane = (env.get("HERDR_PANE_ID") or "").strip()
     if not pane:
-        return ""
+        return {}
     d = Path(registry_dir) if registry_dir else Path(
         env.get("HOME", "/tmp")) / ".claude" / "panes"
     try:
-        return (json.loads((d / (pane.replace(":", "-") + ".json")).read_text())
-                .get("master") or "").strip()
+        return json.loads((d / (pane.replace(":", "-") + ".json")).read_text())
     except (OSError, ValueError, AttributeError):
-        return ""
+        return {}
+
+
+def _identity(env, registry_dir=None):
+    """Who this pane reports to and what role it holds.
+
+    Both answers come from the variable first and the registry behind it, because a restart
+    empties the process and leaves the registry as the only record.
+
+    The role rides on the beat rather than being inferred by a reader. A god is declared, not
+    derived from having no one above it, and a reader that guessed would call every god a
+    shephrd: measured on 2026-09-23, the canary listed this machine's god as a shephrd while
+    the registry held the flag.
+    """
+    rec = _registry(env, registry_dir)
+    reports_to = (env.get("HERDR_REPORTS_TO") or "").strip() or (
+        rec.get("reports_to") or "").strip()
+    god = (env.get("HERDR_GOD") or "").strip().lower() not in ("", "0", "false", "no")
+    god = god or bool(rec.get("god"))
+    role = "god" if god else ("sheep" if reports_to else "shephrd")
+    return reports_to, role
 
 
 def beat(payload, env=None, now=None):
@@ -57,6 +73,11 @@ def beat(payload, env=None, now=None):
     if not sid:
         return None
 
+    # The registry answers what the environment lost. A restarted pane has no HERDR_REPORTS_TO,
+    # and a beat that read only the variable listed a sheep as a shephrd: measured on 2026-09-23
+    # on two panes whose threads had resumed correctly.
+    reports_to, role = _identity(env)
+
     return {
         "session_id": sid,
         "at": now,
@@ -64,10 +85,8 @@ def beat(payload, env=None, now=None):
         "pane": (env.get("HERDR_PANE_ID") or "").strip(),
         "workspace": (env.get("HERDR_WORKSPACE_ID") or "").strip(),
         "name": (env.get("HERDR_AGENT_NAME") or "").strip(),
-        # The registry answers what the environment lost. A restarted pane has no
-        # HERDR_AGENT_MASTER, and a beat that read only the variable listed a sheep as a master:
-        # measured on 2026-09-23 on two panes whose threads had resumed correctly.
-        "master": _master(env),
+        "reports_to": reports_to,
+        "role": role,
         "cwd": (payload.get("cwd") or "").strip(),
         "event": (payload.get("hook_event_name") or "").strip(),
         **where(payload.get("cwd") or ""),
@@ -161,21 +180,21 @@ def selftest():
         "HERDR_PANE_ID": "w1R:p8",
         "HERDR_WORKSPACE_ID": "w1R",
         "HERDR_AGENT_NAME": "worker-a",
-        "HERDR_AGENT_MASTER": "lead",
+        "HERDR_REPORTS_TO": "lead",
     }
     r = beat({"session_id": "abc", "cwd": "/tmp/x", "hook_event_name": "Stop"}, env, now=1000.0)
     assert r["session_id"] == "abc"
     assert r["pane"] == "w1R:p8"
-    assert r["master"] == "lead"
+    assert r["reports_to"] == "lead"
     assert r["at"] == 1000.0
 
     # No session id means no record: a beat that cannot name its session identifies nothing.
     assert beat({}, env) is None
     assert beat({"session_id": "   "}, env) is None
 
-    # A master pane has no master and that is a value, not a missing field.
+    # A shephrd has no master and that is a value, not a missing field.
     r2 = beat({"session_id": "m"}, {}, now=1.0)
-    assert r2["master"] == ""
+    assert r2["reports_to"] == ""
     assert r2["pane"] == ""
 
     # The key is the pane, so a colon does not become a directory separator.
@@ -203,22 +222,22 @@ def selftest():
         write(beat({"session_id": "nopane"}, {}, now=4000.0), d)
         assert len(list(Path(d).glob("*.json"))) == 2
 
-    # The master falls back to the registry when the variable is empty, which is what a restart
+    # The recipient falls back to the registry when the variable is empty, which is what a restart
     # leaves behind.
     with tempfile.TemporaryDirectory() as d:
-        Path(d, "w9-p9.json").write_text(json.dumps({"master": "lead"}))
-        assert _master({"HERDR_PANE_ID": "w9:p9"}, d) == "lead"
+        Path(d, "w9-p9.json").write_text(json.dumps({"reports_to": "lead"}))
+        assert _identity({"HERDR_PANE_ID": "w9:p9"}, d)[0] == "lead"
         # The variable wins when it has a value.
-        assert _master({"HERDR_PANE_ID": "w9:p9", "HERDR_AGENT_MASTER": "other"}, d) == "other"
+        assert _identity({"HERDR_PANE_ID": "w9:p9", "HERDR_REPORTS_TO": "other"}, d)[0] == "other"
         # A pane with no entry, and no pane at all, both read empty rather than raising.
-        assert _master({"HERDR_PANE_ID": "w9:pZ"}, d) == ""
-        assert _master({}, d) == ""
-        # A master records an empty master and the registry does not override it.
-        Path(d, "w9-p8.json").write_text(json.dumps({"master": ""}))
-        assert _master({"HERDR_PANE_ID": "w9:p8"}, d) == ""
+        assert _identity({"HERDR_PANE_ID": "w9:pZ"}, d)[0] == ""
+        assert _identity({}, d)[0] == ""
+        # A shephrd records an empty master and the registry does not override it.
+        Path(d, "w9-p8.json").write_text(json.dumps({"reports_to": ""}))
+        assert _identity({"HERDR_PANE_ID": "w9:p8"}, d)[0] == ""
         # Malformed JSON is a missing answer, not a crash.
         Path(d, "w9-p7.json").write_text("{not json")
-        assert _master({"HERDR_PANE_ID": "w9:p7"}, d) == ""
+        assert _identity({"HERDR_PANE_ID": "w9:p7"}, d)[0] == ""
 
     # Location is best effort and never raises: a path that is not a repository, and one that
     # does not exist, both come back empty rather than failing the beat.

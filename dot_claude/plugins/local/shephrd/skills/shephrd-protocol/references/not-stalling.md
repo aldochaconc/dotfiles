@@ -6,7 +6,7 @@ each is avoided.
 
 ## What earns a prompt
 
-A master has no hook stopping it, so the judgement is the only gate, and a question put on screen
+A god has no hook stopping it, so the judgement is the only gate, and a question put on screen
 stops that pane until the user reads it. Measured on 2026-09-22: a coordinating session raised
 four options about a defect in a repository it did not own, which another session had already
 reported, and its pane sat blocked until the user found it.
@@ -45,7 +45,7 @@ matches nothing and prompts on all of it, with the deletion hidden behind the re
 What stays prompting is what should. `rm -rf` and `sudo` are listed under `ask` because the user
 reserves those, and a sheep inherits that rather than escaping it: a pane running unwatched is a
 reason to write commands that do not need the prompt, never a reason to route around one. A
-command that genuinely needs the decision goes to the master with the rest.
+command that genuinely needs the decision goes to the session above with the rest.
 
 At least one message per turn, carrying three things. A turn that also sent a blocking question
 sends the report as well: the question asks for a decision, the report says where the work stands,
@@ -54,13 +54,13 @@ and neither substitutes for the other.
 | Part | Content |
 |---|---|
 | done | what the turn produced, by file or by outcome |
-| in flight | what is running or half-finished, so the master knows what a next turn continues |
+| in flight | what is running or half-finished, so the session above knows what a next turn continues |
 | blocked | what is waiting on a decision, naming who has to make it |
 
 A turn that produced nothing still reports that it ran. Silence and a dead session read the same
-from outside, and the master acts on the difference.
+from outside, and the session above acts on the difference.
 
-A master reports to nobody and keeps the same accounting for itself, because `/exit-agents` and
+A god reports to nobody and keeps the same accounting for itself, because `/exit-agents` and
 `/agents-budget` read it.
 
 ### Focus
@@ -68,16 +68,16 @@ A master reports to nobody and keeps the same accounting for itself, because `/e
 A session working directly with the user reports the same three parts, plus any decision the user
 made that changes the plan.
 
-The dialogue does not travel. The master needs the state and the decision; a transcript fills its
+The dialogue does not travel. The session above needs the state and the decision; a transcript fills its
 context with what already exists in the other pane.
 
 That decision is what keeps the other sheep correct. A choice the user makes in one pane can
-contradict the assumption another pane is working under, and the master is the only session
+contradict the assumption another pane is working under, and the session above is the only session
 positioned to see both.
 
 ## Work found is work routed
 
-A finding is not an assignment to whoever found it. A master that repairs what it notices fills
+A finding is not an assignment to whoever found it. A god or shephrd that repairs what it notices fills
 its own context with work any pane could have done, and the context it spends is the one holding
 the map of every other pane.
 
@@ -87,21 +87,21 @@ Two questions decide where a finding goes, in this order.
 |---|---|---|
 | Was a pane already working on this? | yes | back to that pane, as one message |
 | Does the repair take more than a turn? | yes | a new pane opened for it, with `/spawn-agent` |
-| Neither | | the master does it |
+| Neither | | the session above does it |
 
 The first question outranks the second. A pane that was building the thing holds why it is the
 way it is, and a second pane repairing it in parallel produces two versions of one file. Handing
 it back costs one message; discovering the conflict costs both attempts.
 
-Measured on 2026-09-23: a master found that one pull request body did not follow the
+Measured on 2026-09-23: a god or shephrd found that one pull request body did not follow the
 repository's template, offered the user three options, and put itself first. The session that
 wrote the other three bodies correctly had just restarted with fresh context and was not
 offered at all.
 
-What makes this hard to see is that the finding arrives already understood. The master has read
+What makes this hard to see is that the finding arrives already understood. The session has read
 the file and knows the repair, so doing it feels shorter than explaining it. The cost that is not
 felt is the context, which is spent for the rest of the session.
 
 A finding routed to a pane goes with what the pane needs to act: what is wrong, where, what was
 measured, and what the repair is if it is known. A message saying only that something is wrong
-makes that pane re-derive what the master already has.
+makes that pane re-derive what the session above already has.

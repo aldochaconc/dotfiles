@@ -44,14 +44,18 @@ def age_rows(records, now=None, stale=None):
         age = now - float(r.get("at") or 0)
         if stale is not None and age < stale:
             continue
-        # A pane opened by hand has no HERDR_AGENT_NAME, which is most masters. The pane id
+        # A pane opened by hand has no HERDR_AGENT_NAME, which is most shephrds. The pane id
         # names it instead, since that is what the reader can act on; falling back to the
         # directory would name several panes the same thing.
         rows.append({
             "name": r.get("name") or r.get("pane") or "(no pane)",
             "pane": r.get("pane") or "(no pane)",
-            "role": "sheep" if (r.get("master") or "") else "master",
-            "master": r.get("master") or "",
+            # The beat carries the role. Deriving it here from an empty reports_to would call
+            # every god a shephrd, since a god is declared rather than inferred; a beat
+            # written before the field existed falls back to the derivation.
+            "role": r.get("role") or
+                    ("sheep" if (r.get("reports_to") or "") else "shephrd"),
+            "reports_to": r.get("reports_to") or "",
             "age": age,
             "at_iso": r.get("at_iso") or "",
             "session_id": r.get("session_id") or "",
@@ -85,7 +89,7 @@ def main():
         print(f"no beats {where}. A pane with no beat has taken no turn since the hook was installed.")
         return
 
-    print(f"{'name':16} {'pane':10} {'role':7} {'last turn':>10}  {'where':28} master")
+    print(f"{'name':16} {'pane':10} {'role':7} {'last turn':>10}  {'where':28} reports to")
     for r in rows:
         where = r["repo"] or ""
         if r["branch"]:
@@ -93,7 +97,7 @@ def main():
         if r["worktree"]:
             where += " wt"
         print(f"{r['name']:16} {r['pane']:10} {r['role']:7} {human(r['age']):>10}  "
-              f"{where[:28]:28} {r['master']}")
+              f"{where[:28]:28} {r['reports_to']}")
 
     print("\nOldest beat first. An old beat is not a fault on its own: a pane nobody has asked")
     print("anything is correctly quiet. It is a fault when something was sent and the beat did")
@@ -103,15 +107,15 @@ def main():
 def selftest():
     now = 1000.0
     recs = [
-        {"session_id": "a", "at": 900.0, "name": "alpha", "pane": "w1:p1", "master": ""},
-        {"session_id": "b", "at": 400.0, "name": "beta", "pane": "w1:p2", "master": "alpha"},
-        {"session_id": "c", "at": 995.0, "name": "gamma", "pane": "w1:p3", "master": "alpha"},
+        {"session_id": "a", "at": 900.0, "name": "alpha", "pane": "w1:p1", "reports_to": ""},
+        {"session_id": "b", "at": 400.0, "name": "beta", "pane": "w1:p2", "reports_to": "alpha"},
+        {"session_id": "c", "at": 995.0, "name": "gamma", "pane": "w1:p3", "reports_to": "alpha"},
     ]
     rows = age_rows(recs, now=now)
     assert [r["name"] for r in rows] == ["beta", "alpha", "gamma"], rows
     assert rows[0]["age"] == 600.0
     assert rows[0]["role"] == "sheep"
-    assert rows[1]["role"] == "master"
+    assert rows[1]["role"] == "shephrd"
 
     # alpha is 100s old and beta 600s, so a 200s threshold keeps only beta.
     only = age_rows(recs, now=now, stale=200.0)
@@ -128,7 +132,18 @@ def selftest():
     assert odd[0]["age"] == now
     assert odd[0]["name"] == "(no pane)"
 
-    # A pane with no agent name is named by its pane id, which is what a master looks like.
+    # The role rides on the beat: a god declared in the registry is not derived from having
+    # nobody above it, and a reader that guessed would call it a shephrd.
+    god = age_rows([{"session_id": "g", "at": now, "pane": "w1T:p1",
+                     "reports_to": "", "role": "god"}], now=now)[0]
+    assert god["role"] == "god", god
+    # A beat written before the field existed still resolves.
+    assert age_rows([{"session_id": "o", "at": now, "pane": "w1:p9",
+                      "reports_to": "lead"}], now=now)[0]["role"] == "sheep"
+    assert age_rows([{"session_id": "o", "at": now, "pane": "w1:p9"}],
+                    now=now)[0]["role"] == "shephrd"
+
+    # A pane with no agent name is named by its pane id, which is what a shephrd looks like.
     unnamed = age_rows([{"session_id": "y", "at": now, "pane": "w1T:p1"}], now=now)
     assert unnamed[0]["name"] == "w1T:p1"
 
@@ -147,7 +162,7 @@ def selftest():
     assert old["repo"] == ""
     assert old["worktree"] is False
 
-    print("canary-read selftest: 18 checks passed")
+    print("canary-read selftest: 21 checks passed")
 
 
 if __name__ == "__main__":

@@ -105,6 +105,6 @@ retaking it is what running this command in the new pane does.
 
 Taking the role makes this session the one every pane it spawns reports to, and the only one that
 reaches the user when those panes run unattended. `/spawn-agent` writes the name set here into
-each pane's `HERDR_AGENT_MASTER`, and `shephrd-protocol` is where both halves of that
-relationship are written out. This session has no master of its own: its `HERDR_AGENT_MASTER`
+each pane's `HERDR_REPORTS_TO`, and `shephrd-protocol` is where both halves of that
+relationship are written out. This session has no master of its own: its `HERDR_REPORTS_TO`
 stays empty and that emptiness is what every role check reads to know it may talk to the user.

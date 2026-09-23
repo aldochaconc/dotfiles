@@ -38,8 +38,8 @@ with it.
 | `traffic-auditor` agent | who reported, who went silent, which question is waiting |
 | `/project-manager` | open the pane that tracks state, plans, and holds the boundaries |
 | `/shephrd` | take the coordinating role for the tree this session sits in |
-| `/spawn-agent` | open a pane, carrying name, root and master into it |
-| `/unattended` | tell a master the user has stepped away; a sheep is already unattended |
+| `/spawn-agent` | open a pane, carrying its name, root and who it reports to |
+| `/unattended` | tell a god or shephrd the user has stepped away; a sheep is already unattended |
 | `/restart-agents` | restart panes so they pick up new permissions and hooks, keeping their names |
 | `/exit-agents` | close panes after each session writes what it was doing |
 | `/agents-budget` | report context and account limits per session |
@@ -49,12 +49,12 @@ never types a slash command and still has to know it answers to someone.
 
 ## Hierarchy
 
-`HERDR_AGENT_MASTER` names the session a pane answers to. `/spawn-agent` sets it. A value there
+`HERDR_REPORTS_TO` names the session a pane answers to. `/spawn-agent` sets it. A value there
 means this session reports to that name and asks it rather than the user for any decision; an
 empty value means the session coordinates itself.
 
 That variable is also the unattended switch. A sheep is unattended from its first turn because
-nobody is watching the pane it opened in, so `/unattended` is a command for a master.
+nobody is watching the pane it opened in, so `/unattended` is a command for a god or a shephrd.
 
 Nothing in `herdr agent list` records this, which is why the variable exists.
 
@@ -66,7 +66,7 @@ against an incoming prompt and the end of a turn has none, so the rule is carrie
 paragraph disables the rule silently.
 
 The prohibition on a sheep calling `AskUserQuestion` is enforced by `hooks/ask-gate.py`, a
-`PreToolUse` hook that denies the call when `HERDR_AGENT_MASTER` is set. Hooks are read once at
+`PreToolUse` hook that denies the call when `HERDR_REPORTS_TO` is set. Hooks are read once at
 launch, so a pane started before the plugin was installed does not have it.
 
 Nothing enforces the rule against commands that wait on input. A denial covers one tool; an

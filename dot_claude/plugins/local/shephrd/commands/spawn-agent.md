@@ -87,20 +87,20 @@ pane about three fifths of the width.
    | out of scope | what it must hand back rather than fix | a pane that repairs what it notices crosses into another's work |
 
    The third part is what stops the overlap that matters. A pane finding a defect outside its
-   paths reports it to the master, which routes it; `references/not-stalling.md` holds that rule
+   paths reports it to the session above, which routes it; `references/not-stalling.md` holds that rule
    and this is where the pane learns it applies to itself.
 
-   Two panes overlap only when the master says so, and then it names which one writes. Reviewing
+   Two panes overlap only when the session above says so, and then it names which one writes. Reviewing
    and building the same files is the ordinary case, and it works because one of them is
    read-only.
 
 5. **Record the pair outside the process.**
-   `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py --write <pane> <name> <master>`.
+   `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py --write <pane> <name> <reports-to>`.
 
    The `--env` of step 2 lives in the pane's process, and a restart replaces that process:
    `herdr agent start` takes no `--env` and creates no pane. Measured on 2026-09-23, two panes
    restarted with their threads intact came back with both variables empty, and a sheep read as
-   a master. The pane registry survives that, and a session with an empty variable reads its own pane
+   a god or shephrd. The pane registry survives that, and a session with an empty variable reads its own pane
    there before concluding it coordinates itself.
 
 6. **Label the pane.** `herdr pane rename <pane> <name>`, with the same name passed to `-n`.
@@ -127,9 +127,9 @@ pane about three fifths of the width.
 ## Environment
 
 Set at split time with one `--env` each, so the pane carries them before its first turn:
-`HERDR_AGENT_NAME`, `HERDR_AGENT_ROOT` and `HERDR_AGENT_MASTER`.
+`HERDR_AGENT_NAME`, `HERDR_AGENT_ROOT` and `HERDR_REPORTS_TO`.
 
-`HERDR_AGENT_MASTER` takes this session's own name, which is what makes the spawned pane know who
+`HERDR_REPORTS_TO` takes this session's own name, which is what makes the spawned pane know who
 to report to. Read it from `HERDR_AGENT_NAME`, and from this session's entry in `ListAgents` when
 that is empty, which is the case for any pane opened by hand rather than by this command. A spawn
 that can resolve neither stops rather than opening a pane answering to nobody.

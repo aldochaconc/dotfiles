@@ -11,7 +11,7 @@ Prose cannot fix this, because the failure is the session believing it already c
 turn does not end. `Stop` with exit 2 returns the reason to the model and the turn continues,
 which is the one moment a missing report can still be sent.
 
-Only a sheep is gated. A master reports to nobody, and a session with no `HERDR_AGENT_MASTER`
+Only a sheep is gated. A master reports to nobody, and a session with no `HERDR_REPORTS_TO`
 ends its turns freely.
 
 The check is whether a `SendMessage` appears in this turn. It does not read who it went to or
@@ -87,7 +87,7 @@ def sent_this_turn(transcript_path):
 def verdict(event, env=None):
     """Return (block, reason). Block is False for a master or a session that already sent."""
     env = env if env is not None else os.environ
-    master = (env.get("HERDR_AGENT_MASTER") or "").strip()
+    master = (env.get("HERDR_REPORTS_TO") or "").strip()
     if not master:
         return False, ""
     # An infinite block would trap a session that cannot send at all, so one continuation is
@@ -115,11 +115,11 @@ def selftest():
     import tempfile
     from pathlib import Path
 
-    sheep = {"HERDR_AGENT_MASTER": "lead"}
+    sheep = {"HERDR_REPORTS_TO": "lead"}
 
     # A master is never gated.
     assert verdict({}, {})[0] is False
-    assert verdict({}, {"HERDR_AGENT_MASTER": "   "})[0] is False
+    assert verdict({}, {"HERDR_REPORTS_TO": "   "})[0] is False
 
     with tempfile.TemporaryDirectory() as d:
         sent = Path(d) / "sent.jsonl"
