@@ -1,13 +1,14 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.10.0
+version: 0.11.0
 ---
 
 # shephrd protocol
 
-Sessions running in panes form a hierarchy of one master and its sheep. The master talks to the
-user. A sheep talks to its master. This skill holds who may do what, and the commands that act on
+Sessions running in panes form a hierarchy of three roles. A sheep answers to a shepherd, a
+shepherd herds sheep over one tree, and a god is the single window the user watches when the
+rest runs unattended. This skill holds who may do what, and the commands that act on
 panes live beside it as `/spawn-agent`, `/shephrd`, `/unattended`, `/restart-agents`,
 `/exit-agents` and `/agents-budget`.
 
@@ -22,26 +23,32 @@ Read the role before anything else. Everything below branches on it.
 `HERDR_AGENT_MASTER` carries the name of the session that spawned this one. `/spawn-agent` sets it
 on every pane it opens.
 
-| `HERDR_AGENT_MASTER` | Role | May reach the user | Reports to |
+| Role | Declared by | Reaches the user | Reports to |
 |---|---|---|---|
-| empty | master | yes | nobody |
-| a name | sheep | no | that name |
+| god | `HERDR_GOD`, or the registry | yes, and is the only window the user watches | nobody |
+| shepherd | an empty `HERDR_AGENT_MASTER` | through the god when there is one | the god |
+| sheep | a name in `HERDR_AGENT_MASTER` | no | its shepherd |
+
+A god is declared rather than inferred, opens watchers of its own rather than sheep, and
+receives only what the shepherds could not resolve. `references/roles.md` holds what passes to
+it, what a watcher is, and why two.
 
 Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py`, which answers the pane, the
-name, the master and where each came from. It reads the variable first and falls back to
-`~/.claude/panes/<pane>.json`, which `/spawn-agent` writes.
+name, the master, the scope, the role and where each came from. It reads the variables first and
+falls back to `~/.claude/panes/<pane>.json`, which `/spawn-agent` writes.
 
 The fallback is what makes an empty variable readable. `--env` lives in the pane's process and a
 restart replaces it: `herdr agent start` takes no `--env` and creates no pane, so a restarted
 sheep comes back with nothing and reads as a master. Measured on 2026-09-23 on two panes whose
 threads resumed correctly.
 
-An empty master in both places means the session coordinates itself. A pane absent from the
-registry was opened by hand, or before the registry existed, and that is reported rather than
-assumed either way: taking the master role wrongly puts a sheep in front of the user.
+An empty master in both places, with no god flag, means the session is a shepherd. A pane absent
+from the registry was opened by hand, or before the registry existed, and that is reported rather
+than assumed either way: reading the role wrongly puts a sheep in front of the user, or leaves a
+god waiting for a report nobody is sending.
 
-Today the hierarchy also travels in the text of each instruction, because a master writes "report
-to me" into the prompts it sends. That works and it is not a mechanism: a master that omits the
+Today the hierarchy also travels in the text of each instruction, because a shepherd writes "report
+to me" into the prompts it sends. That works and it is not a mechanism: a shepherd that omits the
 line leaves its pane with nothing, which is what the registry replaces.
 
 Nothing in `herdr agent list` carries the hierarchy and the workspace does not imply it, which is
@@ -318,6 +325,8 @@ single pane is cheaper read directly.
 
 - **`references/herdr-cli.md`** — the herdr subcommands these rules depend on, each with the
   failure it avoids: the two name records, why an exit is not immediate, what `--pane` fixes.
+- **`references/roles.md`** — what reaches a god and what a shepherd resolves instead, what a
+  watcher is and how it differs from a sheep.
 - **`references/environment.md`** — every variable a pane carries, which are set by `/spawn-agent`
   and which herdr supplies on its own.
 - **`references/not-stalling.md`** — what earns a prompt and what is a report, and the command

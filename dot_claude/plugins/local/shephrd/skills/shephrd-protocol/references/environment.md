@@ -41,3 +41,15 @@ master.
 An empty `HERDR_AGENT_MASTER` means the session coordinates itself. In a pane known to have been
 spawned it means the pane predates this plugin, which is reported rather than treated as the
 master role.
+
+## HERDR_GOD
+
+Set on the one session the user watches, and read by `panes.py` as the first of the two things
+that decide a role. Any value other than empty, `0`, `false` or `no` means yes.
+
+It is declared rather than inferred because the alternative fails at the moment it matters: a
+shepherd that has opened no sheep yet is indistinguishable from a god, and the wrong reading
+decides whether a question reaches the user at all.
+
+Like the other variables it lives in the pane's process, so a restart empties it and the registry
+answers instead. `panes.py --write <pane> <name> "" <scope> --god` records it.
