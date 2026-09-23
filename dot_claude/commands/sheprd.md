@@ -1,6 +1,6 @@
 ---
 description: Take the coordinating role for the tree this session sits in, resuming the previous session there or asking what this one is for
-argument-hint: none; the working directory decides everything
+argument-hint: none; the working directory is what the command reads
 allowed-tools: ["Bash", "ListAgents", "SendMessage", "AskUserQuestion"]
 ---
 
@@ -15,37 +15,32 @@ and on whether a session worked this tree before.
 
 ## Position
 
-The level is read from the tree, not asked. Three cases, each with a different consequence, and
-the checks that tell them apart:
+What the working directory governs is not a category. It is read, reported and then confirmed by
+the user, because the same shape means different things in different places and no check
+distinguishes them.
 
-| Level | Detected by | What the session governs |
+What can be read, and what each fact is evidence of:
+
+| Read | Command | What it bears on |
 |---|---|---|
-| grouping directory | not a git repository, and repositories below it | the projects under it, not any one of their trees |
-| repository of repositories | a git repository with repositories nested inside | its own tree plus the nested ones |
-| repository | a git repository with none nested | that tree |
+| whether this directory is a repository | `git rev-parse --show-toplevel` | whether the session's own commits belong to this tree or to one below it |
+| repositories below it | `find . -maxdepth 2 -name .git` | whether work here means opening panes on them |
+| what a repository says about itself | its `CLAUDE.md`, its README | reach beyond the tree: what is deployed, applied or installed from it, which no filesystem check shows |
+| what was worked here before | the transcripts under `~/.claude/projects` | whether the answer is already known and need not be asked |
 
-Measured on 2026-09-22: one work directory holds five repositories and no repository of its own,
-and one repository holds five more nested inside it.
+That reading is reported as a reading, never as a verdict. A directory holding repositories and
+none of its own may be a place to coordinate projects or just a folder someone made; a
+repository with repositories nested inside may own them or merely contain them. The filesystem
+cannot tell, so the report says what was found and the question below asks what it means.
 
-The level is stated at the start, with what it implies. On a tree that is new it is also one of
-the questions below, where confirming it costs nothing because the call is being made anyway.
-On a tree that is not new it is stated and not asked, since the previous session already worked
-under it.
-
-**On a grouping directory**, the work is across projects. A change inside one of them belongs to
-a pane opened on that project, which is what `/spawn-agent` is for.
-
-**Reach beyond the tree** is the repository's own business, not this command's. A tree whose
-contents are deployed, applied or installed somewhere reaches further than the three levels
-above describe, and what that means is written in its `CLAUDE.md`, which every session in it
-already reads. This command classifies what git and the filesystem show and states it; a
-repository that needs more said reads its own file for it.
+The one case where the answer is on disk is the fourth row: a repository whose `CLAUDE.md`
+states its own reach has already answered, and the session reads it instead of asking.
 
 ## Continuity
 
 A tree that was worked before has a transcript directory under `~/.claude/projects`, named after
 the absolute path with every `/` replaced by `-`. Its presence is the test, and it is exact.
-Measured on 2026-09-22: 57 transcripts for one repository, 7 for one grouping directory.
+Measured on 2026-09-22: 57 transcripts for one directory, 7 for another.
 
 | Found | Action |
 |---|---|
@@ -80,15 +75,15 @@ begins, and the answers do not depend on each other.
 
 Asked only when the tree is new:
 
-1. What this session is working on. No file answers it, and every later decision reads against it.
-2. Which helpers it needs, by role. Each becomes a `/spawn-agent` call, so asking once opens
+1. What this directory governs, as options built from what Position read. A directory holding
+   repositories is offered as coordinating them, as one project among them, or as neither, and
+   the options are written from what was found rather than from a fixed list.
+2. What this session is working on. No file answers it, and every later decision reads against it.
+3. Which helpers it needs, by role. Each becomes a `/spawn-agent` call, so asking once opens
    them all instead of one per turn.
-3. Whether the derived level is right, offered as options rather than as a yes: Position states
-   what it read, and this is where a wrong reading is corrected without costing a turn of its
-   own.
 
-The scope of the tree is not asked: the directory is where the tree hangs from, and the table
-above says how far it reaches.
+Question 1 is first because the other two read against its answer: which helpers make sense
+depends on whether the session coordinates several repositories or works inside one.
 
 A tree that is not new asks nothing. The handoff and the transcript carry what the questions
 would have asked, and asking anyway would be asking the user to repeat what is already on disk.
