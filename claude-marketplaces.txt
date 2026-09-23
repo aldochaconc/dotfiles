@@ -19,3 +19,8 @@ anthropics/skills
 obra/superpowers-marketplace
 DietrichGebert/ponytail
 JuliusBrussee/caveman
+
+# Local, not a clone: ~/.claude/plugins/local is written by chezmoi from dot_claude/plugins/local
+# in this repository. bootstrap.sh replays it like the rest, and the add is idempotent. Publishing
+# it later means pushing that directory and swapping this line for the remote.
+~/.claude/plugins/local

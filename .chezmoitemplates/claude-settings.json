@@ -12,6 +12,7 @@
     "caveman@caveman": true,
     "plugin-dev@claude-code-plugins": true,
     "ponytail@ponytail": true,
+    "shephrd@machine-local": true,
     "superpowers@superpowers-marketplace": true
   },
   "extraKnownMarketplaces": {
@@ -35,6 +36,12 @@
           ".claude-plugin",
           "plugins"
         ]
+      }
+    },
+    "machine-local": {
+      "source": {
+        "source": "directory",
+        "path": "{{ .chezmoi.homeDir }}/.claude/plugins/local"
       }
     },
     "ponytail": {
@@ -122,7 +129,7 @@
         "hooks": [
           {
             "command": "python3 ~/.claude/hooks/gate-skill-writes.py",
-            "statusMessage": "Checking a skill write…",
+            "statusMessage": "Checking a skill write\u2026",
             "type": "command"
           }
         ],
@@ -143,7 +150,7 @@
         "hooks": [
           {
             "command": "python3 ~/.claude/hooks/session-register.py",
-            "statusMessage": "Loading the speaking rules…",
+            "statusMessage": "Loading the speaking rules\u2026",
             "timeout": 10,
             "type": "command"
           }

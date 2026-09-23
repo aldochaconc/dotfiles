@@ -30,3 +30,9 @@ plugin-dev@claude-code-plugins
 superpowers@superpowers-marketplace
 ponytail@ponytail
 caveman@caveman
+
+# Written here rather than installed from a remote: the source is this repository, applied to
+# ~/.claude/plugins/local and registered as the machine-local marketplace. Coordinating sessions
+# across panes is a property of the machine and not of any one tree, so it installs at user scope.
+# The herdr CLI is a dependency and not part of it.
+shephrd@machine-local
