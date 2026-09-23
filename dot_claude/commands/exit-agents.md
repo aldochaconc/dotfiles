@@ -26,38 +26,54 @@ Per pane, in order. A pane that fails a check is reported and left running.
    This session never closes itself. The process running the command is the one that would die,
    and the user closes it.
 
-2. **Check the state.** `agent_status` of `working` means the session is mid-operation, and
-   closing it cuts that operation. It is reported and skipped, not waited on: what it is doing
-   is unknown from here, and a wait with no bound is worse than a report.
+2. **Wait for the turn to end.** `agent_status` of `working` means the session is mid-operation.
+   `herdr agent wait <pane> --until idle --timeout <ms>` blocks until it settles, and the pane is
+   reported as still working when the timeout is reached rather than cut off.
+
+   The turn is never interrupted. A message sent to a working session is queued and delivered
+   when it settles, so nothing is lost by waiting, while an exit mid-turn discards whatever the
+   turn was producing.
+
+   Every wait is bounded. Without `--timeout` the wait is indefinite, and a session that never
+   settles would hold the whole close open.
 
 3. **Check the tree.** `git -C <cwd> status --short` on the session's working directory. This is
    the loss that can be seen from outside without asking anyone, and it is the one that matters:
    uncommitted work in a tree nobody is watching. It is reported with the pane rather than
    resolved, since committing is the user's.
 
-4. **Ask for the summary.** One message to the session asking it to write, before exiting, a
-   file under `~/.claude/sessions/<name>-<date>.md` holding what it did, what is unfinished,
-   and what the next session on that tree has to know. That directory is outside chezmoi, which
-   is correct: a summary is machine state and not configuration.
+4. **Read the budget, then ask for the summary.** The status bar in `herdr agent read <pane>`
+   carries `ctx`, `5h` and `7d`, and it is read after the wait rather than before: the turn that
+   just ended spent context, so a figure taken earlier describes a session that no longer exists.
+
+   A session with no context left cannot write a summary, and asking costs it the little that
+   remains. It is closed with what exists and the report says the summary is missing and why.
+
+   Otherwise one message asks it to write, before exiting, a file under
+   `~/.claude/sessions/<name>-<date>.md` holding what it did, what is unfinished, and what the
+   next session on that tree has to know. That directory is outside chezmoi, which is correct:
+   a summary is machine state and not configuration.
 
    The reply says whether the file was written. A session that does not answer is reported and
-   left running, because silence and "nothing to save" are not the same answer.
+   left running, because silence and "nothing to save" are not the same answer. Writing the
+   summary is itself a turn, so the session goes to `working` again and the wait from step 2
+   applies before the exit.
 
-5. **Read the budget.** The status bar in `herdr agent read <pane>` carries `ctx`, `5h` and
-   `7d`. A session out of context cannot write a summary, and asking it again only burns what is
-   left: it is closed with what exists, and the report says the summary is missing and why.
-
-6. **Exit.** `herdr agent prompt <pane> "/exit"`.
+5. **Exit.** `herdr agent prompt <pane> "/exit"`.
 
    `herdr agent send-keys <pane> ctrl+d` does not close it: the call returns `ok` and the agent
    stays alive.
 
-7. **Confirm.** `herdr agent list` until the `pane_id` is gone. The exit is not immediate, and
+6. **Confirm.** `herdr agent list` until the `pane_id` is gone. The exit is not immediate, and
    `herdr agent read` in that interval returns the shell prompt with Claude's status bar still
    drawn, so a pane that has already exited reads as alive.
 
 ## Reporting
 
 One line per pane: its name, whether a summary was written and where, what `git status` showed,
-and whether it closed. A pane skipped at step 2 or 3 is named with the reason, so the decision
+and whether it closed. A pane left running is named with the reason, which is one of three: the
+wait timed out, the session never answered, or its tree carries uncommitted work. The decision
 to close it anyway stays the user's.
+
+A summary missing for want of context is reported as that, not as a failure: the session was
+closed deliberately with what it had.
