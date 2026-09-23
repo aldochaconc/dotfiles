@@ -1,9 +1,17 @@
+---
+description: Shared procedure read by /spawn-sheep, /spawn-shephrd and /spawn-watcher; not invoked alone, since it carries no role
+disable-model-invocation: true
+---
+
 # Spawning a pane
 
 `/spawn-sheep`, `/spawn-shephrd` and `/spawn-watcher` open a pane by one procedure and differ
 only in what they record. The procedure lives here once, and each command names its row of the
-table below and sends its first prompt. It sits outside `skills/` because it is read by the three
-commands and by nothing that triggers on a description.
+table below and sends its first prompt.
+
+It sits in `commands/`, so Claude Code registers it as `/shephrd:spawning`. Run alone it has no
+row to apply and would open a pane with no role, which is why the model never invokes it and a
+person reaches for one of the three commands instead.
 
 A pane opened by hand has to be told what it is afterwards, and a session restarted later comes
 back under a generated name. Both are identity written after the fact instead of carried from
