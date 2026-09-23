@@ -57,9 +57,12 @@ Per pane, in order. A pane that fails a check is reported and left running.
    remains. It is closed with what exists and the report says the summary is missing and why.
 
    Otherwise one message asks it to write, before exiting, a file under
-   `~/.claude/sessions/<name>-<date>.md` holding what it did, what is unfinished, and what the
+   `~/.claude/handoff/<name>-<date>.md` holding what it did, what is unfinished, and what the
    next session on that tree has to know. That directory is outside chezmoi, which is correct:
    a summary is machine state and not configuration.
+
+   The directory is `handoff` and not `sessions`, because `~/.claude/sessions` belongs to Claude
+   Code, which keeps ten files of its own there named by process id.
 
    The reply says whether the file was written. A session that does not answer is reported and
    left running, because silence and "nothing to save" are not the same answer. Writing the
