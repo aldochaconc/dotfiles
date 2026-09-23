@@ -38,9 +38,10 @@ USAGE = (
     "usage:\n"
     "  panes.py                                          resolve this session's identity\n"
     "  panes.py --write <pane> <name> [master] [scope]   record one pane\n"
+    "  panes.py --write <pane> <name> \"\" <scope> --god  record the session the user watches\n"
     "\n"
-    "Every argument after --write is positional. Scope is the rest of the line, unquoted or\n"
-    "quoted, and takes no flag of its own."
+    "Every argument after --write is positional except --god, which is a flag. Scope is the\n"
+    "rest of the line, unquoted or quoted, and takes no flag of its own."
 )
 
 
@@ -49,7 +50,32 @@ def key(pane):
     return (pane or "").strip().replace(":", "-") + ".json"
 
 
-def write(pane, name, master, scope=None, directory=None):
+def truthy(value):
+    """Whether a flag string means yes. Empty, `0`, `false` and `no` mean no."""
+    return (value or "").strip().lower() not in ("", "0", "false", "no")
+
+
+def role_of(master, god=False):
+    """One of `god`, `shepherd` or `sheep`.
+
+    A sheep answers to a master. A shepherd answers to nobody and herds sheep.
+
+    A god is the session the user watches, and the only one they watch when everything runs
+    unattended and they are reading from a phone. It is declared rather than inferred: a
+    shepherd with no sheep yet is indistinguishable from outside, and reading the role wrong
+    here decides whether a question reaches the user at all.
+
+    What makes it work is what does not reach it. Every shepherd gates before sending, so a god
+    sees decisions only the user can take, a tree that is blocked, a milestone that landed, and a
+    command needing elevation. A shepherd that forwards everything turns the one window into
+    noise, which is the failure this role is built to avoid.
+    """
+    if god:
+        return "god"
+    return "sheep" if (master or "").strip() else "shepherd"
+
+
+def write(pane, name, master, scope=None, god=False, directory=None):
     """Record what a spawn declared for one pane. Returns the path, or None with no pane.
 
     `scope` is what this pane may touch, which a directory does not say: four panes sat on one
@@ -69,6 +95,7 @@ def write(pane, name, master, scope=None, directory=None):
         "name": (name or "").strip(),
         "master": (master or "").strip(),
         "scope": (scope or "").strip(),
+        "god": bool(god),
     }))
     tmp.replace(target)
     return target
@@ -76,7 +103,8 @@ def write(pane, name, master, scope=None, directory=None):
 
 def read(pane, directory=None):
     """What was recorded for a pane. Empty fields when nothing was, or the file is unreadable."""
-    blank = {"pane": (pane or "").strip(), "name": "", "master": "", "scope": ""}
+    blank = {"pane": (pane or "").strip(), "name": "", "master": "", "scope": "",
+             "god": False}
     pane = (pane or "").strip()
     if not pane:
         return blank
@@ -91,6 +119,7 @@ def read(pane, directory=None):
         "name": (d.get("name") or "").strip(),
         "master": (d.get("master") or "").strip(),
         "scope": (d.get("scope") or "").strip(),
+        "god": bool(d.get("god")),
     }
 
 
@@ -107,6 +136,8 @@ def resolve(env=None, directory=None):
     source = "env"
     scope = ""
 
+    god = truthy(env.get("HERDR_GOD"))
+
     if pane:
         rec = read(pane, directory)
         # Scope has no environment variable: the registry is where it lives at all.
@@ -115,8 +146,19 @@ def resolve(env=None, directory=None):
             name, source = rec["name"], "registry"
         if not master and rec["master"]:
             master, source = rec["master"], "registry"
+        # The flag lives in the process and a restart empties it, so the registry answers for it
+        # exactly as it does for the master.
+        god = god or rec["god"]
 
-    return {"pane": pane, "name": name, "master": master, "scope": scope, "source": source}
+    return {
+        "pane": pane,
+        "name": name,
+        "master": master,
+        "scope": scope,
+        "god": god,
+        "role": role_of(master, god),
+        "source": source,
+    }
 
 
 def main(argv=None):
@@ -130,13 +172,15 @@ def main(argv=None):
     if "--help" in argv or "-h" in argv:
         print(USAGE)
         return 0
-    unknown = [a for a in argv if a.startswith("-") and a not in ("--write", "--selftest")]
+    unknown = [a for a in argv
+               if a.startswith("-") and a not in ("--write", "--selftest", "--god")]
     if unknown:
         print(f"unknown argument: {unknown[0]}\n{USAGE}", file=sys.stderr)
         return 2
 
     if "--write" in argv:
-        rest = argv[argv.index("--write") + 1:]
+        god = "--god" in argv
+        rest = [a for a in argv[argv.index("--write") + 1:] if a != "--god"]
         if not rest:
             print(USAGE, file=sys.stderr)
             return 2
@@ -144,7 +188,7 @@ def main(argv=None):
         name = rest[1] if len(rest) > 1 else ""
         master = rest[2] if len(rest) > 2 else ""
         scope = " ".join(rest[3:]) if len(rest) > 3 else ""
-        target = write(pane, name, master, scope)
+        target = write(pane, name, master, scope, god)
         if target is None:
             print("no pane given", file=sys.stderr)
             return 2
@@ -196,14 +240,14 @@ def selftest():
 
     with tempfile.TemporaryDirectory() as d:
         # Scope rides with the pane and survives a restart, since no variable carries it.
-        write("w1R:p9", "pr-reviewer", "lead", "read-only: the four PR bodies", d)
+        write("w1R:p9", "pr-reviewer", "lead", "read-only: the four PR bodies", directory=d)
         assert read("w1R:p9", d)["scope"] == "read-only: the four PR bodies"
         r = resolve({"HERDR_PANE_ID": "w1R:p9"}, d)
         assert r["scope"] == "read-only: the four PR bodies", r
         assert r["master"] == "lead"
 
         # A pane recorded without one has no scope rather than a missing key.
-        write("w1T:p6", "worker", "lead", None, d)
+        write("w1T:p6", "worker", "lead", None, directory=d)
         assert read("w1T:p6", d)["scope"] == ""
         # Scope is read even when the environment supplies both names.
         full = resolve({
@@ -218,6 +262,31 @@ def selftest():
     assert main(["--write"]) == 2
     assert main(["--write", ""]) == 2
 
+    # The three roles, from the two things that decide them.
+    assert role_of("") == "shepherd"
+    assert role_of("lead") == "sheep"
+    assert role_of("", god=True) == "god"
+    # A god with a master is a contradiction the flag wins, since only a spawn sets a master and
+    # only the user declares a god.
+    assert role_of("lead", god=True) == "god"
+
+    assert truthy("1") is True
+    assert truthy("") is False
+    assert truthy("false") is False
+    assert truthy("  no  ") is False
+
+    with tempfile.TemporaryDirectory() as d:
+        # The flag survives a restart the same way the master does.
+        write("w1T:p1", "os-master", "", "dotfiles", god=True, directory=d)
+        assert read("w1T:p1", d)["god"] is True
+        r = resolve({"HERDR_PANE_ID": "w1T:p1"}, d)
+        assert r["role"] == "god", r
+        # The environment declares one where the registry has no entry at all.
+        assert resolve({"HERDR_PANE_ID": "w9:p9", "HERDR_GOD": "1"}, d)["role"] == "god"
+        # And a pane recorded without it stays a shepherd.
+        write("w1R:p1", "herder-b", "", "one tree", directory=d)
+        assert resolve({"HERDR_PANE_ID": "w1R:p1"}, d)["role"] == "shepherd"
+
     # An unknown flag is refused rather than falling through to the read branch, which printed a
     # record and looked like success.
     assert main(["--scope", "x"]) == 2
@@ -225,7 +294,7 @@ def selftest():
     assert main(["--help"]) == 0
     assert main(["-h"]) == 0
 
-    print("panes selftest: 29 checks passed")
+    print("panes selftest: 43 checks passed")
 
 
 if __name__ == "__main__":
