@@ -15,36 +15,37 @@ and on whether a session worked this tree before.
 
 ## Position
 
-The level is read from the tree, not asked. Four cases, each with a different consequence, and
+The level is read from the tree, not asked. Three cases, each with a different consequence, and
 the checks that tell them apart:
 
 | Level | Detected by | What the session governs |
 |---|---|---|
-| chezmoi source | `chezmoi source-path` equals this directory | the machine: what is committed here is applied to `$HOME` |
 | grouping directory | not a git repository, and repositories below it | the projects under it, not any one of their trees |
 | repository of repositories | a git repository with repositories nested inside | its own tree plus the nested ones |
 | repository | a git repository with none nested | that tree |
 
-Measured on 2026-09-22: `chezmoi managed` lists 138 files for the chezmoi source, one work
-directory holds five repositories and no repository of its own, and one repository holds five
-more nested inside it.
+Measured on 2026-09-22: one work directory holds five repositories and no repository of its own,
+and one repository holds five more nested inside it.
 
-The level is stated at the start, with what it implies, and the session proceeds on it. A wrong
-reading is corrected by the user in one sentence, which is cheaper than a question asked at
-every start.
-
-**On the chezmoi source**, the opening line says the tree governs the machine and how many files
-`chezmoi managed` counts. Nothing else changes: the rules that already cover it are in the
-instructions file and in that repository's own `CLAUDE.md`.
+The level is stated at the start, with what it implies. On a tree that is new it is also one of
+the questions below, where confirming it costs nothing because the call is being made anyway.
+On a tree that is not new it is stated and not asked, since the previous session already worked
+under it.
 
 **On a grouping directory**, the work is across projects. A change inside one of them belongs to
 a pane opened on that project, which is what `/spawn-agent` is for.
+
+**Reach beyond the tree** is the repository's own business, not this command's. A tree whose
+contents are deployed, applied or installed somewhere reaches further than the three levels
+above describe, and what that means is written in its `CLAUDE.md`, which every session in it
+already reads. This command classifies what git and the filesystem show and states it; a
+repository that needs more said reads its own file for it.
 
 ## Continuity
 
 A tree that was worked before has a transcript directory under `~/.claude/projects`, named after
 the absolute path with every `/` replaced by `-`. Its presence is the test, and it is exact.
-Measured on 2026-09-22: 57 transcripts for the chezmoi source, 7 for one work directory.
+Measured on 2026-09-22: 57 transcripts for one repository, 7 for one grouping directory.
 
 | Found | Action |
 |---|---|
@@ -73,14 +74,24 @@ reported with its label, and starting Claude in it is `/spawn-agent`.
 
 ## Questions
 
-Asked only when the tree is new, in one `AskUserQuestion` call:
+Every question this command has goes in one `AskUserQuestion` call, answered in one pass. The
+point is starting fast: a session that asks one thing per turn spends four turns before any work
+begins, and the answers do not depend on each other.
+
+Asked only when the tree is new:
 
 1. What this session is working on. No file answers it, and every later decision reads against it.
 2. Which helpers it needs, by role. Each becomes a `/spawn-agent` call, so asking once opens
    them all instead of one per turn.
+3. Whether the derived level is right, offered as options rather than as a yes: Position states
+   what it read, and this is where a wrong reading is corrected without costing a turn of its
+   own.
 
-The level is not asked, because Position already derives it. The scope of the tree is not asked
-either: the directory is where the tree hangs from, and the table above says how far it reaches.
+The scope of the tree is not asked: the directory is where the tree hangs from, and the table
+above says how far it reaches.
+
+A tree that is not new asks nothing. The handoff and the transcript carry what the questions
+would have asked, and asking anyway would be asking the user to repeat what is already on disk.
 
 ## Name
 
