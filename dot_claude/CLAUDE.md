@@ -110,6 +110,13 @@ Anything under `~/.config`, or about Hyprland, Omarchy, terminals, themes or dis
 `omarchy` first, then the project's CLAUDE.md for the rules of that repository. A crash, a core
 dump or a "Process crashed" notification: `diagnose-crash`.
 
+A session running in a pane answers to whoever spawned it, and `HERDR_AGENT_MASTER` carries that
+name. A value there means this session reports to it at the end of every turn and asks it rather
+than the user for any decision; an empty value means the session is on its own. Load
+`shephrd-protocol` before messaging a peer, before asking the user anything while that variable
+is set, and whenever the mode is unattended. The rule is here because a slave never invokes a
+slash command and would otherwise never learn it has a master.
+
 A command needing root runs as `pkexec <command>`, which raises polkit's graphical prompt on
 screen. Plain `sudo` fails from an agent session with "a terminal is required to read the
 password": there is no tty to type it into, in any directory and any repository. The `omarchy`
