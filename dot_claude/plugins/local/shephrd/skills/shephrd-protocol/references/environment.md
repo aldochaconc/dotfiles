@@ -10,10 +10,10 @@ Passed as `--env` at split time, so the pane holds them before its first turn.
 |---|---|---|
 | `HERDR_AGENT_NAME` | the name passed to `-n` | herdr holds a name per pane and Claude registers its own; a pane reading only one of them can disagree with what peers address |
 | `HERDR_AGENT_ROOT` | the directory the pane was opened for | `cwd` moves as the session works, and the directory it was spawned for does not |
-| `HERDR_AGENT_MASTER` | the name of the session that spawned it | nothing in `herdr agent list` records who a pane answers to |
+| `HERDR_REPORTS_TO` | the name of the session that spawned it | nothing in `herdr agent list` records who a pane answers to |
 
-`herdr agent list` carries a `workspace_id` per pane and no field naming a master: measured on
-2026-09-22 across six agents in three workspaces. Deriving the master from the workspace fails on
+`herdr agent list` carries a `workspace_id` per pane and no field naming a god or shephrd: measured on
+2026-09-22 across six agents in three workspaces. Deriving the session above from the workspace fails on
 the same reading, where one workspace's first pane carried no `name` at all and another pane's
 registered name disagreed with the title its terminal still displayed.
 
@@ -35,12 +35,11 @@ workspace to spawn into and no layout to read.
 An empty `HERDR_AGENT_NAME` means the pane was opened by hand rather than by `/spawn-agent`.
 Measured on 2026-09-22: the first pane of a workspace answered to `os-master` in `ListAgents`
 with `HERDR_AGENT_NAME` unset. A session spawning from there resolves its own name from
-`ListAgents` instead, since passing the empty value through would tell every sheep it has no
-master.
+`ListAgents` instead, since passing the empty value through would tell every sheep it has nobody above it.
 
-An empty `HERDR_AGENT_MASTER` means the session coordinates itself. In a pane known to have been
+An empty `HERDR_REPORTS_TO` means the session coordinates itself. In a pane known to have been
 spawned it means the pane predates this plugin, which is reported rather than treated as the
-master role.
+shephrd role.
 
 ## HERDR_GOD
 
@@ -48,7 +47,7 @@ Set on the one session the user watches, and read by `panes.py` as the first of 
 that decide a role. Any value other than empty, `0`, `false` or `no` means yes.
 
 It is declared rather than inferred because the alternative fails at the moment it matters: a
-shepherd that has opened no sheep yet is indistinguishable from a god, and the wrong reading
+shephrd that has opened no sheep yet is indistinguishable from a god, and the wrong reading
 decides whether a question reaches the user at all.
 
 Like the other variables it lives in the pane's process, so a restart empties it and the registry

@@ -1,13 +1,13 @@
 ---
 name: shephrd-protocol
-description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.12.0
+description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al god", "who do I report to", or when working with HERDR_REPORTS_TO, HERDR_PANE_ID, ListAgents or herdr panes.
+version: 0.13.0
 ---
 
 # shephrd protocol
 
-Sessions running in panes form a hierarchy of three roles. A sheep answers to a shepherd, a
-shepherd herds sheep over one tree, and a god is the single window the user watches when the
+Sessions running in panes form a hierarchy of three roles. A sheep answers to a shephrd, a
+shephrd herds sheep over one tree, and a god is the single window the user watches when the
 rest runs unattended. This skill holds who may do what, and the commands that act on
 panes live beside it as `/spawn-agent`, `/shephrd`, `/unattended`, `/restart-agents`,
 `/exit-agents` and `/agents-budget`.
@@ -20,36 +20,40 @@ Read the role before anything else. Everything below branches on it.
 
 ## Role
 
-`HERDR_AGENT_MASTER` carries the name of the session that spawned this one. `/spawn-agent` sets it
+`HERDR_REPORTS_TO` carries the name of the session that spawned this one. `/spawn-agent` sets it
 on every pane it opens.
 
 | Role | Declared by | Reaches the user | Reports to |
 |---|---|---|---|
 | god | `HERDR_GOD`, or the registry | yes, and is the only window the user watches | nobody |
-| shepherd | an empty `HERDR_AGENT_MASTER` | through the god when there is one | the god |
-| sheep | a name in `HERDR_AGENT_MASTER` | no | its shepherd |
+| shephrd | an empty `HERDR_REPORTS_TO` | through the god when there is one | the god |
+| sheep | a name in `HERDR_REPORTS_TO` | no | its shephrd |
 
-A god is declared rather than inferred and receives only what the shepherds could not resolve.
+A god is declared rather than inferred and receives only what the shephrds could not resolve.
 What it opens is watchers rather than sheep: they keep the backlog, the notes and the mail around
-the work, and write no code. `references/roles.md` holds what passes to a god, what a watcher
-writes, and why two.
+the work, write no code, and act only on an errand rather than on what they notice.
+
+Shephrds talk to each other directly, and take a decision to the god rather than settling it
+between themselves: information moves sideways, a decision moves up.
+
+`references/roles.md` holds what passes to a god, what a watcher writes, and why two.
 
 Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py`, which answers the pane, the
-name, the master, the scope, the role and where each came from. It reads the variables first and
+name, the session it reports to, the scope, the role and where each came from. It reads the variables first and
 falls back to `~/.claude/panes/<pane>.json`, which `/spawn-agent` writes.
 
 The fallback is what makes an empty variable readable. `--env` lives in the pane's process and a
 restart replaces it: `herdr agent start` takes no `--env` and creates no pane, so a restarted
-sheep comes back with nothing and reads as a master. Measured on 2026-09-23 on two panes whose
+sheep comes back with nothing and reads as a shephrd. Measured on 2026-09-23 on two panes whose
 threads resumed correctly.
 
-An empty master in both places, with no god flag, means the session is a shepherd. A pane absent
+An empty `HERDR_REPORTS_TO` in both places, with no god flag, means the session is a shephrd. A pane absent
 from the registry was opened by hand, or before the registry existed, and that is reported rather
 than assumed either way: reading the role wrongly puts a sheep in front of the user, or leaves a
 god waiting for a report nobody is sending.
 
-Today the hierarchy also travels in the text of each instruction, because a shepherd writes "report
-to me" into the prompts it sends. That works and it is not a mechanism: a shepherd that omits the
+Today the hierarchy also travels in the text of each instruction, because a shephrd writes "report
+to me" into the prompts it sends. That works and it is not a mechanism: a shephrd that omits the
 line leaves its pane with nothing, which is what the registry replaces.
 
 Nothing in `herdr agent list` carries the hierarchy and the workspace does not imply it, which is
@@ -57,13 +61,13 @@ why the variable and the registry exist at all; `references/environment.md` hold
 
 ### What a pane may touch
 
-The registry carries a `scope` beside the master: what this pane owns, in paths, in a branch, and
+The registry carries a `scope` beside the name: what this pane owns, in paths, in a branch, and
 in what it must hand back rather than fix. A directory does not answer it. Measured on
 2026-09-23: four panes shared one repository and three were nested inside each other, with
 nothing saying whose work was whose; nothing collided because only one of them wrote.
 
 Read it with the same call that resolves the role. A file outside the scope is reported to the
-master rather than changed, which is the rule in `references/not-stalling.md` applied to this
+the session above rather than changed, which is the rule in `references/not-stalling.md` applied to this
 session rather than to a finding it makes elsewhere.
 
 Nothing enforces it. Two panes writing one file produce two versions and the loss is discovered
@@ -102,7 +106,7 @@ and the question no longer matters, and say that it was dismissed.
 
 ## Reporting
 
-Every session reports to its master at the end of every turn. This holds in every mode, whether
+Every session reports upward at the end of every turn. This holds in every mode, whether
 the session runs unattended or the user is typing into it directly.
 
 What enforces this is not the skill. A description matches an incoming prompt, and the end of a
@@ -113,7 +117,7 @@ delivery.
 
 The end of the turn is the only point a report can leave. `SendMessage` runs inside a turn, so
 there is no asynchronous channel out of a long one: a turn that takes twenty minutes leaves the
-master without news for twenty minutes, and no rule changes that.
+session above without news for twenty minutes, and no rule changes that.
 
 Which makes the length of a turn a property of the protocol rather than a detail. Anything that
 runs longer than a few seconds goes to the background, with `run_in_background` on the `Bash`
@@ -131,8 +135,8 @@ work.
 
 ### A report is a message, not a section
 
-Text written into the reply under a heading naming the master reaches nobody. It renders in a pane
-that nobody is watching and the turn ends with the master knowing nothing, while the session has
+Text written into the reply under a heading naming the recipient reaches nobody. It renders in a pane
+that nobody is watching and the turn ends with that recipient knowing nothing, while the session has
 every impression of having reported. Measured on 2026-09-23: a session produced a full report
 with sections for done, in flight and blocked, and its transcript carried one `SendMessage` from
 hours earlier.
@@ -145,30 +149,30 @@ the report goes out and the turn ends after it.
 It checks that a message was sent and nothing about its content. That boundary divides two jobs.
 The hook runs on every turn of every pane, so it answers what a regex answers. Whether the
 reports are any good is a pattern across turns, and `traffic-auditor` reads it from the
-transcripts when someone asks, in its own context rather than the master's.
+transcripts when someone asks, in its own context rather than the session above's.
 
-A master is not gated, since it reports to nobody.
+A god is not gated, since it reports to nobody.
 
 ## Unattended
 
 A sheep is unattended from its first turn. Nothing turns the mode on for it: a non-empty
-`HERDR_AGENT_MASTER` is the mode, because a pane that was spawned has nobody watching it and the
-person who would answer a question is sitting in front of the master. Waiting to be told costs
+`HERDR_REPORTS_TO` is the mode, because a pane that was spawned has nobody watching it and the
+person who would answer a question is sitting in front of the session above. Waiting to be told costs
 the first question, which is the one that stalls the pane before anyone knows it opened.
 
-`/unattended` therefore exists for the master, which is attended by default and is told when the
-user leaves. A master may also run it on itself, and what it means there is the opposite of what
+`/unattended` therefore exists for the session above, which is attended by default and is told when the
+user leaves. A god may also run it on itself, and what it means there is the opposite of what
 it means in a sheep.
 
 | Role | Default | What `/unattended` does |
 |---|---|---|
-| master | attended: the user is there | switches it to advancing alone and batching questions |
+| god, shephrd | attended: the user is there | switches it to advancing alone and batching questions |
 | sheep | unattended from the first turn | nothing; the mode is already on and cannot be turned off |
 
-A sheep does not leave the mode on its own. The user being back is a fact about the master's pane,
-not about this one, and only the master or the user says so.
+A sheep does not leave the mode on its own. The user being back is a fact about the session above's pane,
+not about this one, and only the session above or the user says so.
 
-### A master unattended
+### A god or shephrd unattended
 
 Advance without asking. A decision with a defensible default is taken with the default and
 reported as taken that way: a session that stops at every default has not run unattended.
@@ -184,35 +188,35 @@ Two things break the batch and reach the user at once:
 - a blocked sheep, which has stopped: every turn of waiting is a turn it does not spend
 
 Answer a sheep's question when the answer is available, and pass it on only when it is not.
-Relaying every question unchanged makes the master a pipe and the mode pointless.
+Relaying every question unchanged makes the session above a pipe and the mode pointless.
 
-No hook stops a master from asking, so the judgement is the only gate and a question on screen
+No hook stops a god from asking, so the judgement is the only gate and a question on screen
 holds that pane until the user reads it. `references/not-stalling.md` carries the test for which
 questions earn a prompt, and the measured case of one that did not.
 
 ### Work found is work routed
 
-A finding is not an assignment to whoever found it. A master that repairs what it notices fills
+A finding is not an assignment to whoever found it. A god or shephrd that repairs what it notices fills
 its own context with work any pane could have done.
 
 | Question, in order | Answer | Where the finding goes |
 |---|---|---|
 | Was a pane already working on this? | yes | back to that pane |
 | Does the repair take more than a turn? | yes | a new pane, opened with `/spawn-agent` |
-| Neither | | the master does it |
+| Neither | | the session above does it |
 
 `references/not-stalling.md` carries why the first question outranks the second, and the
-measured case of a master that offered itself first.
+measured case of a god or shephrd that offered itself first.
 
 
 ### A sheep unattended
 
 `AskUserQuestion` is denied by a hook, not by this rule. `hooks/ask-gate.py` returns
-`permissionDecision: "deny"` for any session with a non-empty `HERDR_AGENT_MASTER`, because the
+`permissionDecision: "deny"` for any session with a non-empty `HERDR_REPORTS_TO`, because the
 written prohibition was measured failing: on 2026-09-22 a sheep carrying it asked anyway and the
 menu sat open in a pane nobody was looking at.
 
-A denial is not the end of the turn. The refusal comes back as a tool result naming the master and
+A denial is not the end of the turn. The refusal comes back as a tool result naming the session above and
 what to do instead, so the session sends the question there and continues. Nothing has to be
 restarted or re-attached, which is the difference between a denied call and a menu waiting for a
 keystroke.
@@ -223,22 +227,22 @@ is not at.
 
 Reaching a decision the sheep may not take runs three steps, in order.
 
-1. **Check the master is alive.** `ListAgents` lists the running sessions. Waiting on a session
+1. **Check the session above is alive.** `ListAgents` lists the running sessions. Waiting on a session
    that is not there is waiting forever, and the escalation that would rescue the sheep is written
-   to run inside the master.
+   to run inside the session above.
 
    | Master in `ListAgents` | What the sheep does |
    |---|---|
    | present | step 2 |
-   | absent | stop, report the work as blocked and name the master as gone, and address the user directly |
+   | absent | stop, report the work as blocked and name the session above as gone, and address the user directly |
 
    Addressing the user is allowed in that one case and in no other. The rule forbidding it exists
-   so questions reach the user through one session rather than five; a master that no longer
+   so questions reach the user through one session rather than five; a god or shephrd that no longer
    exists routes nothing, and the alternative is a pane waiting on a name nobody holds.
 
-2. **Send the question.** It carries what the master needs in order to decide without opening the
+2. **Send the question.** It carries what the session above needs in order to decide without opening the
    tree: what is blocked, the options, and what each one costs. A message saying only that
-   something is blocked makes the master reconstruct the question from the repository.
+   something is blocked makes the session above reconstruct the question from the repository.
 
 3. **Stop.** Take no further action in the turn beyond writing the report.
 
@@ -283,7 +287,7 @@ Nothing in `herdr agent list` shows this: it reports what the terminal is doing.
 
 So every pane leaves a beat. `hooks/canary.py` runs on `Stop` and writes
 `~/.claude/canary/<session_id>.json` with the time of the last completed turn, the pane, the name
-and the master. `hooks/canary-read.py` prints them oldest first.
+and the session above. `hooks/canary-read.py` prints them oldest first.
 
 An old beat is not a fault by itself: a pane nobody asked anything is correctly quiet. It is a
 fault when something was sent and the beat did not move, and that comparison is what the reader
@@ -326,7 +330,7 @@ single pane is cheaper read directly.
 
 - **`references/herdr-cli.md`** — the herdr subcommands these rules depend on, each with the
   failure it avoids: the two name records, why an exit is not immediate, what `--pane` fixes.
-- **`references/roles.md`** — what reaches a god and what a shepherd resolves instead, what a
+- **`references/roles.md`** — what reaches a god and what a shephrd resolves instead, what a
   watcher is and how it differs from a sheep.
 - **`references/environment.md`** — every variable a pane carries, which are set by `/spawn-agent`
   and which herdr supplies on its own.

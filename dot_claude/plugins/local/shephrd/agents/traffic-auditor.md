@@ -46,8 +46,8 @@ kept for is exactly what the next run does again from disk.
 ## What the protocol requires
 
 Read `shephrd-protocol` before auditing, since it is the standard this measures against. In
-short: every session reports to its master at the end of every turn, a sheep sends its blocking
-questions to the master rather than to the user, and a master answers what it can rather than
+short: every session reports upward at the end of every turn, a sheep sends its blocking
+questions to the session above rather than to the user, and a god or shephrd answers what it can rather than
 relaying everything.
 
 ## What to read
@@ -77,10 +77,10 @@ any of the text.
    | names what was done, what is in flight and what is blocked | none |
    | says a turn happened and nothing about it | a report that satisfies the gate and informs nobody |
    | repeats the previous turn's report | the session is stalled and reporting as if it were not |
-   | omits work the transcript shows it did | the master is deciding against a partial picture |
+   | omits work the transcript shows it did | the session above is deciding against a partial picture |
 
    The last one is the expensive finding and the reason to read both sides. A report that leaves
-   out a failed command or an abandoned approach costs the master a decision it would not have
+   out a failed command or an abandoned approach costs the session above a decision it would not have
    taken.
 
    A pane with no beat in `~/.claude/canary` and no send at all predates the hooks. Report that
@@ -91,8 +91,8 @@ any of the text.
    waiting, since a sheep that asked and got nothing is stopped.
 
 3. **Questions that went the wrong way.** A sheep that raised an `AskUserQuestion` instead of
-   messaging its master. On a pane spawned since version 0.2.0 the hook denies this, so an
-   instance means either an older pane or a session whose master is empty.
+   messaging the session above it. On a pane spawned since version 0.2.0 the hook denies this, so an
+   instance means either an older pane or a session with nobody above it.
 
 4. **Failed delivery.** A send that came back refused, expired or unreachable. These appear in
    the sender's transcript as the tool result and are easy to miss, because the sending session
