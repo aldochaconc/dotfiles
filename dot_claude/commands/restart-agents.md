@@ -42,12 +42,20 @@ Per pane, in order. The target of each command is the pane id, which never chang
    and one line on what to resume. Its context dies with the process, so what is not written to
    disk is gone. A session that does not answer is reported to the user, who decides.
 
-3. **Exit.** `herdr agent prompt <pane> "/exit"`.
+   A message to a session reported as `working` is queued and delivered when its turn ends, so
+   the question costs nothing but the wait. The turn is never interrupted.
+
+3. **Wait for it to settle.** `herdr agent wait <pane> --until idle --timeout <ms>`. An exit
+   sent mid-turn discards what the turn was producing, including the answer to step 2. Every
+   wait carries a timeout: without one it is indefinite, and a session that never settles holds
+   the whole restart open. A pane that times out is reported and left running.
+
+4. **Exit.** `herdr agent prompt <pane> "/exit"`.
 
    `herdr agent send-keys <pane> ctrl+d` does not close it. Measured: the call returns `ok` and
    the agent stays alive.
 
-4. **Wait for the pane to free.** `herdr agent list` until the `pane_id` is gone from it. The
+5. **Wait for the pane to free.** `herdr agent list` until the `pane_id` is gone from it. The
    exit is not immediate, and `agent start` on a pane still closing fails with
    `agent_pane_busy: is not an available shell`.
 
@@ -55,7 +63,7 @@ Per pane, in order. The target of each command is the pane id, which never chang
    Claude's status bar still drawn, so a pane that has already exited reads as alive. The
    disappearance from `agent list` is the signal.
 
-5. **Start with the name and the permission mode.**
+6. **Start with the name and the permission mode.**
    `herdr agent start <temp> --kind claude --pane <pane> -- -n <name>
    --dangerously-skip-permissions`.
 
@@ -67,15 +75,15 @@ Per pane, in order. The target of each command is the pane id, which never chang
 
    Everything after `--` goes to the `claude` binary, and `-n <name>` is what survives into
    `ListAgents`. `<temp>` names the `herdr` record and must differ from `<name>`: the dead
-   agent's name is still reserved, so reusing the real one fails with `agent_name_taken`. Step 4
+   agent's name is still reserved, so reusing the real one fails with `agent_name_taken`. Step 5
    waits for the pane to leave `agent list` and this reserves the name past that point, which is
    why both are needed. A pane id is not a legal value either: a name starts with a lowercase
    letter and carries lowercase letters, digits, `-` or `_`.
 
-6. **Sync the `herdr` record.** `herdr agent rename <pane> <name>`.
+7. **Sync the `herdr` record.** `herdr agent rename <pane> <name>`.
 
-7. **Verify in `ListAgents`, never in `herdr agent list`.** The second reads the `herdr` record,
-   which step 6 just wrote and which tells nothing about what peers see. Only `ListAgents`
+8. **Verify in `ListAgents`, never in `herdr agent list`.** The second reads the `herdr` record,
+   which step 7 just wrote and which tells nothing about what peers see. Only `ListAgents`
    answers whether the session can be addressed by name.
 
 A pane that came back under a generated name is repaired by running the procedure again over it,
