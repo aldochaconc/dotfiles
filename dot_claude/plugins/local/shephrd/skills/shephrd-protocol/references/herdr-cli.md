@@ -67,6 +67,24 @@ letters, digits, `-` or `_`.
 
 `herdr agent send-keys <pane> ctrl+d` does not. The call returns `ok` and the agent stays alive.
 
+## Reaching a blocked pane
+
+A pane showing a dialog refuses every prompt: `agent_blocked: agent <pane> is blocked and
+requires interactive input`. The three channels differ in what the block stops.
+
+| Channel | Reaches a blocked pane | What it is for |
+|---|---|---|
+| `herdr agent prompt` | no | a turn the session answers |
+| `herdr agent send-keys` | yes | keystrokes the terminal takes, above the agent |
+| `SendMessage` | queued behind the dialog | anything the session reads when it next runs |
+
+`herdr agent send-keys <pane> Escape` dismisses the dialog. Measured on 2026-09-23: a pane
+blocked over an hour returned `{"type":"ok"}`, moved from `blocked` to `done`, and kept its
+context at 9%. Nothing else recovers such a pane without the user touching the keyboard.
+
+What Escape costs is the dialog's content. A question with four analysed options loses the
+analysis, not just the prompt, so the pane is read first and the user decides.
+
 The exit is not immediate. In the interval `herdr agent read` returns the shell prompt with
 Claude's status bar still drawn, so a pane that has already exited reads as alive. The signal is
 the pane disappearing from `herdr agent list`; `agent start` before that fails with

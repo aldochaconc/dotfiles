@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.9.1
+version: 0.10.0
 ---
 
 # shephrd protocol
@@ -63,6 +63,34 @@ later, so the boundary is declared at the spawn and read before writing, not che
 
 An empty scope means the pane was opened before this existed. That is reported rather than read
 as permission for everything.
+
+### What a session cannot do to itself
+
+A session cannot close itself and cannot clear its own dialog. Both need the terminal, which
+runs the session rather than being driven by it.
+
+| Asked of a session | What happens |
+|---|---|
+| run `/exit` | it cannot: `/exit` is a terminal command, not a tool. Measured on 2026-09-23, two sessions asked to exit wrote their handoffs, answered that they had no way, and stayed alive |
+| answer its own `AskUserQuestion` | it cannot: the dialog is waiting on a keystroke |
+| write a file, send a message | it can, and those are what to ask for |
+
+So a close is sent from another session with `herdr agent prompt <pane> "/exit"`, and what the
+closing session asks the pane for is the handoff and a reply. Asking for the exit produces a
+pane that saved its work, said it could not comply, and is still running.
+
+A pane already showing a dialog takes neither: `herdr agent prompt` refuses it outright with
+`agent_blocked: agent <pane> is blocked and requires interactive input`.
+
+What reaches it is `herdr agent send-keys <pane> Escape`, which dismisses the dialog. Keys go to
+the terminal rather than through the agent, so the block that stops a prompt does not stop them.
+Measured on 2026-09-23: a pane blocked for over an hour returned `{"type":"ok"}`, moved from
+`blocked` to `done`, and kept its context intact at 9%.
+
+Escape discards whatever the dialog was asking. Read the pane first with `herdr agent read` and
+report what is on screen: a question the user still wants to answer is answered in that pane, and
+dismissing it throws away the analysis behind the options. Send Escape when the pane has to move
+and the question no longer matters, and say that it was dismissed.
 
 ## Reporting
 

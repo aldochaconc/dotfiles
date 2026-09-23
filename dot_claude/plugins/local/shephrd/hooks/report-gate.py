@@ -30,9 +30,26 @@ import re
 import sys
 
 SEND = re.compile(r'"name"\s*:\s*"SendMessage"')
-# Claude Code marks the boundary of a user turn with this role. Scanning back to the most recent
-# one keeps the check to the turn that is ending rather than the whole session.
+# A turn begins at the user's own message, and `"type":"user"` alone does not find it: a tool
+# result carries the same type. Measured on 2026-09-23 over one session's transcript, 649 of 704
+# user entries were tool results and 55 were messages, so scanning back to the first `user` line
+# stopped at whatever tool ran last.
+#
+# What that cost: a session that sent its report and then read a file had the read hide the send,
+# so the gate blocked a turn that had reported. Measured twice against one pane, each time
+# forcing a duplicate report into the master's context, which is the cost the whole design exists
+# to avoid.
+#
+# A real user message has no `tool_result` in its content. A tool result always does, so the
+# absence of that string is what separates them.
 USER_TURN = re.compile(r'"type"\s*:\s*"user"')
+TOOL_RESULT = re.compile(r'"type"\s*:\s*"tool_result"')
+
+
+def starts_turn(line):
+    """Whether this transcript line is the user's own message rather than a tool result."""
+    return bool(USER_TURN.search(line)) and not TOOL_RESULT.search(line)
+
 
 REASON = (
     "Turn not ended: this pane answers to {master} and no SendMessage went out this turn.\n\n"
@@ -62,7 +79,7 @@ def sent_this_turn(transcript_path):
     for line in reversed(lines):
         if SEND.search(line):
             return True
-        if USER_TURN.search(line):
+        if starts_turn(line):
             return False
     return False
 
@@ -121,6 +138,25 @@ def selftest():
         )
         # The send is from a previous turn, so it does not count for this one.
         assert sent_this_turn(str(quiet)) is False
+
+        # A tool result after the send is not a turn boundary. This is the case that blocked
+        # turns which had reported: the session sent, then read a file, and the read hid it.
+        worked = Path(d) / "worked.jsonl"
+        worked.write_text(
+            '{"type":"user","message":{"content":"do the thing"}}\n'
+            '{"type":"assistant","message":{"content":[{"name":"SendMessage"}]}}\n'
+            '{"type":"user","message":{"content":[{"type":"tool_result","content":"ok"}]}}\n'
+            '{"type":"assistant","message":{"content":[{"name":"Bash"}]}}\n'
+            '{"type":"user","message":{"content":[{"type":"tool_result","content":"out"}]}}\n'
+        )
+        assert sent_this_turn(str(worked)) is True
+        assert verdict({"transcript_path": str(worked)}, sheep)[0] is False
+
+        # The boundary test itself, on the two shapes it has to separate.
+        assert starts_turn('{"type":"user","message":{"content":"hello"}}') is True
+        assert starts_turn(
+            '{"type":"user","message":{"content":[{"type":"tool_result"}]}}') is False
+        assert starts_turn('{"type":"assistant"}') is False
         block, reason = verdict({"transcript_path": str(quiet)}, sheep)
         assert block is True
         assert "lead" in reason
@@ -135,7 +171,7 @@ def selftest():
     assert sent_this_turn("/nonexistent/path.jsonl") is True
     assert sent_this_turn("") is True
 
-    print("report-gate selftest: 11 checks passed")
+    print("report-gate selftest: 16 checks passed")
 
 
 if __name__ == "__main__":

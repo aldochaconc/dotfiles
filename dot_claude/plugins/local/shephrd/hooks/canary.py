@@ -226,18 +226,26 @@ def selftest():
     assert where("/nonexistent/xyz")["repo"] == ""
     assert where("/tmp")["repo"] == ""
 
-    # A real repository answers its own path and is not a worktree. This file lives in one, so
-    # its own directory is the fixture and no path is written out.
-    repo = str(Path(__file__).resolve().parents[5])
-    here = where(repo)
-    assert here["repo"] == repo, here
-    assert here["worktree"] is False
-    assert here["branch"]
+    # A real repository answers its own path and is not a worktree. The fixture is built rather
+    # than assumed from this file's location: the installed copy lives outside any repository,
+    # where deriving one gave an empty reading and failed a test that was measuring nothing.
+    with tempfile.TemporaryDirectory() as d:
+        repo = str(Path(d).resolve())
+        for cmd in (["init", "-q"], ["config", "user.email", "t@e"], ["config", "user.name", "t"]):
+            subprocess.run(["git", "-C", repo] + cmd, capture_output=True, timeout=10)
+        Path(repo, "f").write_text("x")
+        subprocess.run(["git", "-C", repo, "add", "f"], capture_output=True, timeout=10)
+        subprocess.run(["git", "-C", repo, "commit", "-qm", "init"], capture_output=True, timeout=10)
 
-    # The fields ride on the beat rather than being computed by the reader.
-    r3 = beat({"session_id": "loc", "cwd": repo}, env)
-    assert r3["repo"] == repo
-    assert r3["worktree"] is False
+        here = where(repo)
+        assert here["repo"] == repo, here
+        assert here["worktree"] is False
+        assert here["branch"]
+
+        # The fields ride on the beat rather than being computed by the reader.
+        r3 = beat({"session_id": "loc", "cwd": repo}, env)
+        assert r3["repo"] == repo
+        assert r3["worktree"] is False
 
     print("canary selftest: 33 checks passed")
 
