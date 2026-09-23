@@ -110,6 +110,34 @@ types again; the register applies to every sentence of it, and the rows it draws
 the reader cannot see coming: `Address`, `Epiphonema` and `Evaluative intensification` all
 sound like speech and are what a spoken answer reaches for first.
 
+### Which surface is active
+
+What decides the surface is where the reply comes out, never how the message came in. Dictation
+puts the user's voice into the transcript as a typed message and leaves the reply on screen,
+which is the written surface: the user is reading. `/voice` is the one thing that moves the reply
+off the screen and into synthesis, and only then is there no terminal to render into.
+
+| Evidence | Surface |
+|---|---|
+| `/voice` above, nothing typed since | spoken |
+| a typed message after the last `/voice` | written |
+| a message that reads as dictated: no punctuation, spoken asides, a transcription slip | written |
+| no `/voice`, or a transcript too short to tell | written |
+
+The last two rows carry the default, and the default is written because the failure is not
+symmetric. A menu rendered for a listener is invisible and the turn stalls until someone looks at
+the screen. Prose options offered to a reader cost a typed answer instead of a keystroke, which
+is worse than a menu and is not a stall.
+
+So a decision goes through `AskUserQuestion` unless `/voice` is visible above with nothing typed
+after it. The tool renders a select or a checkbox; prose options in a written reply ask the user
+to type back what a click would have answered.
+
+The state is not queryable. No environment variable and no file records that `/voice` is on:
+checked on 2026-09-22, the transcript is the only trace. A compaction drops it along with
+everything else old, and a session that cannot see it answers as written, which is the safe way
+to be wrong.
+
 What changes is the shape, because the listener has no screen and no way back.
 
 | Written | Spoken |
@@ -170,4 +198,5 @@ a row nobody closes shows its age at every start.
 | 2026-09-22 | spoken reply | Address, Metadiscourse, Epiphonema, Evaluative intensification | Nine instances in one spoken reply, with the skill already loaded in the session. Loading it is not applying it: the register was never checked against the text before it shipped. | the register is verified against every reply, not once per session when the skill loads |
 | 2026-09-22 | spoken reply | gap | Second occurrence in one session of the spoken mode taken as licence for conversational prose. The first was answered by restating the register; the defect returned in the next spoken turn, so restating it is not the repair. | the delivery mode fixes the shape and never the register: `Spoken reply` above names what changes, and nothing in it relaxes a row |
 | 2026-09-22 | commit body | gap | Two commit messages shipped to the user with a `Claude-Session` line carrying the session URL, appended because an environment reminder asks for it. The same family was corrected on 2026-09-20 (`Co-Authored-By`), and that correction produced a log row and no rule, so the second occurrence had nothing to fail against. The register governs how a sentence reads and never what a text is forbidden to contain, which is why neither occurrence matched a row. | gap: no gate asks what a text must not carry. A1 and A2 verify that a count and a path are correct, not that a path belongs in the text at all |
+| 2026-09-22 | reply | gap | A coordinating session put a decision to the user as numbered prose options instead of `AskUserQuestion`. `Spoken reply` said what changes inside the spoken surface and never how a session tells which surface is active, so the absence of a `/voice` read as permission rather than as the default. A first repair tested how the user's message arrived, which is wrong for the same reason: dictation types into the transcript and leaves the reply on screen, so the input channel says nothing about the output one. | the surface is decided by where the reply comes out: `AskUserQuestion` unless `/voice` is visible above with nothing typed after it |
 | 2026-09-21 | doc | B2 | An audit reported eighteen defects inside a section that restated three earlier sections in a different key, and repaired every one of them. B2 ("whether the document should exist") was never asked of the section, because the audit procedure starts at reading the text and naming register rows. Repairing a redundant section's prose makes it read well enough to survive. | in an audit, ask B2 and B6 of each section before naming a single register row in it; a section whose facts all stand elsewhere is reported as redundant, not repaired |
