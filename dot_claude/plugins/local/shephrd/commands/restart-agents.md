@@ -1,6 +1,6 @@
 ---
 description: Restart Claude in panes so they pick up new permissions and hooks, keeping each session's name
-argument-hint: pane ids or names, space separated; empty restarts every peer pane but this one
+argument-hint: pane ids or names, space separated, each optionally as <pane>=<new-name>; empty restarts every peer pane but this one
 allowed-tools: ["Bash", "Skill", "ListAgents", "AskUserQuestion"]
 ---
 
@@ -58,6 +58,9 @@ An agent restarts the panes of its own workspace, read from `$HERDR_WORKSPACE_ID
 from what is focused. A pane outside it is delegated by message to an agent running there.
 
 This session never restarts itself: the process running the command is the one that would die.
+A session that needs a new name asks a peer to restart it, and the peer passes `<pane>=<name>`:
+the pane restarts under `<name>` rather than its current one. `/shephrd` uses this to name the
+god.
 
 ## Reporting
 

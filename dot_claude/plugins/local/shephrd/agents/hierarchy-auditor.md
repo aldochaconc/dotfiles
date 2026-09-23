@@ -71,7 +71,7 @@ Read `ListAgents` and `herdr agent list` always. Read a pane only when its statu
 
 4. **Empty panes.** A pane in `session.json` with no agent in `herdr agent list` came back from a
    restore without its session. Report it with its stored label and directory, which is what
-   `/spawn-agent` would need.
+   `/spawn-sheep` would need.
 
 5. **Orphans.** A pane whose `HERDR_REPORTS_TO` names a session absent from `ListAgents` is
    waiting on a god or shephrd that cannot answer. This is the one finding that has a deadline: the pane
@@ -81,12 +81,12 @@ Read `ListAgents` and `herdr agent list` always. Read a pane only when its statu
 
 Never run `herdr pane run` against a pane with an agent in it. There is no shell to answer:
 the text enters that session's message queue as if the user had typed it, and it sits there
-until the session's next turn. Measured on 2026-09-23: two probes for this variable landed in a
+until the session's next turn. Measured: two probes for this variable landed in a
 pane as queued messages and returned nothing, and repeating the read queued the second one. A
 command that produces no output and no error is indistinguishable from a slow one, which is why
 the advice to retry makes it worse.
 
-Read the pair from `~/.claude/panes/<pane>.json` instead, which `/spawn-agent` writes and a
+Read the pair from `~/.claude/panes/<pane>.json` instead, which the spawn commands write and a
 restart does not clear. Its `master` field is what the pane answers to.
 
 A pane absent from the registry was opened by hand, or before the registry existed. Report that as

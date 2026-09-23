@@ -1,6 +1,6 @@
 # herdr CLI
 
-Every row was measured on 2026-09-22 in this machine's workspaces. What each one records is a
+Every row was measured in this machine's workspaces. What each one records is a
 failure that a plausible command produces.
 
 ## Three name records
@@ -15,7 +15,7 @@ session name. Three records, written by three commands, disagreeing by default.
 | `herdr pane rename <pane> <name>` | the pane label | the sidebar, `session.json`, `/shephrd` |
 
 Only the first is an address. The other two are what a person reads, and a pane missing its
-label shows as a number: measured on 2026-09-23, two panes carried none and one carried
+label shows as a number: Measured: two panes carried none and one carried
 `skills-agent` while its session answered to `skills-swe`.
 
 `herdr tab rename <tab> <name>` is a fourth, one per workspace rather than per pane. A tab whose
@@ -45,7 +45,7 @@ panes were restarted without it: three peer messages lost, one refused and two e
 
 The flag does not cover a project hook, which is the limit worth knowing before relying on it.
 Hooks run in every mode and decide on their own, so a hook returning `permissionDecision: "ask"`
-raises a prompt the flag was supposed to remove. Measured on 2026-09-22: a pane launched with the
+raises a prompt the flag was supposed to remove. Measured: a pane launched with the
 flag stopped on every `git` write, because the repository's own `PreToolUse` hook answered `ask`
 each time. The pane reports `idle`, since the interface is waiting on a human, and a queued
 message or a new prompt sits behind the open dialog rather than replacing it.
@@ -78,7 +78,7 @@ requires interactive input`. The three channels differ in what the block stops.
 | `herdr agent send-keys` | yes | keystrokes the terminal takes, above the agent |
 | `SendMessage` | queued behind the dialog | anything the session reads when it next runs |
 
-`herdr agent send-keys <pane> Escape` dismisses the dialog. Measured on 2026-09-23: a pane
+`herdr agent send-keys <pane> Escape` dismisses the dialog. Measured: a pane
 blocked over an hour returned `{"type":"ok"}`, moved from `blocked` to `done`, and kept its
 context at 9%. Nothing else recovers such a pane without the user touching the keyboard.
 
@@ -116,7 +116,7 @@ back to the focused pane, which can sit in another workspace.
 `herdr pane run` is for a pane holding a shell and nothing else. Against a pane running an agent
 there is no shell to receive it: the text enters that session's message queue as if the user had
 typed it, and waits there for its next turn. It returns no output and no error, so it reads like
-a slow command, and retrying queues a second message. Measured on 2026-09-23, two probes for an
+a slow command, and retrying queues a second message. Measured: two probes for an
 environment variable landed in one pane that way.
 
 What a pane with an agent is asked, it is asked with `herdr agent prompt`, which enters as a turn

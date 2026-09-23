@@ -28,7 +28,7 @@ Per pane, in order. A pane that fails a check is reported and left running.
 
 2. **Separate the panes that can be closed from the one that cannot.** `agent_status` of
    `blocked` means a dialog is open in that pane and nothing programmatic reaches it. Measured on
-   2026-09-23: `herdr agent prompt` refused with `agent_blocked: agent <pane> is blocked and
+   `herdr agent prompt` refused with `agent_blocked: agent <pane> is blocked and
    requires interactive input`, so the pane could be neither asked for a handoff nor exited.
 
    | Status | What this command can do |
@@ -39,7 +39,7 @@ Per pane, in order. A pane that fails a check is reported and left running.
 
    A blocked pane is recoverable rather than lost. `herdr agent send-keys <pane> Escape` reaches
    it where a prompt cannot, because keys go to the terminal rather than through the agent:
-   measured on 2026-09-23, a pane blocked for over an hour returned `{"type":"ok"}`, moved to
+   A pane blocked for over an hour returned `{"type":"ok"}`, moved to
    `done`, and kept its context at 9%. It could then be asked for a handoff like any other.
 
    Escape discards what the dialog was asking, so it is the user's call and not this command's.
@@ -51,7 +51,7 @@ Per pane, in order. A pane that fails a check is reported and left running.
 
    What is on disk survives it regardless, and that is worth measuring before the report says
    work is at risk: `git -C <cwd> status --short` and `git -C <cwd> stash list` say what the
-   close would and would not cost. On 2026-09-23 a blocked pane's three fixes were all on disk,
+   close would and would not cost. a blocked pane's three fixes were all on disk,
    one staged and two in a labelled stash, so what was lost was the analysis and not the code.
 
 3. **Ask before waiting on a working session.** `agent_status` of `working` means the session is
@@ -99,7 +99,7 @@ Per pane, in order. A pane that fails a check is reported and left running.
    What the message carries decides whether the handoff is worth having. Naming the sections is
    not enough: a session writes what it did, which is the part already visible from outside.
    Ask for what is not on disk anywhere else, which is the only thing that dies with the
-   process. On 2026-09-23 that produced three files of 7 to 15 KB carrying a scope that was
+   process. that produced three files of 7 to 15 KB carrying a scope that was
    never recorded, seven figures one session had passed wrong and another had corrected, and a
    working-tree arrangement that had contained two losses of work that day.
 
@@ -112,7 +112,7 @@ Per pane, in order. A pane that fails a check is reported and left running.
 
    A session cannot close itself, and asking it to is the mistake this step exists to prevent.
    `/exit` is a command the terminal interprets, not a tool a session can call: measured on
-   2026-09-23, two sessions were each asked to write a handoff and then exit, both wrote the file
+two sessions were each asked to write a handoff and then exit, both wrote the file
    and both answered that they had no way to run the command. They stayed alive with their work
    saved, which is the harmless version of the failure; the harmful one is a close reported as
    done that never happened.

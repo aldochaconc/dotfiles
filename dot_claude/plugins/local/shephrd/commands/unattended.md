@@ -17,8 +17,14 @@ Load `shephrd-protocol` before acting. It holds what the mode means in each role
 
 ## Procedure
 
-1. **Read the role.** `echo "$HERDR_REPORTS_TO"`. Empty is a god or shephrd, a name is a sheep. The
-   variable is read rather than the role assumed.
+1. **Read the role.** `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py`, which answers `role`
+   directly.
+
+   `echo "$HERDR_REPORTS_TO"` is not the same reading and fails in both directions. A restarted
+   pane has the variable empty and is still a sheep: `herdr agent start` takes no `--env`, so a
+   restart loses it and the registry is what survives. A shephrd has the variable full, since it
+   reports to the god, and deriving from that reads it as a sheep. Measured: on
+   both shapes at once.
 
    A sheep reports that the mode was already on and stops here.
 

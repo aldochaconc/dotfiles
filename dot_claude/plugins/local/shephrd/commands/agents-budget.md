@@ -14,7 +14,7 @@ and when they go nothing runs anywhere.
 
 Claude Code hands the status line script a JSON object on stdin every time the bar is redrawn,
 and that object is the only place `rate_limits.five_hour` and `rate_limits.seven_day` appear.
-Checked on 2026-09-22: no subcommand of the binary reports them, and no file under `~/.claude`
+Checked: no subcommand of the binary reports them, and no file under `~/.claude`
 carries them, including `policy-limits.json` and the dashboard cache.
 
 `~/.claude/statusline-command.sh` therefore keeps the object, one file per session at

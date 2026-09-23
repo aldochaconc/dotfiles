@@ -2,7 +2,7 @@
 """Liveness for a pane, written by the pane itself and read by anyone.
 
 A session that stops consuming its inbox looks identical from outside to one that is simply
-idle. Measured on 2026-09-22: five `SendMessage` to one pane, none read, the pane reporting
+idle. Measured: five `SendMessage` to one pane, none read, the pane reporting
 `idle` the whole time; a sixth message would have looked exactly as fine as the first five.
 `herdr agent list` reports what the terminal is doing and Claude Code's own status says nothing
 about whether messages are being taken off the queue.
@@ -49,7 +49,7 @@ def _identity(env, registry_dir=None):
 
     Every answer comes from the variable first and the registry behind it, because a restart
     empties the process and leaves the registry as the only record. All three fall back, not
-    just the one that prompted the fallback: measured on 2026-09-23, a restarted pane wrote a
+    just the one that prompted the fallback: Measured: a restarted pane wrote a
     beat with the role right and the name blank, because only two of the three read the file.
 
     The role rides on the beat rather than being inferred by a reader. A god is declared, not
@@ -57,9 +57,9 @@ def _identity(env, registry_dir=None):
     shephrd.
 
     The registry answers the role where it recorded one. Deriving it from `reports_to` reads a
-    shephrd reporting to the god as a sheep, which `panes.py` fixed on 2026-09-23 and this
-    writer kept for another day. Measured on 2026-09-23: pane `w1R:p1` is recorded `shephrd`
-    with `os-master` above it, and the beat written for it carried `sheep`. `canary-read.py`
+    shephrd reporting to the god as a sheep, which `panes.py` fixed  and this
+    writer kept for another day. Measured: pane `wA:p1` is recorded `shephrd`
+    with the god above it, and the beat written for it carried `sheep`. `canary-read.py`
     already held this precedence, so the reader was correct about a field the writer spoiled.
     The derivation stays for a record written before the field existed.
     """
@@ -90,7 +90,7 @@ def beat(payload, env=None, now=None, registry_dir=None):
         return None
 
     # The registry answers what the environment lost, for all three fields. A restarted pane has
-    # none of the variables: measured on 2026-09-23, one wrote a beat with no name at all and an
+    # none of the variables: Measured: one wrote a beat with no name at all and an
     # earlier one listed a sheep as a shephrd.
     name, reports_to, role = _identity(env, registry_dir)
 
@@ -114,7 +114,7 @@ def where(cwd):
 
     A pane inside a linked worktree has a `cwd` under a scratchpad and a branch nobody else is
     on, so the directory alone says neither which repository it belongs to nor what it is
-    building. Measured on 2026-09-23: one workspace held a worktree at a session scratchpad path
+    building. Measured: one workspace held a worktree at a session scratchpad path
     while the main checkout sat elsewhere on another branch.
 
     `--git-common-dir` answers the main repository from either side. Everything here is best
@@ -156,8 +156,8 @@ def beat_key(record):
 
     A pane is what the reader watches, so the pane id is the key where there is one. Keying by
     session id instead accumulates a file per session in one pane, and a pane that restarts or
-    compacts gets a new session id: measured on 2026-09-22, the first real run produced two
-    beats six minutes apart for pane w1T:p1, which the reader listed as two panes.
+    compacts gets a new session id: Measured: the first real run produced two
+    beats six minutes apart for pane wB:p1, which the reader listed as two panes.
 
     A session outside a pane keeps its session id, since it has no pane to be confused with.
     """
@@ -193,14 +193,14 @@ def selftest():
     import tempfile
 
     env = {
-        "HERDR_PANE_ID": "w1R:p8",
+        "HERDR_PANE_ID": "wA:p8",
         "HERDR_WORKSPACE_ID": "w1R",
         "HERDR_AGENT_NAME": "worker-a",
         "HERDR_REPORTS_TO": "lead",
     }
     r = beat({"session_id": "abc", "cwd": "/tmp/x", "hook_event_name": "Stop"}, env, now=1000.0)
     assert r["session_id"] == "abc"
-    assert r["pane"] == "w1R:p8"
+    assert r["pane"] == "wA:p8"
     assert r["reports_to"] == "lead"
     assert r["at"] == 1000.0
 
@@ -214,14 +214,14 @@ def selftest():
     assert r2["pane"] == ""
 
     # The key is the pane, so a colon does not become a directory separator.
-    assert beat_key(r) == "w1R-p8.json"
+    assert beat_key(r) == "wA-p8.json"
     assert beat_key({"session_id": "s", "pane": ""}) == "s.json"
     assert beat_key({"session_id": "s"}) == "s.json"
 
     with tempfile.TemporaryDirectory() as d:
         p = write(r, d)
         assert p.exists()
-        assert json.loads(p.read_text())["pane"] == "w1R:p8"
+        assert json.loads(p.read_text())["pane"] == "wA:p8"
         # A second beat replaces the first rather than accumulating.
         write(beat({"session_id": "abc"}, env, now=2000.0), d)
         assert json.loads(p.read_text())["at"] == 2000.0
@@ -270,18 +270,18 @@ def selftest():
     # what the derivation would produce, so a writer that dropped back to it fails all of them.
     with tempfile.TemporaryDirectory() as d:
         Path(d, "w2-p1.json").write_text(json.dumps(
-            {"name": "tree-a", "reports_to": "os-master", "role": "shephrd"}))
-        assert _identity({"HERDR_PANE_ID": "w2:p1"}, d) == ("tree-a", "os-master", "shephrd")
+            {"name": "tree-a", "reports_to": "god", "role": "shephrd"}))
+        assert _identity({"HERDR_PANE_ID": "w2:p1"}, d) == ("tree-a", "god", "shephrd")
         # The variables being present changes nothing: the role has no variable to win with.
         assert _identity({"HERDR_PANE_ID": "w2:p1", "HERDR_AGENT_NAME": "tree-a",
-                          "HERDR_REPORTS_TO": "os-master"}, d)[2] == "shephrd"
+                          "HERDR_REPORTS_TO": "god"}, d)[2] == "shephrd"
         # A watcher has someone above it and is not a sheep.
         Path(d, "w2-p2.json").write_text(json.dumps(
-            {"name": "notes", "reports_to": "os-master", "role": "watcher"}))
+            {"name": "notes", "reports_to": "god", "role": "watcher"}))
         assert _identity({"HERDR_PANE_ID": "w2:p2"}, d)[2] == "watcher"
         # A god is recorded as one even with nothing in the flag.
         Path(d, "w2-p3.json").write_text(json.dumps(
-            {"name": "os-master", "reports_to": "", "god": False, "role": "god"}))
+            {"name": "god", "reports_to": "", "god": False, "role": "god"}))
         assert _identity({"HERDR_PANE_ID": "w2:p3"}, d)[2] == "god"
         # A sheep recorded with no one above it keeps what was recorded.
         Path(d, "w2-p4.json").write_text(json.dumps(
@@ -301,7 +301,7 @@ def selftest():
         # the hook actually runs. The written beat is what a reader consults.
         r4 = beat({"session_id": "role"}, {"HERDR_PANE_ID": "w2:p1"}, now=1.0, registry_dir=d)
         assert r4["role"] == "shephrd", r4
-        assert r4["reports_to"] == "os-master"
+        assert r4["reports_to"] == "god"
         with tempfile.TemporaryDirectory() as out:
             assert json.loads(write(r4, out).read_text())["role"] == "shephrd"
 
@@ -332,7 +332,7 @@ def selftest():
         assert r3["repo"] == repo
         assert r3["worktree"] is False
 
-    print("canary selftest: 46 checks passed")
+    print("canary selftest passed")
 
 
 if __name__ == "__main__":

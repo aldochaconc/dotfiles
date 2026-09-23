@@ -3,7 +3,7 @@
 
 Writing a section headed "Report to <master>" reads exactly like reporting, and it is not: the
 text renders in a pane nobody is watching and the master receives nothing. Measured on
-2026-09-23: a session produced a full report with headings for done, in flight and blocked, and
+a session produced a full report with headings for done, in flight and blocked, and
 its transcript carried one `SendMessage` from hours earlier. The work was real and the master
 never heard about it.
 
@@ -11,8 +11,15 @@ Prose cannot fix this, because the failure is the session believing it already c
 turn does not end. `Stop` with exit 2 returns the reason to the model and the turn continues,
 which is the one moment a missing report can still be sent.
 
-Only a sheep is gated. A master reports to nobody, and a session with no `HERDR_REPORTS_TO`
-ends its turns freely.
+Only a god is ungated, because it reports to nobody. A sheep and a shephrd under a god report
+upward every turn. A watcher reports when a turn did work: one with no errand is at rest, and a
+turn that ran no tool has nothing to report. Measured: the gate forced a watcher at rest to reply
+to the god after the god had told it not to.
+
+Who that is comes from the registry before the variable. `HERDR_REPORTS_TO` does not survive a
+restart, since `herdr agent start` takes no `--env`: Measured: a restarted sheep
+read as answering to nobody and ended its turns ungated, which is the failure this hook exists to
+stop, arriving through the path that was supposed to be covered.
 
 The check is whether a `SendMessage` appears in this turn. It does not read who it went to or
 what it said, and that boundary is a split of work rather than a shortcut.
@@ -28,10 +35,52 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
+
+
+def _registry(env, registry_dir=None):
+    """This pane's registry record, or an empty one.
+
+    Importing `panes` is avoided, the same way `canary.py` and `ask-gate.py` avoid it: a hook
+    that fails on a missing sibling fails on every turn. Any failure gives an empty record, which
+    the caller treats as an unresolved role rather than as permission to end the turn.
+    """
+    pane = (env.get("HERDR_PANE_ID") or "").strip()
+    if not pane:
+        return {}
+    d = Path(registry_dir) if registry_dir else Path(
+        env.get("HOME", "/tmp")) / ".claude" / "panes"
+    try:
+        return json.loads((d / (pane.replace(":", "-") + ".json")).read_text())
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+def recipient(env, registry_dir=None):
+    """The session this pane reports to, or `""` when it reports to nobody.
+
+    A god reports to nobody and is never gated. Everyone else reports upward, so what
+    this answers is the name a report has to reach, not the role.
+
+    The registry is read before the variable for the reason `panes.py` records: `herdr agent
+    start` takes no `--env`, so a restarted pane loses `HERDR_REPORTS_TO` while keeping its pane
+    id. Measured: a restarted sheep read as reporting to nobody and ended its turns
+    ungated, which is the whole failure this hook exists to stop.
+    """
+    rec = _registry(env, registry_dir)
+    role = (rec.get("role") or "").strip().lower()
+    if role == "god":
+        return ""
+    if (env.get("HERDR_GOD") or "").strip().lower() not in ("", "0", "false", "no"):
+        return ""
+    if bool(rec.get("god")):
+        return ""
+    return (env.get("HERDR_REPORTS_TO") or "").strip() or (
+        rec.get("reports_to") or "").strip()
 
 SEND = re.compile(r'"name"\s*:\s*"SendMessage"')
 # A turn begins at the user's own message, and `"type":"user"` alone does not find it: a tool
-# result carries the same type. Measured on 2026-09-23 over one session's transcript, 649 of 704
+# result carries the same type. Measured: over one session's transcript, 649 of 704
 # user entries were tool results and 55 were messages, so scanning back to the first `user` line
 # stopped at whatever tool ran last.
 #
@@ -44,25 +93,33 @@ SEND = re.compile(r'"name"\s*:\s*"SendMessage"')
 # absence of that string is what separates them.
 USER_TURN = re.compile(r'"type"\s*:\s*"user"')
 TOOL_RESULT = re.compile(r'"type"\s*:\s*"tool_result"')
+TOOL_USE = re.compile(r'"type"\s*:\s*"tool_use"')
 
 
 def starts_turn(line):
-    """Whether this transcript line is the user's own message rather than a tool result."""
+    """Whether this transcript line is the user's own message rather than a tool result.
+
+    The fallback boundary, for a transcript whose lines carry no `promptId`.
+    """
     return bool(USER_TURN.search(line)) and not TOOL_RESULT.search(line)
 
 
-REASON = (
-    "Turn not ended: this pane answers to {master} and no SendMessage went out this turn.\n\n"
-    "A report written into the reply does not reach {master}. The text renders here, in a pane "
-    "nobody is watching, and the turn ends with the master knowing nothing. Send it with "
-    "SendMessage to {master}, carrying what was done, what is in flight and what is blocked.\n\n"
-    "A turn that produced nothing still reports that it ran: silence and a dead session read the "
-    "same from outside. shephrd-protocol holds the rule."
-)
+# A second shape hides a send the same way, and the test above cannot see it. Loading a skill
+# writes the skill's text as a `"type":"user"` line with `isMeta` and no `tool_result`, so a
+# session that sent its report and then loaded a skill read as a new turn with nothing sent.
+# Measured in this plugin's own transcripts: two skill loads sat inside one turn as user lines,
+# and a pane reported duplicates twice (msg_ids c64b9bfa then ff2abb50, 87137ea8 then ff60ed4f).
+#
+# What every user line of one turn shares is its `promptId`: the prompt, its tool results and a
+# skill load alike. A peer message arriving mid-turn is written as an `attachment`, not as a user
+# line, so it never starts a turn. The turn is therefore the run of lines back to the first user
+# line carrying a different `promptId`. An escaped key inside quoted content reads `\"promptId\"`
+# and does not match.
+PROMPT_ID = re.compile(r'"promptId"\s*:\s*"([^"]+)"')
 
 
-def sent_this_turn(transcript_path):
-    """Whether a SendMessage appears since the last user turn.
+def in_this_turn(transcript_path, pattern):
+    """Whether `pattern` matches a line of the current turn.
 
     An unreadable or absent transcript returns True. A gate that blocks because it could not read
     its evidence stops every turn in a session whose transcript moved, which is worse than a
@@ -76,25 +133,84 @@ def sent_this_turn(transcript_path):
     except OSError:
         return True
 
-    for line in reversed(lines):
-        if SEND.search(line):
-            return True
-        if starts_turn(line):
-            return False
-    return False
+    # The turn starts at its earliest user line, so assistant lines between the previous turn's
+    # last user line and this turn's first belong to the previous turn.
+    turn, start = None, None
+    for i in range(len(lines) - 1, -1, -1):
+        m = PROMPT_ID.search(lines[i])
+        if m:
+            if turn is None:
+                turn = m.group(1)
+            elif m.group(1) != turn:
+                break
+            start = i
+        elif turn is None and starts_turn(lines[i]):
+            start = i
+            break
+    if start is None:
+        start = 0
+    return any(pattern.search(line) for line in lines[start:])
 
 
-def verdict(event, env=None):
-    """Return (block, reason). Block is False for a master or a session that already sent."""
+REASON = (
+    "Turn not ended: this pane answers to {master} and no SendMessage went out this turn.\n\n"
+    "A report written into the reply does not reach {master}. The text renders here, in a pane "
+    "nobody is watching, and the turn ends with the master knowing nothing. Send it with "
+    "SendMessage to {master}, carrying what was done, what is in flight and what is blocked.\n\n"
+    "A turn that produced nothing still reports that it ran: silence and a dead session read the "
+    "same from outside. A send that fails because {master} is not reachable counts as sent: "
+    "try once and end the turn. shephrd-protocol holds the rule."
+)
+
+
+def sent_this_turn(transcript_path):
+    """Whether a SendMessage was called this turn, whatever it returned.
+
+    The call is what counts, not its result. A send to a recipient that has gone, which returns
+    `No agent named '<name>' is reachable`, is still the report this pane could make, and a gate
+    that waited for a delivered one would hold the turn until a restart elsewhere finished.
+    """
+    return in_this_turn(transcript_path, SEND)
+
+
+def worked_this_turn(transcript_path):
+    """Whether any tool ran this turn.
+
+    It separates a watcher at rest from one on an errand. A turn that only answered in text did
+    no work, and gating it forces a message the god may have asked not to receive.
+    """
+    return in_this_turn(transcript_path, TOOL_USE)
+
+
+def verdict(event, env=None, registry_dir=None):
+    """Return (block, reason). Block is False for a god or a session that already sent.
+
+    The recipient comes from `recipient`, which reads the registry before the variable. Reading
+    `HERDR_REPORTS_TO` alone let a restarted sheep end its turns without reporting: the variable
+    does not survive `herdr agent start`, so the pane came back looking like a session that
+    answers to nobody. Measured: .
+
+    A pane with no recipient at all is not blocked. A block here is only useful because it names
+    where the report goes; with nothing to name, the session has no action that would satisfy the
+    gate and would be held for a turn it cannot complete. A pane in that state is visible through
+    its canary beat instead.
+
+    `ask-gate.py` permits on the same evidence, for the same reason: gating is opted into by a
+    recorded recipient rather than assumed from its absence.
+    """
     env = env if env is not None else os.environ
-    master = (env.get("HERDR_REPORTS_TO") or "").strip()
+    master = recipient(env, registry_dir)
     if not master:
         return False, ""
     # An infinite block would trap a session that cannot send at all, so one continuation is
     # enough: Claude Code sets this when the Stop hook already fired for this turn.
     if event.get("stop_hook_active"):
         return False, ""
-    if sent_this_turn(event.get("transcript_path") or ""):
+    path = event.get("transcript_path") or ""
+    if sent_this_turn(path):
+        return False, ""
+    role = (_registry(env, registry_dir).get("role") or "").strip().lower()
+    if role == "watcher" and not worked_this_turn(path):
         return False, ""
     return True, REASON.format(master=master)
 
@@ -134,7 +250,7 @@ def selftest():
         quiet.write_text(
             '{"type":"assistant","message":{"content":[{"name":"SendMessage"}]}}\n'
             '{"type":"user"}\n'
-            '{"type":"assistant","message":{"content":[{"name":"Bash"}]}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash"}]}}\n'
         )
         # The send is from a previous turn, so it does not count for this one.
         assert sent_this_turn(str(quiet)) is False
@@ -146,7 +262,7 @@ def selftest():
             '{"type":"user","message":{"content":"do the thing"}}\n'
             '{"type":"assistant","message":{"content":[{"name":"SendMessage"}]}}\n'
             '{"type":"user","message":{"content":[{"type":"tool_result","content":"ok"}]}}\n'
-            '{"type":"assistant","message":{"content":[{"name":"Bash"}]}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash"}]}}\n'
             '{"type":"user","message":{"content":[{"type":"tool_result","content":"out"}]}}\n'
         )
         assert sent_this_turn(str(worked)) is True
@@ -167,11 +283,109 @@ def selftest():
             {"transcript_path": str(quiet), "stop_hook_active": True}, sheep
         )[0] is False
 
+    with tempfile.TemporaryDirectory() as d:
+        # A skill load after the send is a user line with no tool_result, and the same promptId.
+        # It hid the send and forced duplicate reports before the turn was read by promptId.
+        skill = Path(d) / "skill.jsonl"
+        skill.write_text(
+            '{"type":"user","promptId":"p0","message":{"content":"earlier"}}\n'
+            '{"type":"user","promptId":"p1","isMeta":true,"message":{"content":"go"}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"SendMessage"}]}}\n'
+            '{"type":"user","promptId":"p1","message":{"content":[{"type":"tool_result"}]}}\n'
+            '{"type":"user","promptId":"p1","isMeta":true,"message":{"content":[{"type":"text","text":"Base directory for this skill"}]}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"text","text":"done"}]}}\n'
+        )
+        assert sent_this_turn(str(skill)) is True
+        # A peer message mid-turn is an attachment and does not start a turn either.
+        peer = Path(d) / "peer.jsonl"
+        peer.write_text(
+            '{"type":"user","promptId":"p1","message":{"content":"go"}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"SendMessage"}]}}\n'
+            '{"type":"attachment","attachment":{"type":"queued_command"}}\n'
+        )
+        assert sent_this_turn(str(peer)) is True
+        # The previous turn's send does not count: a different promptId closes the turn.
+        prev = Path(d) / "prev.jsonl"
+        prev.write_text(
+            '{"type":"user","promptId":"p1","message":{"content":"go"}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"SendMessage"}]}}\n'
+            '{"type":"user","promptId":"p2","message":{"content":"again"}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash"}]}}\n'
+        )
+        assert sent_this_turn(str(prev)) is False
+        # A send that failed because the recipient is gone still counts.
+        gone = Path(d) / "gone.jsonl"
+        gone.write_text(
+            '{"type":"user","promptId":"p1","message":{"content":"go"}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"SendMessage"}]}}\n'
+            '{"type":"user","promptId":"p1","message":{"content":[{"type":"tool_result","is_error":true,"content":"No agent named \'god\' is reachable"}]}}\n'
+        )
+        assert verdict({"transcript_path": str(gone)}, sheep)[0] is False
+
     # An unreadable transcript never blocks.
     assert sent_this_turn("/nonexistent/path.jsonl") is True
     assert sent_this_turn("") is True
 
-    print("report-gate selftest: 16 checks passed")
+    # The recipient comes from the registry before the variable, so a restart does not release a
+    # pane from the gate. Every row here has the variable empty, which is what a restart leaves.
+    with tempfile.TemporaryDirectory() as d:
+        def record(pane, **fields):
+            Path(d, pane.replace(":", "-") + ".json").write_text(json.dumps(fields))
+
+        quiet = Path(d) / "quiet.jsonl"
+        quiet.write_text(
+            '{"type":"user","message":{"content":"go"}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash"}]}}\n'
+        )
+        event = {"transcript_path": str(quiet)}
+
+        # The case that was live: a restarted sheep kept its pane id and lost every variable.
+        record("w3:p1", name="worker", reports_to="lead", role="sheep")
+        assert recipient({"HERDR_PANE_ID": "w3:p1"}, d) == "lead"
+        block, reason = verdict(event, {"HERDR_PANE_ID": "w3:p1"}, d)
+        assert block is True
+        assert "lead" in reason
+
+        # A shephrd under a god reports to the god every turn and is gated like anyone else.
+        record("w3:p2", name="tree-a", reports_to="god", role="shephrd")
+        assert verdict(event, {"HERDR_PANE_ID": "w3:p2"}, d)[0] is True
+        # A watcher on an errand too: the turn ran a tool.
+        record("w3:p3", name="notes", reports_to="god", role="watcher")
+        assert verdict(event, {"HERDR_PANE_ID": "w3:p3"}, d)[0] is True
+        # A watcher at rest answered in text and ran nothing, so the turn ends without a send.
+        rest = Path(d) / "rest.jsonl"
+        rest.write_text(
+            '{"type":"user","message":{"content":"no reply needed"}}\n'
+            '{"type":"assistant","message":{"content":[{"type":"text","text":"ok"}]}}\n'
+        )
+        assert worked_this_turn(str(rest)) is False
+        assert verdict({"transcript_path": str(rest)}, {"HERDR_PANE_ID": "w3:p3"}, d)[0] is False
+        # The exemption is the watcher's alone: a sheep at the same turn still reports.
+        assert verdict({"transcript_path": str(rest)}, {"HERDR_PANE_ID": "w3:p1"}, d)[0] is True
+
+        # A god reports to nobody, by the recorded role and by the flag alike.
+        record("w3:p4", name="god", reports_to="", god=True, role="god")
+        assert recipient({"HERDR_PANE_ID": "w3:p4"}, d) == ""
+        assert verdict(event, {"HERDR_PANE_ID": "w3:p4"}, d)[0] is False
+        record("w3:p5", name="g", reports_to="god", role="god")
+        assert recipient({"HERDR_PANE_ID": "w3:p5"}, d) == ""
+        assert recipient({"HERDR_PANE_ID": "w3:pZ", "HERDR_GOD": "1"}, d) == ""
+
+        # A shephrd with nobody above it reports to nobody and ends its turns freely.
+        record("w3:p6", name="lone", reports_to="", role="shephrd")
+        assert verdict(event, {"HERDR_PANE_ID": "w3:p6"}, d)[0] is False
+
+        # The variable still answers where the registry has nothing, which is a pane opened
+        # before the registry existed.
+        assert recipient({"HERDR_PANE_ID": "w3:pZ", "HERDR_REPORTS_TO": "lead"}, d) == "lead"
+        # And a pane with neither is not blocked: a gate that named no recipient would hold a
+        # turn the session has no way to complete.
+        assert verdict(event, {"HERDR_PANE_ID": "w3:pZ"}, d)[0] is False
+        # A malformed record reads as nothing recorded rather than raising.
+        Path(d, "w3-p7.json").write_text("{not json")
+        assert recipient({"HERDR_PANE_ID": "w3:p7", "HERDR_REPORTS_TO": "lead"}, d) == "lead"
+
+    print("report-gate selftest passed")
 
 
 if __name__ == "__main__":
