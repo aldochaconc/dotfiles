@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al god", "who do I report to", or when working with HERDR_REPORTS_TO, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.16.0
+version: 0.17.0
 ---
 
 # shephrd protocol
@@ -45,16 +45,16 @@ between themselves: information moves sideways, a decision moves up.
 `references/roles.md` holds what passes to a god, what a watcher writes, and why two.
 
 Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py`, which answers the pane, the
-name, the session it reports to, the scope, the role and where each came from. It reads the variables first and
-falls back to `~/.claude/panes/<pane>.json`, which `/spawn-agent` writes.
+name, the session it reports to, the scope, the role and where each came from. It reads the
+variables first and falls back to `~/.claude/panes/<pane>.json`, which `/spawn-agent` writes.
 
 The fallback is what makes an empty variable readable. `--env` lives in the pane's process and a
 restart replaces it: `herdr agent start` takes no `--env` and creates no pane, so a restarted
 sheep comes back with nothing and reads as a shephrd. Measured on 2026-09-23 on two panes whose
 threads resumed correctly.
 
-An empty `HERDR_REPORTS_TO` in both places, with no god flag, means the session is a shephrd. A pane absent
-from the registry was opened by hand, or before the registry existed, and that is reported rather
+An empty `HERDR_REPORTS_TO` in both places, with no god flag, means the session is a shephrd.
+A pane absent from the registry was opened by hand, or before the registry existed, and that is reported rather
 than assumed either way: reading the role wrongly puts a sheep in front of the user, or leaves a
 god waiting for a report nobody is sending.
 
@@ -72,8 +72,7 @@ in what it must hand back rather than fix. A directory does not answer it. Measu
 2026-09-23: four panes shared one repository and three were nested inside each other, with
 nothing saying whose work was whose; nothing collided because only one of them wrote.
 
-Read it with the same call that resolves the role. A file outside the scope is reported to the
-the session above rather than changed, which is the rule in `references/not-stalling.md` applied to this
+Read it with the same call that resolves the role. A file outside the scope is reported upward rather than changed, which is the rule in `references/not-stalling.md` applied to this
 session rather than to a finding it makes elsewhere.
 
 Nothing enforces it. Two panes writing one file produce two versions and the loss is discovered
@@ -138,6 +137,16 @@ a pane that died.
 `herdr agent wait` is the case worth naming, since waiting is what it does: it goes to the
 background always, and a wait held in the foreground is a turn spent watching another session
 work.
+
+### The heartbeat a shephrd owes the god
+
+A shephrd sends the god a heartbeat every five of its own turns, unprompted, covering every
+session it holds: what moved, what is in flight, what is waiting. Five turns that advanced
+nothing says exactly that.
+
+It is not a liveness check. The canary already answers who is taking turns; this answers whether
+the work is moving. `references/roles.md` holds why five turns rather than a clock.
+
 
 ### A report is a message, not a section
 

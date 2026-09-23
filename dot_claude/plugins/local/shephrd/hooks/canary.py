@@ -55,6 +55,13 @@ def _identity(env, registry_dir=None):
     The role rides on the beat rather than being inferred by a reader. A god is declared, not
     derived from having no one above it, and a reader that guessed would call every god a
     shephrd.
+
+    The registry answers the role where it recorded one. Deriving it from `reports_to` reads a
+    shephrd reporting to the god as a sheep, which `panes.py` fixed on 2026-09-23 and this
+    writer kept for another day. Measured on 2026-09-23: pane `w1R:p1` is recorded `shephrd`
+    with `os-master` above it, and the beat written for it carried `sheep`. `canary-read.py`
+    already held this precedence, so the reader was correct about a field the writer spoiled.
+    The derivation stays for a record written before the field existed.
     """
     rec = _registry(env, registry_dir)
     name = (env.get("HERDR_AGENT_NAME") or "").strip() or (rec.get("name") or "").strip()
@@ -62,12 +69,19 @@ def _identity(env, registry_dir=None):
         rec.get("reports_to") or "").strip()
     god = (env.get("HERDR_GOD") or "").strip().lower() not in ("", "0", "false", "no")
     god = god or bool(rec.get("god"))
-    role = "god" if god else ("sheep" if reports_to else "shephrd")
+    role = (rec.get("role") or "").strip().lower()
+    if role not in ("god", "shephrd", "sheep", "watcher"):
+        role = "god" if god else ("sheep" if reports_to else "shephrd")
     return name, reports_to, role
 
 
-def beat(payload, env=None, now=None):
-    """Build the record for one turn ending. Returns None when there is no session to name."""
+def beat(payload, env=None, now=None, registry_dir=None):
+    """Build the record for one turn ending. Returns None when there is no session to name.
+
+    `registry_dir` exists for the selftest. Without it the identity fields could only be checked
+    against whatever the machine's own registry holds, so the beat's role went unverified while
+    `_identity` had a test and the wrong value shipped anyway.
+    """
     env = env if env is not None else os.environ
     now = now if now is not None else time.time()
 
@@ -78,7 +92,7 @@ def beat(payload, env=None, now=None):
     # The registry answers what the environment lost, for all three fields. A restarted pane has
     # none of the variables: measured on 2026-09-23, one wrote a beat with no name at all and an
     # earlier one listed a sheep as a shephrd.
-    name, reports_to, role = _identity(env)
+    name, reports_to, role = _identity(env, registry_dir)
 
     return {
         "session_id": sid,
@@ -251,6 +265,46 @@ def selftest():
         Path(d, "w9-p7.json").write_text("{not json")
         assert _identity({"HERDR_PANE_ID": "w9:p7"}, d)[1] == ""
 
+    # The recorded role wins over the derivation, which is the whole case: a shephrd reporting
+    # to the god derives as a sheep and is recorded as a shephrd. Every row here disagrees with
+    # what the derivation would produce, so a writer that dropped back to it fails all of them.
+    with tempfile.TemporaryDirectory() as d:
+        Path(d, "w2-p1.json").write_text(json.dumps(
+            {"name": "tree-a", "reports_to": "os-master", "role": "shephrd"}))
+        assert _identity({"HERDR_PANE_ID": "w2:p1"}, d) == ("tree-a", "os-master", "shephrd")
+        # The variables being present changes nothing: the role has no variable to win with.
+        assert _identity({"HERDR_PANE_ID": "w2:p1", "HERDR_AGENT_NAME": "tree-a",
+                          "HERDR_REPORTS_TO": "os-master"}, d)[2] == "shephrd"
+        # A watcher has someone above it and is not a sheep.
+        Path(d, "w2-p2.json").write_text(json.dumps(
+            {"name": "notes", "reports_to": "os-master", "role": "watcher"}))
+        assert _identity({"HERDR_PANE_ID": "w2:p2"}, d)[2] == "watcher"
+        # A god is recorded as one even with nothing in the flag.
+        Path(d, "w2-p3.json").write_text(json.dumps(
+            {"name": "os-master", "reports_to": "", "god": False, "role": "god"}))
+        assert _identity({"HERDR_PANE_ID": "w2:p3"}, d)[2] == "god"
+        # A sheep recorded with no one above it keeps what was recorded.
+        Path(d, "w2-p4.json").write_text(json.dumps(
+            {"name": "orphan", "reports_to": "", "role": "sheep"}))
+        assert _identity({"HERDR_PANE_ID": "w2:p4"}, d)[2] == "sheep"
+        # A record written before the field existed, and one with a value that is not a role,
+        # both fall back to the derivation.
+        Path(d, "w2-p5.json").write_text(json.dumps({"name": "old", "reports_to": "lead"}))
+        assert _identity({"HERDR_PANE_ID": "w2:p5"}, d)[2] == "sheep"
+        Path(d, "w2-p6.json").write_text(json.dumps(
+            {"name": "bad", "reports_to": "", "role": "nonsense"}))
+        assert _identity({"HERDR_PANE_ID": "w2:p6"}, d)[2] == "shephrd"
+        # The flag still decides where no role was recorded.
+        Path(d, "w2-p7.json").write_text(json.dumps({"name": "g", "reports_to": "", "god": True}))
+        assert _identity({"HERDR_PANE_ID": "w2:p7"}, d)[2] == "god"
+        # And the role rides onto the beat rather than stopping at _identity, which is the path
+        # the hook actually runs. The written beat is what a reader consults.
+        r4 = beat({"session_id": "role"}, {"HERDR_PANE_ID": "w2:p1"}, now=1.0, registry_dir=d)
+        assert r4["role"] == "shephrd", r4
+        assert r4["reports_to"] == "os-master"
+        with tempfile.TemporaryDirectory() as out:
+            assert json.loads(write(r4, out).read_text())["role"] == "shephrd"
+
     # Location is best effort and never raises: a path that is not a repository, and one that
     # does not exist, both come back empty rather than failing the beat.
     assert where("") == {"repo": "", "branch": "", "worktree": False}
@@ -278,7 +332,7 @@ def selftest():
         assert r3["repo"] == repo
         assert r3["worktree"] is False
 
-    print("canary selftest: 35 checks passed")
+    print("canary selftest: 46 checks passed")
 
 
 if __name__ == "__main__":

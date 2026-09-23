@@ -1,6 +1,6 @@
 # Roles
 
-Three roles, and what separates them is who may reach the user. The skill carries the table;
+Four roles, and what separates them is who may reach the user. The skill carries the table;
 this carries why each boundary is where it is.
 
 ## The god
@@ -93,3 +93,33 @@ the god rather than agreeing on it: a peer cannot grant what only the user can, 
 sessions converging on an answer nobody authorised is how permission gets laundered.
 
 The test is what the exchange produces. Information moves sideways; a decision moves up.
+
+## The heartbeat
+
+A shephrd sends the god a heartbeat every five of its own turns, unprompted, and every session
+it holds is inside it. This is separate from the per-turn report a sheep sends its shephrd: the
+sheep reports work, and the shephrd reports movement.
+
+What it carries is what moved, in one line each:
+
+| Part | Content |
+|---|---|
+| moved | what advanced since the last heartbeat, by outcome rather than by step |
+| in flight | what each sheep is on now |
+| waiting | what is blocked, and on whom |
+
+Silence is a state and is reported as one. Five turns that advanced nothing says exactly that,
+and it is more useful than no message: it distinguishes a tree that is stuck from one the god
+simply has not heard from.
+
+Five turns rather than a clock, because a shephrd's turns are the unit of its own work. A busy
+shephrd reports often and an idle one rarely, which is the cadence the god wants without anyone
+measuring elapsed time.
+
+What it is not is a liveness check. The canary at `~/.claude/canary` already answers who is
+taking turns, and `canary-read.py` prints it oldest first. A heartbeat that only said a session
+was alive would duplicate a file that is already written on every turn by every pane. It exists
+for what the canary cannot see: whether the work is moving.
+
+A god does not send one. It is the window rather than a session anything watches, and a watcher
+reports when its errand is done rather than on a count.
