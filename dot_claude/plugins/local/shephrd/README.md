@@ -42,6 +42,7 @@ with it.
 | `/unattended` | tell a god or shephrd the user has stepped away; a sheep is already unattended |
 | `/restart-agents` | restart panes so they pick up new permissions and hooks, keeping their names |
 | `/exit-agents` | close panes after each session writes what it was doing |
+| `/flood` | close every shephrd and its sheep, leaving the god: the god's command |
 | `/agents-budget` | report context and account limits per session |
 
 The commands are typed by a person. The skill loads on its own, which is the point: a spawned pane

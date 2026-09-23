@@ -26,6 +26,11 @@ What a god reads instead of a tree is the registry itself: every pane, who it re
 what it holds. `hooks/panes.py` answers that for one pane, and the canary's beats answer which
 are still alive.
 
+One command belongs to the god alone. `/flood` closes every shephrd and every sheep, leaving the
+god and its watchers, so the next start is from nothing. A shephrd running it would be closing
+its peers and then itself; a sheep cannot close anything. It touches no working tree: sessions
+end, and what they wrote stays written.
+
 ## Watchers
 
 What a god does open is watchers, two by default, and they are its own.
