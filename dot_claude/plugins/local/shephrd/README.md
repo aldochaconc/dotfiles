@@ -33,6 +33,7 @@ with it.
 | `report-gate.py` hook | holds a turn that a slave would end without reporting |
 | `canary.py` hook | writes a liveness beat at the end of every turn, so a stalled pane is visible |
 | `canary-read.py` | prints the beats oldest first |
+| `roster.py` | who a pane answers to, kept outside the process a restart replaces |
 | `hierarchy-auditor` agent | which panes exist, which names reach them, which are stalled |
 | `traffic-auditor` agent | who reported, who went silent, which question is waiting |
 | `/shephrd` | take the coordinating role for the tree this session sits in |

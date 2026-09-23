@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.4.1
+version: 0.5.0
 ---
 
 # shephrd protocol
@@ -27,19 +27,25 @@ on every pane it opens.
 | empty | master | yes | nobody |
 | a name | slave | no | that name |
 
-Read it with `echo "$HERDR_AGENT_MASTER"` rather than assuming it.
+Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/roster.py`, which answers the pane, the
+name, the master and where each came from. It reads the variable first and falls back to
+`~/.claude/roster/<pane>.json`, which `/spawn-agent` writes.
 
-An empty value has two causes and no test separates them: the session coordinates itself, or the
-pane was opened before this plugin existed and lost the variable that would have been set. Taking
-the master role on the second one puts a slave in front of the user. Say which reading was taken
-when first asked to act on the hierarchy, in one line, so a wrong one is corrected by the user
-rather than discovered later.
+The fallback is what makes an empty variable readable. `--env` lives in the pane's process and a
+restart replaces it: `herdr agent start` takes no `--env` and creates no pane, so a restarted
+slave comes back with nothing and reads as a master. Measured on 2026-09-23 on two panes whose
+threads resumed correctly.
 
-`HERDR_AGENT_NAME` does not decide it either. A hand-opened pane legitimately has that unset while
-answering to a registered name, which `references/environment.md` records.
+An empty master in both places means the session coordinates itself. A pane with no roster entry
+at all was opened before the roster existed, and that is reported rather than assumed either way:
+taking the master role wrongly puts a slave in front of the user.
 
-The variable is the only record of the hierarchy. Nothing in `herdr agent list` carries it, and
-the workspace does not imply it; `references/environment.md` holds the measurement behind that.
+Today the hierarchy also travels in the text of each instruction, because a master writes "report
+to me" into the prompts it sends. That works and it is not a mechanism: a master that omits the
+line leaves its pane with nothing, which is what the roster replaces.
+
+Nothing in `herdr agent list` carries the hierarchy and the workspace does not imply it, which is
+why the variable and the roster exist at all; `references/environment.md` holds the measurement.
 
 ## Reporting
 

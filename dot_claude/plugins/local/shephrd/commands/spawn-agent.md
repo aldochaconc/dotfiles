@@ -72,7 +72,16 @@ pane about three fifths of the width.
    builds a name from the basename of the working directory and peers cannot address the pane by
    the name intended for it. `/restart-agents` carries the same rule and the failures behind it.
 
-4. **Label the pane.** `herdr pane rename <pane> <name>`, with the same name passed to `-n`.
+4. **Record the pair outside the process.**
+   `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/roster.py --write <pane> <name> <master>`.
+
+   The `--env` of step 2 lives in the pane's process, and a restart replaces that process:
+   `herdr agent start` takes no `--env` and creates no pane. Measured on 2026-09-23, two panes
+   restarted with their threads intact came back with both variables empty, and a slave read as
+   a master. The roster survives that, and a session with an empty variable reads its own pane
+   there before concluding it coordinates itself.
+
+5. **Label the pane.** `herdr pane rename <pane> <name>`, with the same name passed to `-n`.
 
    A pane with no label shows as a number in the sidebar, and so does a tab: measured on
    2026-09-23, three tabs carried `label` equal to their index and two panes carried none. A
@@ -83,14 +92,14 @@ pane about three fifths of the width.
    This is a third name record, beside the two `/restart-agents` describes. It feeds the
    sidebar and `~/.config/herdr/session.json`; it is not what `SendMessage` addresses.
 
-5. **Name the tab if it has none.** `herdr tab list` shows a `label` per tab, and a tab whose
+6. **Name the tab if it has none.** `herdr tab list` shows a `label` per tab, and a tab whose
    label is its own number was never named. `herdr tab rename <tab> <name>` takes the tree the
    workspace works on, which is the name the user reads in the sidebar.
 
    Only when it has none. A tab already named belongs to the workspace rather than to this
    spawn, and renaming it on every spawn would rename it after whichever agent opened last.
 
-6. **Verify in `ListAgents`.** `herdr agent list` reads herdr's own record and says nothing
+7. **Verify in `ListAgents`.** `herdr agent list` reads herdr's own record and says nothing
    about what peers see.
 
 ## Environment

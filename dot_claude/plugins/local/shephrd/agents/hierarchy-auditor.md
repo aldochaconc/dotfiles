@@ -79,14 +79,23 @@ Read `ListAgents` and `herdr agent list` always. Read a pane only when its statu
 
 ## Reading a pane's master
 
-`HERDR_AGENT_MASTER` belongs to the pane's own process and is not in any listing. Read it with
-`herdr pane run <pane> 'echo "$HERDR_AGENT_MASTER"'`, then read the output back; a read taken
-immediately after can return the prompt before the output, so repeat it rather than believing the
-first one.
+Never run `herdr pane run` against a pane with an agent in it. There is no shell to answer:
+the text enters that session's message queue as if the user had typed it, and it sits there
+until the session's next turn. Measured on 2026-09-23: two probes for this variable landed in a
+pane as queued messages and returned nothing, and repeating the read queued the second one. A
+command that produces no output and no error is indistinguishable from a slow one, which is why
+the advice to retry makes it worse.
 
-A pane running Claude interactively may not answer a `pane run` at all. Report that as unknown
-rather than as empty: empty means master and the difference decides whether a session may talk to
-the user.
+Read the pair from `~/.claude/roster/<pane>.json` instead, which `/spawn-agent` writes and a
+restart does not clear. Its `master` field is what the pane answers to.
+
+A pane with no roster file was opened before the roster existed or by hand. Report that as
+unknown rather than as master: empty means master and the difference decides whether a session
+may talk to the user.
+
+`~/.claude/canary/<pane>.json` carries the same two fields and is not a substitute. A beat
+records what the process held when the turn ended, so a restarted pane overwrites it with the
+values it lost.
 
 ## Report
 
