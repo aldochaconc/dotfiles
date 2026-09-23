@@ -11,8 +11,13 @@
 # pane already carries identity, so the name comes from the pane record and this only fills the
 # gap when that record has none.
 #
-# Usage:  cc [claude args...]        name derived
+# Usage:  cc [claude args...]         name derived
+#         cc --sheprd [args...]      the bare project name, taken even when reserved
 #         cc -n <name> [args...]     name respected, nothing derived
+#
+# `--sheprd` is for retaking a tree whose coordinating session died without releasing its name.
+# The suffix rule would otherwise leave the tree coordinated by a session called <project>-2
+# while nothing answers to <project>, which is the address peers already hold.
 #
 # Self-check: cc --selftest
 set -uo pipefail
@@ -69,13 +74,27 @@ pick_name() {
 }
 
 main() {
-  # An explicit -n is the user's decision and is never second-guessed.
+  local shepherd=0 args=()
   for arg in "$@"; do
     case "$arg" in
-      -n|--name) exec claude "$@" ;;
+      # An explicit -n is the user's decision and is never second-guessed.
+      -n|--name) exec claude "$@"; return ;;
+      # Not a claude flag: it is consumed here and never forwarded.
+      --sheprd|--shepherd) shepherd=1 ;;
+      *) args+=("$arg") ;;
     esac
   done
-  exec claude -n "$(pick_name)" "$@"
+
+  local name
+  if ((shepherd)); then
+    # The bare project name, whether or not something else holds it. A session that died
+    # without releasing its name leaves it reserved, and the suffix rule would then hand the
+    # tree's coordination to a session called dotfiles-2 while nothing answers to dotfiles.
+    name="$(sanitize "$(basename "$PWD")")"
+  else
+    name="$(pick_name)"
+  fi
+  exec claude -n "$name" "${args[@]}"
 }
 
 selftest() {
@@ -104,7 +123,20 @@ selftest() {
   got="$(cd "$HOME/dotfiles" 2>/dev/null && pick_name)"
   [[ $got == "dotfiles" ]] || { printf 'FAIL empty registry: want dotfiles, got %s\n' "$got"; fail=1; }
 
-  ((fail)) || printf 'selftest ok: 6 sanitize + 3 pick\n'
+  # main, with claude stubbed: the flag must not reach it, and --sheprd must win over a
+  # reserved name. Anything forwarded verbatim would fail as an unknown claude flag.
+  # `exec` would replace this shell, so the stub runs in a subshell where exec is disarmed.
+  claude() { printf '%s\n' "$*"; }
+  exec() { "$@"; }
+  live_names() { printf 'dotfiles\n'; }
+  got="$(cd "$HOME/dotfiles" 2>/dev/null && main --sheprd --resume)"
+  [[ $got == "-n dotfiles --resume" ]] || { printf 'FAIL sheprd: want "-n dotfiles --resume", got "%s"\n' "$got"; fail=1; }
+  got="$(cd "$HOME/dotfiles" 2>/dev/null && main --resume)"
+  [[ $got == "-n dotfiles-2 --resume" ]] || { printf 'FAIL suffix: want "-n dotfiles-2 --resume", got "%s"\n' "$got"; fail=1; }
+  got="$(cd "$HOME/dotfiles" 2>/dev/null && main -n chosen --resume)"
+  [[ $got == "-n chosen --resume" ]] || { printf 'FAIL explicit -n: want "-n chosen --resume", got "%s"\n' "$got"; fail=1; }
+
+  ((fail)) || printf 'selftest ok: 6 sanitize + 3 pick + 3 main\n'
   return $fail
 }
 
