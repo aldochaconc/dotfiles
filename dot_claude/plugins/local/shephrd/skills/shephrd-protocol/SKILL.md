@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al god", "who do I report to", or when working with HERDR_REPORTS_TO, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.15.0
+version: 0.16.0
 ---
 
 # shephrd protocol
@@ -23,11 +23,17 @@ Read the role before anything else. Everything below branches on it.
 `HERDR_REPORTS_TO` carries the name of the session that spawned this one. `/spawn-agent` sets it
 on every pane it opens.
 
-| Role | Declared by | Reaches the user | Reports to |
+| Role | Reaches the user | Reports to | Opens |
 |---|---|---|---|
-| god | `HERDR_GOD`, or the registry | yes, and is the only window the user watches | nobody |
-| shephrd | an empty `HERDR_REPORTS_TO` | through the god when there is one | the god |
-| sheep | a name in `HERDR_REPORTS_TO` | no | its shephrd |
+| god | yes, and is the only window the user watches | nobody | watchers |
+| shephrd | through the god when there is one | the god | sheep |
+| sheep | no | its shephrd | nothing |
+| watcher | through the god | the god | nothing |
+
+The role is recorded rather than derived. Deriving it from who a pane reports to collapses two
+different facts: a shephrd reports to the god and is not a sheep for doing so, and leaving its
+recipient empty to avoid that loses who it answers to. Measured on 2026-09-23, both halves of
+that were wrong in the registry at once.
 
 A god is declared rather than inferred and receives only what the shephrds could not resolve.
 What it opens is watchers rather than sheep: they keep the backlog, the notes and the mail around
