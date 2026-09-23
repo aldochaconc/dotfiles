@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.5.0
+version: 0.6.0
 ---
 
 # shephrd protocol
@@ -46,6 +46,23 @@ line leaves its pane with nothing, which is what the roster replaces.
 
 Nothing in `herdr agent list` carries the hierarchy and the workspace does not imply it, which is
 why the variable and the roster exist at all; `references/environment.md` holds the measurement.
+
+### What a pane may touch
+
+The roster carries a `scope` beside the master: what this pane owns, in paths, in a branch, and
+in what it must hand back rather than fix. A directory does not answer it. Measured on
+2026-09-23: four panes shared one repository and three were nested inside each other, with
+nothing saying whose work was whose; nothing collided because only one of them wrote.
+
+Read it with the same call that resolves the role. A file outside the scope is reported to the
+master rather than changed, which is the rule in `references/not-stalling.md` applied to this
+session rather than to a finding it makes elsewhere.
+
+Nothing enforces it. Two panes writing one file produce two versions and the loss is discovered
+later, so the boundary is declared at the spawn and read before writing, not checked afterwards.
+
+An empty scope means the pane was opened before this existed. That is reported rather than read
+as permission for everything.
 
 ## Reporting
 
