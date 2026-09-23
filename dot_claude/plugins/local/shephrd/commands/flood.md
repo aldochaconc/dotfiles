@@ -45,20 +45,29 @@ The registry survives on purpose. What each pane held is what makes reopening ch
    A dirty tree is the reason a flood is cancelled, and it is read rather than asked:
    `git -C <cwd> status --short` per pane. Report it in the question, not afterwards.
 
-3. **Ask every pane for its handoff, in parallel.** One message each, naming the file under
-   `~/.claude/handoff/<name>-<date>.md` and what belongs in it: what it did, what is unfinished,
-   and what is not written down anywhere else. That last part is the whole reason to ask, since
-   the rest is visible from the tree.
+3. **Ask each shephrd, and only the shephrds.** One message per shephrd: write your handoff, and
+   collect your sheep's. A god that writes to a sheep directly is reaching past the session that
+   owns it, which is the hierarchy this plugin exists to keep.
+
+   The shephrd is also the one who should ask. It knows what each sheep was given, so it can say
+   what is missing from a thin handoff; a god asking cold gets whatever the sheep thinks matters.
+
+   What to name in the message: the file under `~/.claude/handoff/<name>-<date>.md`, and that
+   what belongs in it is what is written down nowhere else. The rest is visible from the tree.
 
    Ask for the file and the reply, never for the exit: a session cannot run `/exit` on itself.
 
-4. **Wait for the replies, in the background.** A handoff is a turn, so each pane goes to
-   `working` and comes back. A pane that does not answer is reported and left running rather
-   than closed on silence.
+4. **Wait for the replies, in the background.** A handoff is a turn, and a shephrd collecting its
+   sheep's is several. A shephrd that does not answer is reported and left running with its
+   sheep, rather than closed on silence.
 
 5. **Close, sheep before shephrds.** `herdr agent prompt <pane> "/exit"` per pane, then wait for
    each `pane_id` to leave `herdr agent list`. A shephrd closed first leaves its sheep reporting
    to a name that no longer answers, which is the orphan state the protocol has a rule for.
+
+   The close is the god's, and it is the one thing that does reach a sheep directly: a shephrd
+   asked to close its own sheep and then itself would be running `/exit` on its own pane, which
+   no session can do.
 
    A pane reading `blocked` takes no prompt. `herdr agent send-keys <pane> Escape` clears the
    dialog first, and what that discards is reported: the pane is read before the key is sent.
