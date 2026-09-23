@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.6.0
+version: 0.7.0
 ---
 
 # shephrd protocol
@@ -274,6 +274,7 @@ spend its context on the reading. An agent runs in its own context and returns o
 |---|---|
 | `hierarchy-auditor` | which panes exist, which names reach them, which are stalled or orphaned |
 | `traffic-auditor` | who reported, who went silent, which question is waiting on an answer |
+| `project-manager` | where the work stands across branches, pull requests and panes |
 
 Both read and neither acts. A repair named in a report is run by the session that asked, which is
 the one holding the authority to restart a pane or send a message.
