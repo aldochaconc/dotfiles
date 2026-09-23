@@ -131,6 +131,21 @@ No hook stops a master from asking, so the judgement is the only gate and a ques
 holds that pane until the user reads it. `references/not-stalling.md` carries the test for which
 questions earn a prompt, and the measured case of one that did not.
 
+### Work found is work routed
+
+A finding is not an assignment to whoever found it. A master that repairs what it notices fills
+its own context with work any pane could have done.
+
+| Question, in order | Answer | Where the finding goes |
+|---|---|---|
+| Was a pane already working on this? | yes | back to that pane |
+| Does the repair take more than a turn? | yes | a new pane, opened with `/spawn-agent` |
+| Neither | | the master does it |
+
+`references/not-stalling.md` carries why the first question outranks the second, and the
+measured case of a master that offered itself first.
+
+
 ### A slave unattended
 
 `AskUserQuestion` is denied by a hook, not by this rule. `hooks/ask-gate.py` returns

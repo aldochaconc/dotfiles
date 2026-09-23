@@ -76,6 +76,12 @@ PATTERNS = [
 def graphite_governs(cwd):
     """Whether `gt init` has run in the repository containing cwd.
 
+    `--git-common-dir` rather than `--absolute-git-dir`, because a linked worktree has a git
+    directory of its own under `<main>/.git/worktrees/<name>` and Graphite's config sits in the
+    main one. Measured on 2026-09-23 in a live worktree: the absolute form reported plain git
+    for a repository Graphite governs, and the common form answered correctly from both the
+    worktree and the main checkout.
+
     Failure returns False. A state read that cannot complete must not change a verdict, and the
     verdict here does not depend on it.
     """
@@ -83,7 +89,7 @@ def graphite_governs(cwd):
         return False
     try:
         out = subprocess.run(
-            ["git", "-C", cwd, "rev-parse", "--absolute-git-dir"],
+            ["git", "-C", cwd, "rev-parse", "--path-format=absolute", "--git-common-dir"],
             capture_output=True, text=True, timeout=5,
         )
     except (OSError, subprocess.SubprocessError):

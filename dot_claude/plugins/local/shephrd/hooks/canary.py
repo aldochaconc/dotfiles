@@ -18,6 +18,7 @@ take the session with it.
 
 import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -44,7 +45,50 @@ def beat(payload, env=None, now=None):
         "master": (env.get("HERDR_AGENT_MASTER") or "").strip(),
         "cwd": (payload.get("cwd") or "").strip(),
         "event": (payload.get("hook_event_name") or "").strip(),
+        **where(payload.get("cwd") or ""),
     }
+
+
+def where(cwd):
+    """The repository a pane is working in, and the branch, when there is one.
+
+    A pane inside a linked worktree has a `cwd` under a scratchpad and a branch nobody else is
+    on, so the directory alone says neither which repository it belongs to nor what it is
+    building. Measured on 2026-09-23: one workspace held a worktree at a session scratchpad path
+    while the main checkout sat elsewhere on another branch.
+
+    `--git-common-dir` answers the main repository from either side. Everything here is best
+    effort: a read that fails leaves the fields empty rather than failing the beat.
+    """
+    out = {"repo": "", "branch": "", "worktree": False}
+    if not cwd:
+        return out
+    try:
+        common = subprocess.run(
+            ["git", "-C", cwd, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if common.returncode != 0:
+            return out
+        common_dir = common.stdout.strip()
+        out["repo"] = str(Path(common_dir).parent) if common_dir.endswith(".git") else common_dir
+
+        top = subprocess.run(
+            ["git", "-C", cwd, "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if top.returncode == 0 and top.stdout.strip():
+            out["worktree"] = str(Path(top.stdout.strip())) != out["repo"]
+
+        branch = subprocess.run(
+            ["git", "-C", cwd, "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if branch.returncode == 0:
+            out["branch"] = branch.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return out
+    return out
 
 
 def beat_key(record):
@@ -134,7 +178,26 @@ def selftest():
         write(beat({"session_id": "nopane"}, {}, now=4000.0), d)
         assert len(list(Path(d).glob("*.json"))) == 2
 
-    print("canary selftest: 19 checks passed")
+    # Location is best effort and never raises: a path that is not a repository, and one that
+    # does not exist, both come back empty rather than failing the beat.
+    assert where("") == {"repo": "", "branch": "", "worktree": False}
+    assert where("/nonexistent/xyz")["repo"] == ""
+    assert where("/tmp")["repo"] == ""
+
+    # A real repository answers its own path and is not a worktree. This file lives in one, so
+    # its own directory is the fixture and no path is written out.
+    repo = str(Path(__file__).resolve().parents[5])
+    here = where(repo)
+    assert here["repo"] == repo, here
+    assert here["worktree"] is False
+    assert here["branch"]
+
+    # The fields ride on the beat rather than being computed by the reader.
+    r3 = beat({"session_id": "loc", "cwd": repo}, env)
+    assert r3["repo"] == repo
+    assert r3["worktree"] is False
+
+    print("canary selftest: 27 checks passed")
 
 
 if __name__ == "__main__":
