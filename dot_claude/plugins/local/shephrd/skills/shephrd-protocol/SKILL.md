@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.11.0
+version: 0.12.0
 ---
 
 # shephrd protocol
@@ -29,9 +29,10 @@ on every pane it opens.
 | shepherd | an empty `HERDR_AGENT_MASTER` | through the god when there is one | the god |
 | sheep | a name in `HERDR_AGENT_MASTER` | no | its shepherd |
 
-A god is declared rather than inferred, opens watchers of its own rather than sheep, and
-receives only what the shepherds could not resolve. `references/roles.md` holds what passes to
-it, what a watcher is, and why two.
+A god is declared rather than inferred and receives only what the shepherds could not resolve.
+What it opens is watchers rather than sheep: they keep the backlog, the notes and the mail around
+the work, and write no code. `references/roles.md` holds what passes to a god, what a watcher
+writes, and why two.
 
 Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py`, which answers the pane, the
 name, the master, the scope, the role and where each came from. It reads the variables first and
