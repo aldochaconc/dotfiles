@@ -86,10 +86,10 @@ pane as queued messages and returned nothing, and repeating the read queued the 
 command that produces no output and no error is indistinguishable from a slow one, which is why
 the advice to retry makes it worse.
 
-Read the pair from `~/.claude/roster/<pane>.json` instead, which `/spawn-agent` writes and a
+Read the pair from `~/.claude/panes/<pane>.json` instead, which `/spawn-agent` writes and a
 restart does not clear. Its `master` field is what the pane answers to.
 
-A pane with no roster file was opened before the roster existed or by hand. Report that as
+A pane absent from the registry was opened by hand, or before the registry existed. Report that as
 unknown rather than as master: empty means master and the difference decides whether a session
 may talk to the user.
 

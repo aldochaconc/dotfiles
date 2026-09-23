@@ -103,7 +103,7 @@ environment variable landed in one pane that way.
 
 What a pane with an agent is asked, it is asked with `herdr agent prompt`, which enters as a turn
 and is answered. What is read about it without disturbing it comes from
-`~/.claude/roster/<pane>.json` and `~/.claude/canary/<pane>.json`.
+`~/.claude/panes/<pane>.json` and `~/.claude/canary/<pane>.json`.
 
 Reading a shell pane immediately after `herdr pane run` can return the prompt before the output. Repeat
 the read rather than believing the first one.

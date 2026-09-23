@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al master", "who is my master", or when working with HERDR_AGENT_MASTER, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.7.0
+version: 0.8.0
 ---
 
 # shephrd protocol
@@ -27,29 +27,29 @@ on every pane it opens.
 | empty | master | yes | nobody |
 | a name | slave | no | that name |
 
-Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/roster.py`, which answers the pane, the
+Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py`, which answers the pane, the
 name, the master and where each came from. It reads the variable first and falls back to
-`~/.claude/roster/<pane>.json`, which `/spawn-agent` writes.
+`~/.claude/panes/<pane>.json`, which `/spawn-agent` writes.
 
 The fallback is what makes an empty variable readable. `--env` lives in the pane's process and a
 restart replaces it: `herdr agent start` takes no `--env` and creates no pane, so a restarted
 slave comes back with nothing and reads as a master. Measured on 2026-09-23 on two panes whose
 threads resumed correctly.
 
-An empty master in both places means the session coordinates itself. A pane with no roster entry
-at all was opened before the roster existed, and that is reported rather than assumed either way:
-taking the master role wrongly puts a slave in front of the user.
+An empty master in both places means the session coordinates itself. A pane absent from the
+registry was opened by hand, or before the registry existed, and that is reported rather than
+assumed either way: taking the master role wrongly puts a slave in front of the user.
 
 Today the hierarchy also travels in the text of each instruction, because a master writes "report
 to me" into the prompts it sends. That works and it is not a mechanism: a master that omits the
-line leaves its pane with nothing, which is what the roster replaces.
+line leaves its pane with nothing, which is what the registry replaces.
 
 Nothing in `herdr agent list` carries the hierarchy and the workspace does not imply it, which is
-why the variable and the roster exist at all; `references/environment.md` holds the measurement.
+why the variable and the registry exist at all; `references/environment.md` holds the measurement.
 
 ### What a pane may touch
 
-The roster carries a `scope` beside the master: what this pane owns, in paths, in a branch, and
+The registry carries a `scope` beside the master: what this pane owns, in paths, in a branch, and
 in what it must hand back rather than fix. A directory does not answer it. Measured on
 2026-09-23: four panes shared one repository and three were nested inside each other, with
 nothing saying whose work was whose; nothing collided because only one of them wrote.
@@ -274,7 +274,6 @@ spend its context on the reading. An agent runs in its own context and returns o
 |---|---|
 | `hierarchy-auditor` | which panes exist, which names reach them, which are stalled or orphaned |
 | `traffic-auditor` | who reported, who went silent, which question is waiting on an answer |
-| `project-manager` | where the work stands across branches, pull requests and panes |
 
 Both read and neither acts. A repair named in a report is run by the session that asked, which is
 the one holding the authority to restart a pane or send a message.

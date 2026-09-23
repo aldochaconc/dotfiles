@@ -7,7 +7,7 @@ no `--env` and creates no pane, so the variables are gone and the session reads 
 Measured on 2026-09-23: two panes restarted with their threads intact came back with both empty,
 and the canary listed a slave as a master.
 
-So the spawn also writes the pair to `~/.claude/roster/<pane>.json`, which survives the process.
+So the spawn also writes the pair to `~/.claude/panes/<pane>.json`, which survives the process.
 A session with an empty variable reads the file for its own pane before concluding it
 coordinates itself.
 
@@ -23,7 +23,7 @@ that is running now, and the file may describe a pane that was reused for someth
 The canary's beat cannot serve as this record, though it carries the same two fields. A beat
 reports what the process holds at the end of a turn, so a restarted pane overwrites it with the
 empty values it lost: measured on 2026-09-23, `w1R-p8` reported a name and an empty master while
-that pane was a slave. The roster is written once by the spawn and is not touched by a restart.
+that pane was a slave. The registry is written once by the spawn and is not touched by a restart.
 Two files, two owners.
 """
 
@@ -32,7 +32,7 @@ import os
 import sys
 from pathlib import Path
 
-DIR = Path(os.environ.get("HOME", "/tmp")) / ".claude" / "roster"
+DIR = Path(os.environ.get("HOME", "/tmp")) / ".claude" / "panes"
 
 
 def key(pane):
@@ -100,12 +100,12 @@ def resolve(env=None, directory=None):
 
     if pane:
         rec = read(pane, directory)
-        # Scope has no environment variable: the roster is where it lives at all.
+        # Scope has no environment variable: the registry is where it lives at all.
         scope = rec["scope"]
         if not name and rec["name"]:
-            name, source = rec["name"], "roster"
+            name, source = rec["name"], "registry"
         if not master and rec["master"]:
-            master, source = rec["master"], "roster"
+            master, source = rec["master"], "registry"
 
     return {"pane": pane, "name": name, "master": master, "scope": scope, "source": source}
 
@@ -116,7 +116,7 @@ def main(argv=None):
     if "--write" in argv:
         rest = argv[argv.index("--write") + 1:]
         if not rest:
-            print("usage: roster.py --write <pane> <name> [master] [scope]", file=sys.stderr)
+            print("usage: panes.py --write <pane> <name> [master] [scope]", file=sys.stderr)
             return 2
         pane = rest[0]
         name = rest[1] if len(rest) > 1 else ""
@@ -152,7 +152,7 @@ def selftest():
         r = resolve({"HERDR_PANE_ID": "w1R:p8"}, d)
         assert r["master"] == "lead", r
         assert r["name"] == "worker-a"
-        assert r["source"] == "roster"
+        assert r["source"] == "registry"
 
         # The environment wins where it has a value.
         r2 = resolve({
@@ -196,7 +196,7 @@ def selftest():
     assert main(["--write"]) == 2
     assert main(["--write", ""]) == 2
 
-    print("roster selftest: 23 checks passed")
+    print("panes selftest: 23 checks passed")
 
 
 if __name__ == "__main__":
