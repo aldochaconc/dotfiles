@@ -4,7 +4,7 @@
 A pane opened by `/spawn-agent` carries HERDR_AGENT_MASTER, and nobody is watching it: the
 person who would answer is sitting in front of the master. An `AskUserQuestion` there renders a
 menu in a pane the user is not looking at and the turn stops until someone finds it. Measured on
-2026-09-22: a slave holding the written prohibition asked anyway, which is what a rule stated in
+2026-09-22: a sheep holding the written prohibition asked anyway, which is what a rule stated in
 prose and enforced by nothing produces.
 
 So the rule stops being prose. `permissionDecision: "deny"` with the reason naming what to do
@@ -25,7 +25,7 @@ import sys
 
 REASON = (
     "AskUserQuestion is not available in this pane. HERDR_AGENT_MASTER is set to {master!r}, so "
-    "this session is a slave: nobody is watching this pane and the user is in front of {master}. "
+    "this session is a sheep: nobody is watching this pane and the user is in front of {master}. "
     "A question rendered here stops the turn until someone notices it.\n\n"
     "Send the decision to {master} with SendMessage instead, carrying what is blocked, the "
     "options, and what each one costs. Then stop for the turn and report. Check first that "
@@ -37,7 +37,7 @@ REASON = (
 def decision(env=None):
     """Return (permissionDecision, reason) for the current environment.
 
-    A slave is any session with a non-empty HERDR_AGENT_MASTER. Whitespace is not a name, so it
+    A sheep is any session with a non-empty HERDR_AGENT_MASTER. Whitespace is not a name, so it
     reads as empty: a variable set to a blank string comes from a spawn that could not resolve a
     name, and treating that as a master is what the spawn command already refuses to do.
     """

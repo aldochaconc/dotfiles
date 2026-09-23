@@ -5,7 +5,7 @@
 and those live in the pane's process. A restart replaces that process: `herdr agent start` takes
 no `--env` and creates no pane, so the variables are gone and the session reads as a master.
 Measured on 2026-09-23: two panes restarted with their threads intact came back with both empty,
-and the canary listed a slave as a master.
+and the canary listed a sheep as a master.
 
 So the spawn also writes the pair to `~/.claude/panes/<pane>.json`, which survives the process.
 A session with an empty variable reads the file for its own pane before concluding it
@@ -23,7 +23,7 @@ that is running now, and the file may describe a pane that was reused for someth
 The canary's beat cannot serve as this record, though it carries the same two fields. A beat
 reports what the process holds at the end of a turn, so a restarted pane overwrites it with the
 empty values it lost: measured on 2026-09-23, `w1R-p8` reported a name and an empty master while
-that pane was a slave. The registry is written once by the spawn and is not touched by a restart.
+that pane was a sheep. The registry is written once by the spawn and is not touched by a restart.
 Two files, two owners.
 """
 

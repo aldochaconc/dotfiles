@@ -30,7 +30,7 @@ with it.
 |---|---|
 | `shephrd-protocol` skill | who may talk to the user, who reports to whom, what unattended means per role |
 | `ask-gate.py` hook | denies `AskUserQuestion` in a spawned pane, where nobody is watching to answer |
-| `report-gate.py` hook | holds a turn that a slave would end without reporting |
+| `report-gate.py` hook | holds a turn that a sheep would end without reporting |
 | `canary.py` hook | writes a liveness beat at the end of every turn, so a stalled pane is visible |
 | `canary-read.py` | prints the beats oldest first |
 | `panes.py` | who a pane answers to, kept outside the process a restart replaces |
@@ -39,7 +39,7 @@ with it.
 | `/project-manager` | open the pane that tracks state, plans, and holds the boundaries |
 | `/shephrd` | take the coordinating role for the tree this session sits in |
 | `/spawn-agent` | open a pane, carrying name, root and master into it |
-| `/unattended` | tell a master the user has stepped away; a slave is already unattended |
+| `/unattended` | tell a master the user has stepped away; a sheep is already unattended |
 | `/restart-agents` | restart panes so they pick up new permissions and hooks, keeping their names |
 | `/exit-agents` | close panes after each session writes what it was doing |
 | `/agents-budget` | report context and account limits per session |
@@ -53,7 +53,7 @@ never types a slash command and still has to know it answers to someone.
 means this session reports to that name and asks it rather than the user for any decision; an
 empty value means the session coordinates itself.
 
-That variable is also the unattended switch. A slave is unattended from its first turn because
+That variable is also the unattended switch. A sheep is unattended from its first turn because
 nobody is watching the pane it opened in, so `/unattended` is a command for a master.
 
 Nothing in `herdr agent list` records this, which is why the variable exists.
@@ -65,7 +65,7 @@ against an incoming prompt and the end of a turn has none, so the rule is carrie
 `# Machine` paragraph of `~/.claude/CLAUDE.md`, which is reinjected every turn. Trimming that
 paragraph disables the rule silently.
 
-The prohibition on a slave calling `AskUserQuestion` is enforced by `hooks/ask-gate.py`, a
+The prohibition on a sheep calling `AskUserQuestion` is enforced by `hooks/ask-gate.py`, a
 `PreToolUse` hook that denies the call when `HERDR_AGENT_MASTER` is set. Hooks are read once at
 launch, so a pane started before the plugin was installed does not have it.
 

@@ -99,7 +99,7 @@ pane about three fifths of the width.
 
    The `--env` of step 2 lives in the pane's process, and a restart replaces that process:
    `herdr agent start` takes no `--env` and creates no pane. Measured on 2026-09-23, two panes
-   restarted with their threads intact came back with both variables empty, and a slave read as
+   restarted with their threads intact came back with both variables empty, and a sheep read as
    a master. The pane registry survives that, and a session with an empty variable reads its own pane
    there before concluding it coordinates itself.
 
