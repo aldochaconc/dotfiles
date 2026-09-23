@@ -45,23 +45,25 @@ def _registry(env, registry_dir=None):
 
 
 def _identity(env, registry_dir=None):
-    """Who this pane reports to and what role it holds.
+    """This pane's name, who it reports to, and what role it holds.
 
-    Both answers come from the variable first and the registry behind it, because a restart
-    empties the process and leaves the registry as the only record.
+    Every answer comes from the variable first and the registry behind it, because a restart
+    empties the process and leaves the registry as the only record. All three fall back, not
+    just the one that prompted the fallback: measured on 2026-09-23, a restarted pane wrote a
+    beat with the role right and the name blank, because only two of the three read the file.
 
     The role rides on the beat rather than being inferred by a reader. A god is declared, not
     derived from having no one above it, and a reader that guessed would call every god a
-    shephrd: measured on 2026-09-23, the canary listed this machine's god as a shephrd while
-    the registry held the flag.
+    shephrd.
     """
     rec = _registry(env, registry_dir)
+    name = (env.get("HERDR_AGENT_NAME") or "").strip() or (rec.get("name") or "").strip()
     reports_to = (env.get("HERDR_REPORTS_TO") or "").strip() or (
         rec.get("reports_to") or "").strip()
     god = (env.get("HERDR_GOD") or "").strip().lower() not in ("", "0", "false", "no")
     god = god or bool(rec.get("god"))
     role = "god" if god else ("sheep" if reports_to else "shephrd")
-    return reports_to, role
+    return name, reports_to, role
 
 
 def beat(payload, env=None, now=None):
@@ -73,10 +75,10 @@ def beat(payload, env=None, now=None):
     if not sid:
         return None
 
-    # The registry answers what the environment lost. A restarted pane has no HERDR_REPORTS_TO,
-    # and a beat that read only the variable listed a sheep as a shephrd: measured on 2026-09-23
-    # on two panes whose threads had resumed correctly.
-    reports_to, role = _identity(env)
+    # The registry answers what the environment lost, for all three fields. A restarted pane has
+    # none of the variables: measured on 2026-09-23, one wrote a beat with no name at all and an
+    # earlier one listed a sheep as a shephrd.
+    name, reports_to, role = _identity(env)
 
     return {
         "session_id": sid,
@@ -84,7 +86,7 @@ def beat(payload, env=None, now=None):
         "at_iso": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(now)),
         "pane": (env.get("HERDR_PANE_ID") or "").strip(),
         "workspace": (env.get("HERDR_WORKSPACE_ID") or "").strip(),
-        "name": (env.get("HERDR_AGENT_NAME") or "").strip(),
+        "name": name,
         "reports_to": reports_to,
         "role": role,
         "cwd": (payload.get("cwd") or "").strip(),
@@ -222,22 +224,32 @@ def selftest():
         write(beat({"session_id": "nopane"}, {}, now=4000.0), d)
         assert len(list(Path(d).glob("*.json"))) == 2
 
+    # A restart empties every variable, so all three come from the registry together. The name
+    # was the one that did not, and a restarted pane wrote a beat with no name at all.
+    with tempfile.TemporaryDirectory() as d:
+        Path(d, "w5-p5.json").write_text(json.dumps(
+            {"name": "herder-c", "reports_to": "", "god": False}))
+        assert _identity({"HERDR_PANE_ID": "w5:p5"}, d) == ("herder-c", "", "shephrd")
+        # The variable still wins where it has a value.
+        assert _identity(
+            {"HERDR_PANE_ID": "w5:p5", "HERDR_AGENT_NAME": "renamed"}, d)[0] == "renamed"
+
     # The recipient falls back to the registry when the variable is empty, which is what a restart
     # leaves behind.
     with tempfile.TemporaryDirectory() as d:
         Path(d, "w9-p9.json").write_text(json.dumps({"reports_to": "lead"}))
-        assert _identity({"HERDR_PANE_ID": "w9:p9"}, d)[0] == "lead"
+        assert _identity({"HERDR_PANE_ID": "w9:p9"}, d)[1] == "lead"
         # The variable wins when it has a value.
-        assert _identity({"HERDR_PANE_ID": "w9:p9", "HERDR_REPORTS_TO": "other"}, d)[0] == "other"
+        assert _identity({"HERDR_PANE_ID": "w9:p9", "HERDR_REPORTS_TO": "other"}, d)[1] == "other"
         # A pane with no entry, and no pane at all, both read empty rather than raising.
-        assert _identity({"HERDR_PANE_ID": "w9:pZ"}, d)[0] == ""
-        assert _identity({}, d)[0] == ""
+        assert _identity({"HERDR_PANE_ID": "w9:pZ"}, d)[1] == ""
+        assert _identity({}, d)[1] == ""
         # A shephrd records an empty master and the registry does not override it.
         Path(d, "w9-p8.json").write_text(json.dumps({"reports_to": ""}))
-        assert _identity({"HERDR_PANE_ID": "w9:p8"}, d)[0] == ""
+        assert _identity({"HERDR_PANE_ID": "w9:p8"}, d)[1] == ""
         # Malformed JSON is a missing answer, not a crash.
         Path(d, "w9-p7.json").write_text("{not json")
-        assert _identity({"HERDR_PANE_ID": "w9:p7"}, d)[0] == ""
+        assert _identity({"HERDR_PANE_ID": "w9:p7"}, d)[1] == ""
 
     # Location is best effort and never raises: a path that is not a repository, and one that
     # does not exist, both come back empty rather than failing the beat.
@@ -266,7 +278,7 @@ def selftest():
         assert r3["repo"] == repo
         assert r3["worktree"] is False
 
-    print("canary selftest: 33 checks passed")
+    print("canary selftest: 35 checks passed")
 
 
 if __name__ == "__main__":
