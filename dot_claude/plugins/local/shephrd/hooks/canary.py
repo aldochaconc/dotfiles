@@ -26,6 +26,28 @@ from pathlib import Path
 DIR = Path(os.environ.get("HOME", "/tmp")) / ".claude" / "canary"
 
 
+def _master(env, registry_dir=None):
+    """The master this pane answers to, from the environment or the registry behind it.
+
+    Importing `panes` is avoided: a hook that fails on a missing sibling stops writing beats,
+    and a beat is what makes a stalled pane visible. The file is read directly and any failure
+    leaves the field empty, which is what the variable alone would have given.
+    """
+    value = (env.get("HERDR_AGENT_MASTER") or "").strip()
+    if value:
+        return value
+    pane = (env.get("HERDR_PANE_ID") or "").strip()
+    if not pane:
+        return ""
+    d = Path(registry_dir) if registry_dir else Path(
+        env.get("HOME", "/tmp")) / ".claude" / "panes"
+    try:
+        return (json.loads((d / (pane.replace(":", "-") + ".json")).read_text())
+                .get("master") or "").strip()
+    except (OSError, ValueError, AttributeError):
+        return ""
+
+
 def beat(payload, env=None, now=None):
     """Build the record for one turn ending. Returns None when there is no session to name."""
     env = env if env is not None else os.environ
@@ -42,7 +64,10 @@ def beat(payload, env=None, now=None):
         "pane": (env.get("HERDR_PANE_ID") or "").strip(),
         "workspace": (env.get("HERDR_WORKSPACE_ID") or "").strip(),
         "name": (env.get("HERDR_AGENT_NAME") or "").strip(),
-        "master": (env.get("HERDR_AGENT_MASTER") or "").strip(),
+        # The registry answers what the environment lost. A restarted pane has no
+        # HERDR_AGENT_MASTER, and a beat that read only the variable listed a sheep as a master:
+        # measured on 2026-09-23 on two panes whose threads had resumed correctly.
+        "master": _master(env),
         "cwd": (payload.get("cwd") or "").strip(),
         "event": (payload.get("hook_event_name") or "").strip(),
         **where(payload.get("cwd") or ""),
@@ -178,6 +203,23 @@ def selftest():
         write(beat({"session_id": "nopane"}, {}, now=4000.0), d)
         assert len(list(Path(d).glob("*.json"))) == 2
 
+    # The master falls back to the registry when the variable is empty, which is what a restart
+    # leaves behind.
+    with tempfile.TemporaryDirectory() as d:
+        Path(d, "w9-p9.json").write_text(json.dumps({"master": "lead"}))
+        assert _master({"HERDR_PANE_ID": "w9:p9"}, d) == "lead"
+        # The variable wins when it has a value.
+        assert _master({"HERDR_PANE_ID": "w9:p9", "HERDR_AGENT_MASTER": "other"}, d) == "other"
+        # A pane with no entry, and no pane at all, both read empty rather than raising.
+        assert _master({"HERDR_PANE_ID": "w9:pZ"}, d) == ""
+        assert _master({}, d) == ""
+        # A master records an empty master and the registry does not override it.
+        Path(d, "w9-p8.json").write_text(json.dumps({"master": ""}))
+        assert _master({"HERDR_PANE_ID": "w9:p8"}, d) == ""
+        # Malformed JSON is a missing answer, not a crash.
+        Path(d, "w9-p7.json").write_text("{not json")
+        assert _master({"HERDR_PANE_ID": "w9:p7"}, d) == ""
+
     # Location is best effort and never raises: a path that is not a repository, and one that
     # does not exist, both come back empty rather than failing the beat.
     assert where("") == {"repo": "", "branch": "", "worktree": False}
@@ -197,7 +239,7 @@ def selftest():
     assert r3["repo"] == repo
     assert r3["worktree"] is False
 
-    print("canary selftest: 27 checks passed")
+    print("canary selftest: 33 checks passed")
 
 
 if __name__ == "__main__":
