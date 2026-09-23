@@ -95,7 +95,17 @@ layout opens in the wrong workspace or fails.
 `herdr pane split <target>` carries the same defect when `<target>` is omitted: the split falls
 back to the focused pane, which can sit in another workspace.
 
-Reading a pane immediately after `herdr pane run` can return the prompt before the output. Repeat
+`herdr pane run` is for a pane holding a shell and nothing else. Against a pane running an agent
+there is no shell to receive it: the text enters that session's message queue as if the user had
+typed it, and waits there for its next turn. It returns no output and no error, so it reads like
+a slow command, and retrying queues a second message. Measured on 2026-09-23, two probes for an
+environment variable landed in one pane that way.
+
+What a pane with an agent is asked, it is asked with `herdr agent prompt`, which enters as a turn
+and is answered. What is read about it without disturbing it comes from
+`~/.claude/roster/<pane>.json` and `~/.claude/canary/<pane>.json`.
+
+Reading a shell pane immediately after `herdr pane run` can return the prompt before the output. Repeat
 the read rather than believing the first one.
 
 ## Persistence

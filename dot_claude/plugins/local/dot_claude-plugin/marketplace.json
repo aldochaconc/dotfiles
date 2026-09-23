@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "shephrd",
-      "version": "0.4.1",
+      "version": "0.5.0",
       "description": "Shepherd Claude sessions across terminal panes: master and slave roles, per-turn reporting, unattended operation, liveness canary, and the commands that open, restart and close panes. Depends on the herdr CLI.",
       "source": "./shephrd",
       "category": "productivity"
