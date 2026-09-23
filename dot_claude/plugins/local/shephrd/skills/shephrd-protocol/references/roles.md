@@ -57,6 +57,12 @@ god is the window, not a substitute for the person at it.
 Read the pane before sending any key. `esc` discards whatever a dialog was asking, and an
 `Enter` lands on whichever option is highlighted rather than on the one that was meant.
 
+One `Enter` does not close a series. A call carrying several questions advances to the next one,
+and the last lands on a confirmation screen that wants its own `Enter`; the pane reads `blocked`
+throughout. Measured on 2026-09-23: three were needed, and checking `herdr agent list` after the
+first made the key look like it had failed. Read the pane again between keys rather than counting
+them.
+
 ## Watchers
 
 What a god does open is watchers, two by default, and they are its own.
