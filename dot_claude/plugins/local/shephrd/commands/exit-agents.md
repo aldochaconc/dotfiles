@@ -1,7 +1,7 @@
 ---
 description: Close Claude in herdr panes after each session writes what it was doing, leaving the panes at their shell prompt
 argument-hint: pane ids or names, space separated; empty closes every pane of this workspace but this one
-allowed-tools: ["Bash", "ListAgents", "SendMessage", "AskUserQuestion"]
+allowed-tools: ["Bash", "Skill", "ListAgents", "SendMessage", "AskUserQuestion"]
 ---
 
 # Close agent panes

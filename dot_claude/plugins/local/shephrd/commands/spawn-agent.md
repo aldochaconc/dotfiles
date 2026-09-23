@@ -1,7 +1,7 @@
 ---
 description: Open a Claude pane in the current workspace, split so the first pane stays widest, carrying its identity from the environment
 argument-hint: agent name, optionally a path to work in
-allowed-tools: ["Bash", "ListAgents", "AskUserQuestion"]
+allowed-tools: ["Bash", "Skill", "ListAgents", "AskUserQuestion"]
 ---
 
 # Spawn an agent pane
@@ -77,29 +77,25 @@ pane about three fifths of the width.
 
 ## Environment
 
-Set at split time, so the pane carries them before its first turn.
+Set at split time with one `--env` each, so the pane carries them before its first turn:
+`HERDR_AGENT_NAME`, `HERDR_AGENT_ROOT` and `HERDR_AGENT_MASTER`.
 
-| Variable | Value | Why it cannot be derived later |
-|---|---|---|
-| `HERDR_AGENT_NAME` | the name passed to `-n` | herdr holds a name per pane and Claude registers its own; a pane reading only one of them can disagree with what peers address |
-| `HERDR_AGENT_ROOT` | the working directory | `cwd` moves as the session works, and the directory it was spawned for does not |
+`HERDR_AGENT_MASTER` takes this session's own name, which is what makes the spawned pane know who
+to report to. Read it from `HERDR_AGENT_NAME`, and from this session's entry in `ListAgents` when
+that is empty, which is the case for any pane opened by hand rather than by this command. A spawn
+that can resolve neither stops rather than opening a pane answering to nobody.
 
-`HERDR_PANE_ID`, `HERDR_TAB_ID` and `HERDR_WORKSPACE_ID` arrive without being set. A pane reads
-its own `HERDR_PANE_ID` and finds its record in `herdr agent list`, which carries the workspace,
-the working directory and the name herdr knows.
+Setting it is also what puts the pane in unattended mode, with no command sent to it. The pane has
+nobody watching it from the moment it opens, so it asks this session rather than the user for
+every decision from its first turn; `shephrd-protocol` is where that follows from the variable.
 
-Verified on 2026-09-22, splitting the bottom pane of a three-pane workspace: the first pane kept
-its width of 128 columns while the bottom one went from 28 rows to two of 14, and the new pane
-read back all four variables, the two set here and the two herdr supplies.
-
-Reading a pane immediately after `herdr pane run` can return the prompt before the output. The
-read is repeated rather than believed the first time.
+`shephrd-protocol` holds what each variable means and the measurements behind them, in
+`references/environment.md`.
 
 ## Scope
 
 The pane opens in the current workspace. A pane for another workspace is asked for by message to
-an agent already running there, which is where `/restart-agents` draws the same line: the agent
-coordinating a workspace is the one started first in it.
+an agent already running there.
 
 No name is reused. `herdr agent start` fails with `agent_name_taken` while herdr still holds a
 record under that name, including one whose agent has exited.

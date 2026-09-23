@@ -1,7 +1,7 @@
 ---
 description: Take the coordinating role for the tree this session sits in, resuming the previous session there or asking what this one is for
 argument-hint: none; the working directory is what the command reads
-allowed-tools: ["Bash", "ListAgents", "SendMessage", "AskUserQuestion"]
+allowed-tools: ["Bash", "Skill", "ListAgents", "SendMessage", "AskUserQuestion"]
 ---
 
 # Shepherd a tree
@@ -69,53 +69,29 @@ holds each workspace's `identity_cwd`, the split layout with its ratios, and a `
 per pane. That restoration does not depend on the previous session having closed cleanly, which
 is why it is the source here rather than anything this command writes.
 
-What `herdr` does not restore is the agent inside each pane. A pane that comes back empty is
-reported with its label, and starting Claude in it is `/spawn-agent`.
+What `herdr` does not restore is the agent inside each pane. Every pane that was working comes
+back empty, which is why the helpers question below is asked on a resumed thread as much as on a
+new one: it is the step that puts the agents back, one `/spawn-agent` per selection.
 
 ## Questions
 
-Every question this command has goes in one `AskUserQuestion` call, answered in one pass. The
-point is starting fast: a session that asks one thing per turn spends three turns before any
-work begins.
+Every question goes in one `AskUserQuestion` call, answered in one pass. A session that asks
+one thing per turn spends three turns before any work begins.
 
-The questions are ordered but not sequential. Question 1 frames the other two and the user reads
-all three before answering any, which is what makes one call enough.
-
-Asked when the tree is new, and when the user chooses to start fresh on a tree that has a
-transcript. A resumed session asks none of them: the thread it continues already carries the
-answers, and asking would be asking the user to repeat what is on disk.
-
-1. What this directory governs, as options built from what Position read. A directory holding
-   repositories is offered as coordinating them, as one project among them, or as neither, and
-   the options are written from what was found rather than from a fixed list.
-2. What this session is working on. No file answers it, and every later decision reads against it.
-3. Which helpers it needs. This is the last question because it reads against both answers
-   above, and it is the one with something to show.
-
-Which helpers make sense depends on whether the session coordinates several repositories or
-works inside one, which is why question 3 comes after question 1 and reads with it.
-
-### Helpers
-
-`~/.config/herdr/session.json` keeps a `label` and a `cwd` per pane, and both survive the pane
-being closed. Measured on 2026-09-22: one workspace held three labelled panes and another held
-one labelled and two unlabelled, all with their directory recorded.
-
-The question therefore shows what was there rather than asking into nothing:
-
-| Offered | Built from |
+| Start | Questions |
 |---|---|
-| the panes that were open before, each with its label and directory | the stored panes for this workspace |
-| a name per helper, proposed from the repositories found below this directory | the `find` in Position |
-| a helper the user names and places | typed in, for work no reading predicted |
-| none | starting alone, and `/spawn-agent` opens one later |
+| new tree, or fresh on a tree with a transcript | what the directory governs, what the session works on, which helpers |
+| resumed | the helpers question alone |
 
-A stored pane with no label is offered by its directory, which is what distinguishes it. Its
-name is proposed the same way a new helper's is, since a pane that was never named has nothing
-to restore.
+A resumed thread carries the first two answers already. It carries nothing about the helpers,
+since `herdr` restores panes and not the agents inside them: every pane that was working came
+back empty, and the helpers question is what puts them back.
 
-Each answer becomes one `/spawn-agent` call, which is why the question is a multiple selection
-and not a count.
+The helpers question is `AskUserQuestion` with `multiSelect: true`, never prose. It brings back a
+set in one pass and each selection becomes one `/spawn-agent` call.
+
+`references/taking-a-tree.md` in `shephrd-protocol` holds what each question offers and where
+each option comes from.
 
 ## Name
 
@@ -125,4 +101,10 @@ both are needed, for the reason `/restart-agents` records.
 
 A live session already holding that name means one of two things. It is still coordinating this
 tree, and this pane reports that and takes no role. Or it died without releasing the name, and
-retaking it is the point of `cc --sheprd`.
+retaking it is what running this command in the new pane does.
+
+Taking the role makes this session the one every pane it spawns reports to, and the only one that
+reaches the user when those panes run unattended. `/spawn-agent` writes the name set here into
+each pane's `HERDR_AGENT_MASTER`, and `shephrd-protocol` is where both halves of that
+relationship are written out. This session has no master of its own: its `HERDR_AGENT_MASTER`
+stays empty and that emptiness is what every role check reads to know it may talk to the user.
