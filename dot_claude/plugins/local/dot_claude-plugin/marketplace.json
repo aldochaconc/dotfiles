@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "shephrd",
-      "version": "0.11.0",
+      "version": "0.12.0",
       "description": "Shepherd Claude sessions across terminal panes: a god the user watches, shepherds that gate before reaching it, and their sheep. Per-turn reporting, unattended operation, liveness canary. Depends on the herdr CLI.",
       "source": "./shephrd",
       "category": "productivity"
