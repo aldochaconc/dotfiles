@@ -36,6 +36,7 @@ with it.
 | `roster.py` | who a pane answers to, kept outside the process a restart replaces |
 | `hierarchy-auditor` agent | which panes exist, which names reach them, which are stalled |
 | `traffic-auditor` agent | who reported, who went silent, which question is waiting |
+| `project-manager` agent | the state of the work across branches, pull requests and panes |
 | `/shephrd` | take the coordinating role for the tree this session sits in |
 | `/spawn-agent` | open a pane, carrying name, root and master into it |
 | `/unattended` | tell a master the user has stepped away; a slave is already unattended |
