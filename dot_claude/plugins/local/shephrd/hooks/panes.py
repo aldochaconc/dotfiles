@@ -34,6 +34,15 @@ from pathlib import Path
 
 DIR = Path(os.environ.get("HOME", "/tmp")) / ".claude" / "panes"
 
+USAGE = (
+    "usage:\n"
+    "  panes.py                                          resolve this session's identity\n"
+    "  panes.py --write <pane> <name> [master] [scope]   record one pane\n"
+    "\n"
+    "Every argument after --write is positional. Scope is the rest of the line, unquoted or\n"
+    "quoted, and takes no flag of its own."
+)
+
 
 def key(pane):
     """A pane id as a file name. The colon is not a path separator anywhere it lands."""
@@ -113,10 +122,23 @@ def resolve(env=None, directory=None):
 def main(argv=None):
     """`--write <pane> <name> [master] [scope]` records one; no arguments resolves this session."""
     argv = list(sys.argv[1:] if argv is None else argv)
+
+    # An unknown flag used to fall through to the read branch, which printed this pane's record
+    # and looked like success: measured on 2026-09-23, a caller passing `--scope "<text>"` after
+    # the positional arguments lost a turn to that. Every argument is positional after `--write`,
+    # and anything else is refused with the usage line.
+    if "--help" in argv or "-h" in argv:
+        print(USAGE)
+        return 0
+    unknown = [a for a in argv if a.startswith("-") and a not in ("--write", "--selftest")]
+    if unknown:
+        print(f"unknown argument: {unknown[0]}\n{USAGE}", file=sys.stderr)
+        return 2
+
     if "--write" in argv:
         rest = argv[argv.index("--write") + 1:]
         if not rest:
-            print("usage: panes.py --write <pane> <name> [master] [scope]", file=sys.stderr)
+            print(USAGE, file=sys.stderr)
             return 2
         pane = rest[0]
         name = rest[1] if len(rest) > 1 else ""
@@ -196,7 +218,14 @@ def selftest():
     assert main(["--write"]) == 2
     assert main(["--write", ""]) == 2
 
-    print("panes selftest: 23 checks passed")
+    # An unknown flag is refused rather than falling through to the read branch, which printed a
+    # record and looked like success.
+    assert main(["--scope", "x"]) == 2
+    assert main(["--write", "w:p", "n", "m", "--scope", "x"]) == 2
+    assert main(["--help"]) == 0
+    assert main(["-h"]) == 0
+
+    print("panes selftest: 29 checks passed")
 
 
 if __name__ == "__main__":
