@@ -1,7 +1,7 @@
 ---
 name: shephrd-protocol
 description: This skill should be used when a message arrives from another Claude session rather than from a person, when work is handed over by a session, before sending a message to another session, before asking the user anything from a pane, when a tool result shows agent_pane_busy, agent_name_taken or a refused peer message, when the user says "unattended", "reporta al god", "who do I report to", or when working with HERDR_REPORTS_TO, HERDR_PANE_ID, ListAgents or herdr panes.
-version: 0.13.1
+version: 0.14.0
 ---
 
 # shephrd protocol
@@ -10,7 +10,7 @@ Sessions running in panes form a hierarchy of three roles. A sheep answers to a 
 shephrd herds sheep over one tree, and a god is the single window the user watches when the
 rest runs unattended. This skill holds who may do what, and the commands that act on
 panes live beside it as `/spawn-agent`, `/shephrd`, `/unattended`, `/restart-agents`,
-`/exit-agents` and `/agents-budget`.
+`/exit-agents`, `/agents-budget` and `/flood`.
 
 `herdr` is the terminal workspace manager that owns the panes, and this plugin depends on it
 without being it: the protocol decides who may speak, `herdr` moves the panes. A machine without

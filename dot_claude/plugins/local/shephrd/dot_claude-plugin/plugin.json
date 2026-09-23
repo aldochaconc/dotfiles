@@ -1,5 +1,5 @@
 {
   "name": "shephrd",
-  "version": "0.13.1",
+  "version": "0.14.0",
   "description": "Shephrd Claude sessions across terminal panes: a god the user watches, shephrds that gate before reaching it, their sheep, and the god's watchers. Per-turn reporting, unattended operation, liveness canary. Depends on herdr."
 }
