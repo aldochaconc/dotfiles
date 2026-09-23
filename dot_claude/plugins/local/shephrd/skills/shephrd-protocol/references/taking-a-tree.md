@@ -39,7 +39,7 @@ and leaving its helpers dead is half a restoration, and the helpers question is 
 ### Helpers
 
 `~/.config/herdr/session.json` keeps a `label` and a `cwd` per pane, and both survive the pane
-being closed. Measured on 2026-09-22: one workspace held three labelled panes and another held
+being closed. Measured: one workspace held three labelled panes and another held
 one labelled and two unlabelled, all with their directory recorded.
 
 The question therefore shows what was there rather than asking into nothing:
@@ -49,7 +49,7 @@ The question therefore shows what was there rather than asking into nothing:
 | the panes that were open before, each with its label and directory | the stored panes for this workspace |
 | a name per helper, proposed from the repositories found below this directory | the `find` in Position |
 | a helper the user names and places | typed in, for work no reading predicted |
-| none | starting alone, and `/spawn-agent` opens one later |
+| none | starting alone, and `/spawn-sheep` opens one later |
 
 A stored pane with no label is offered by its directory, which is what distinguishes it. Its
 name is proposed the same way a new helper's is, since a pane that was never named has nothing
@@ -57,7 +57,7 @@ to restore.
 
 The question goes through `AskUserQuestion` with `multiSelect: true`, never through prose. This is
 required rather than preferred. What it brings back is a set: the panes that were working before
-are selected together in one pass, and each selection becomes one `/spawn-agent` call. Listing
+are selected together in one pass, and each selection becomes one `/spawn-sheep` call. Listing
 them in prose and waiting for a typed answer costs a turn per helper and loses the set, which is
 the whole point of restoring a workspace rather than opening panes one at a time.
 

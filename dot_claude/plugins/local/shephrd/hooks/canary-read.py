@@ -134,7 +134,7 @@ def selftest():
 
     # The role rides on the beat: a god declared in the registry is not derived from having
     # nobody above it, and a reader that guessed would call it a shephrd.
-    god = age_rows([{"session_id": "g", "at": now, "pane": "w1T:p1",
+    god = age_rows([{"session_id": "g", "at": now, "pane": "wB:p1",
                      "reports_to": "", "role": "god"}], now=now)[0]
     assert god["role"] == "god", god
     # A beat written before the field existed still resolves.
@@ -144,13 +144,13 @@ def selftest():
                     now=now)[0]["role"] == "shephrd"
 
     # A pane with no agent name is named by its pane id, which is what a shephrd looks like.
-    unnamed = age_rows([{"session_id": "y", "at": now, "pane": "w1T:p1"}], now=now)
-    assert unnamed[0]["name"] == "w1T:p1"
+    unnamed = age_rows([{"session_id": "y", "at": now, "pane": "wB:p1"}], now=now)
+    assert unnamed[0]["name"] == "wB:p1"
 
     # Location rides on the beat. The repository shows as its basename, since the full path
     # would push the master off the line and carry the home directory with it.
     loc = age_rows([{
-        "session_id": "z", "at": now, "pane": "w1T:p2",
+        "session_id": "z", "at": now, "pane": "wB:p2",
         "repo": "/home/x/Work/taylor", "branch": "bugfix/parser", "worktree": True,
     }], now=now)[0]
     assert loc["repo"] == "taylor", loc
@@ -158,11 +158,11 @@ def selftest():
     assert loc["worktree"] is True
 
     # A beat written before these fields existed reads as empty rather than failing.
-    old = age_rows([{"session_id": "w", "at": now, "pane": "w1T:p3"}], now=now)[0]
+    old = age_rows([{"session_id": "w", "at": now, "pane": "wB:p3"}], now=now)[0]
     assert old["repo"] == ""
     assert old["worktree"] is False
 
-    print("canary-read selftest: 21 checks passed")
+    print("canary-read selftest passed")
 
 
 if __name__ == "__main__":

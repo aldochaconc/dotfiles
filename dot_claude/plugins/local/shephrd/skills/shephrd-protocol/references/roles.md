@@ -9,8 +9,15 @@ A god is declared rather than inferred: a shephrd with no sheep yet looks identi
 outside, and reading that wrong decides whether a question reaches the user at all.
 
 It exists for the case where the user is watching one pane and nothing else, from a phone, while
-everything runs unattended. That is also what constrains it: work on a tree goes to a shephrd
-rather than to a pane the god opens.
+everything runs unattended. That is also what constrains it: work on a tree goes to a shephrd,
+which the god opens with `/spawn-shephrd`, rather than to a sheep of its own.
+
+It is named `god`, its pane is labelled `god`, and its herdr workspace is named `shephrd`;
+`/shephrd` sets the three when the user declares it. `god` is the name `/spawn-shephrd` and
+`/spawn-watcher` write into every pane they open. Only a start with `-n god` sets the session
+name, and `/restart-agents` forbids a session restarting itself, so a session declared god after
+starting under another name is restarted by a peer. Measured: a god started without `-n` had to
+be restarted from another pane before peers could reach it.
 
 Its own location does not matter, and this is the difference that shapes the whole registry. A
 shephrd is defined by where it stands: the tree under it is what it holds, what its scope is
@@ -35,7 +42,7 @@ end, and what they wrote stays written.
 
 A dialog open in any pane is reachable from the god. `herdr agent send-keys <pane> <key>` takes
 `Enter` for the highlighted option, a digit for one by number, arrows to move and `esc` to
-dismiss: measured on 2026-09-23, an `Enter` approved a skill edit in a sheep's pane and moved it
+dismiss: Measured: an `Enter` approved a skill edit in a sheep's pane and moved it
 from `blocked` to `working` in seconds.
 
 That is what keeps the user in one window. Walking to each pane is what the god exists to
@@ -59,22 +66,27 @@ Read the pane before sending any key. `esc` discards whatever a dialog was askin
 
 One `Enter` does not close a series. A call carrying several questions advances to the next one,
 and the last lands on a confirmation screen that wants its own `Enter`; the pane reads `blocked`
-throughout. Measured on 2026-09-23: three were needed, and checking `herdr agent list` after the
+throughout. Measured: three were needed, and checking `herdr agent list` after the
 first made the key look like it had failed. Read the pane again between keys rather than counting
 them.
 
 ## Watchers
 
-What a god does open is watchers, two by default, and they are its own.
+Beside shephrds, a god opens watchers, two by default, with `/spawn-watcher`.
 
 A watcher takes no instruction at spawn, only the context and the hierarchy: who the shephrds
-are, what tree each holds, and what is already known. It works out what to record from that,
-because a god that has to brief its watchers is spending the attention the watchers exist to
-save.
+are, what tree each holds, and what is already known. An errand builds on that context, so the
+god does not brief a watcher from nothing each time it sends one.
 
-It records by default and acts only when told. The backlog, a note in the vault, a mail that has
-to go out, a decision written down before it is forgotten: the clerical work around the code,
-which no shephrd owns and which the god would otherwise do itself between reports.
+A watcher with no errand is at rest. It does not investigate, measure or record on its own
+initiative, and a turn at rest runs no tool and sends no message: `report-gate.py` lets a
+watcher end such a turn without a report. Measured: before that exemption the gate forced a
+watcher at rest to reply to the god after the god had told it not to.
+
+An errand is what moves it. The backlog, a note in the vault, a mail that has to go out, a
+decision written down before it is forgotten: the clerical work around the code, which no
+shephrd owns and which the god would otherwise do itself between reports. The watcher reports
+when the errand is done and returns to rest.
 
 Nothing it notices becomes an action of its own. A watcher that sees a stalled pane, a stale
 backlog item or a mail that should go out says so and stops there; the god decides whether it
@@ -85,15 +97,18 @@ and a watcher has an errand at a time.
 | | sheep | watcher |
 |---|---|---|
 | spawned by | a shephrd | the god |
-| arrives with | a task and a scope | the context and the hierarchy |
-| writes | code, within its scope | the backlog, notes, mail; never a repository |
+| arrives with | a task and a scope | the context and the hierarchy, then one errand at a time |
+| writes | code, within its scope | the backlog, notes, mail; a repository only when an errand assigns it |
 | reports to | its shephrd | the god |
 
-The line that matters is the last one in the writes row. A watcher writing code is a sheep
-nobody assigned a scope to, which is the overlap `references/not-stalling.md` exists to prevent.
+The line that matters is the writes row. Writing to a repository is not a watcher's job by
+default: a watcher writing code on its own is a sheep nobody assigned a scope to, which is the
+overlap `references/not-stalling.md` exists to prevent. An errand that assigns a repository is
+the scope, naming the paths and what stays out as a spawn does for a sheep, and the write ends
+with the errand.
 A finding it makes about a tree goes to the god, which routes it to the shephrd that owns it.
 
-Where it writes, measured on 2026-09-23: two Obsidian vaults under `~/Documents`, at `notes` and
+Where it writes: two Obsidian vaults under `~/Documents`, at `notes` and
 at `Obsidian Vault`, with `obsidian-markdown` and `obsidian-bases` holding their syntax. Mail
 arrives through the account's MCP rather than through settings, so a session without it reports
 that rather than failing.

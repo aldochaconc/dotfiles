@@ -9,7 +9,7 @@ version: 0.18.0
 Sessions running in panes form a hierarchy of three roles. A sheep answers to a shephrd, a
 shephrd herds sheep over one tree, and a god is the single window the user watches when the
 rest runs unattended. This skill holds who may do what, and the commands that act on
-panes live beside it as `/spawn-agent`, `/shephrd`, `/unattended`, `/restart-agents`,
+panes live beside it as `/spawn-sheep`, `/spawn-shephrd`, `/spawn-watcher`, `/shephrd`, `/unattended`, `/restart-agents`,
 `/exit-agents`, `/agents-budget` and `/flood`.
 
 `herdr` is the terminal workspace manager that owns the panes, and this plugin depends on it
@@ -20,24 +20,25 @@ Read the role before anything else. Everything below branches on it.
 
 ## Role
 
-`HERDR_REPORTS_TO` carries the name of the session that spawned this one. `/spawn-agent` sets it
+`HERDR_REPORTS_TO` carries the name of the session that spawned this one. The three spawn commands set it
 on every pane it opens.
 
 | Role | Reaches the user | Reports to | Opens |
 |---|---|---|---|
-| god | yes, and is the only window the user watches | nobody | watchers |
+| god | yes, and is the only window the user watches | nobody | shephrds and watchers |
 | shephrd | through the god when there is one | the god | sheep |
 | sheep | no | its shephrd | nothing |
 | watcher | through the god | the god | nothing |
 
 The role is recorded rather than derived. Deriving it from who a pane reports to collapses two
 different facts: a shephrd reports to the god and is not a sheep for doing so, and leaving its
-recipient empty to avoid that loses who it answers to. Measured on 2026-09-23, both halves of
-that were wrong in the registry at once.
+recipient empty to avoid that loses who it answers to. Both halves of that have been wrong in the registry at once.
 
 A god is declared rather than inferred and receives only what the shephrds could not resolve.
-What it opens is watchers rather than sheep: they keep the backlog, the notes and the mail around
-the work, write no code, and act only on an errand rather than on what they notice.
+It is named `god`, in a workspace named `shephrd`, which `/shephrd` sets when the user declares it.
+What it opens is shephrds, one per tree with `/spawn-shephrd`, and watchers with `/spawn-watcher`.
+A watcher keeps the backlog, the notes and the mail around the work, and rests until an errand
+arrives: with none it does not investigate, measure or record on its own initiative.
 
 Shephrds talk to each other directly, and take a decision to the god rather than settling it
 between themselves: information moves sideways, a decision moves up.
@@ -46,12 +47,11 @@ between themselves: information moves sideways, a decision moves up.
 
 Read the role with `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py`, which answers the pane, the
 name, the session it reports to, the scope, the role and where each came from. It reads the
-variables first and falls back to `~/.claude/panes/<pane>.json`, which `/spawn-agent` writes.
+variables first and falls back to `~/.claude/panes/<pane>.json`, which the spawn commands write.
 
 The fallback is what makes an empty variable readable. `--env` lives in the pane's process and a
 restart replaces it: `herdr agent start` takes no `--env` and creates no pane, so a restarted
-sheep comes back with nothing and reads as a shephrd. Measured on 2026-09-23 on two panes whose
-threads resumed correctly.
+sheep comes back with nothing and reads as a shephrd. Seen on two panes whose threads resumed correctly.
 
 An empty `HERDR_REPORTS_TO` in both places, with no god flag, means the session is a shephrd.
 A pane absent from the registry was opened by hand, or before the registry existed, and that is reported rather
@@ -68,8 +68,7 @@ why the variable and the registry exist at all; `references/environment.md` hold
 ### What a pane may touch
 
 The registry carries a `scope` beside the name: what this pane owns, in paths, in a branch, and
-in what it must hand back rather than fix. A directory does not answer it. Measured on
-2026-09-23: four panes shared one repository and three were nested inside each other, with
+in what it must hand back rather than fix. A directory does not answer it. Four panes have shared one repository and three were nested inside each other, with
 nothing saying whose work was whose; nothing collided because only one of them wrote.
 
 Read it with the same call that resolves the role. A file outside the scope is reported upward rather than changed, which is the rule in `references/not-stalling.md` applied to this
@@ -81,27 +80,47 @@ later, so the boundary is declared at the spawn and read before writing, not che
 An empty scope means the pane was opened before this existed. That is reported rather than read
 as permission for everything.
 
-### What a session cannot do to itself
+### What a session does to itself
 
-A session cannot close itself and cannot clear its own dialog. Both need the terminal, which
-runs the session rather than being driven by it.
+A session ends itself with `herdr pane close $HERDR_PANE_ID`. The command takes any pane id,
+the caller's own included, and reaches the pane from outside the process.
+
+A session does not clear its own dialog, which waits on a keystroke the terminal owns.
 
 | Asked of a session | What happens |
 |---|---|
-| run `/exit` | it cannot: `/exit` is a terminal command, not a tool. Measured on 2026-09-23, two sessions asked to exit wrote their handoffs, answered that they had no way, and stayed alive |
-| answer its own `AskUserQuestion` | it cannot: the dialog is waiting on a keystroke |
-| write a file, send a message | it can, and those are what to ask for |
+| close its own pane | `herdr pane close $HERDR_PANE_ID` ends it; `/kill-sheep` is the order |
+| run `/exit` | nothing: `/exit` is a terminal command and not a tool, so the session stays alive |
+| answer its own `AskUserQuestion` | nothing: the dialog waits on a keystroke |
+| write a file, send a message | both, and those are what to ask of it |
 
-So a close is sent from another session with `herdr agent prompt <pane> "/exit"`, and what the
-closing session asks the pane for is the handoff and a reply. Asking for the exit produces a
-pane that saved its work, said it could not comply, and is still running.
+A close sent from another session uses `herdr agent prompt <pane> "/exit"` and asks the pane for
+its handoff and a reply rather than for the exit.
+
+### A sheep ending itself
+
+`/kill-sheep` runs three steps in order: report to the shephrd, write the handoff, close the
+pane. Each step makes the next survivable, and a pane that closes first has nothing left to say
+it.
+
+The report carries the tree, measured with `git status --short`, in two classes. A modified file
+is recoverable from a diff. An untracked file is lost whole: a pane died
+mid-task leaving four modified files and an untracked workdoc of 1050 lines, and the untracked
+file sat outside the backup its shephrd had taken, because `git diff` covers what changed and
+not what is new.
+
+The handoff goes to `~/.claude/handoff/<name>-<date>.md`. The directory is global, so the
+shephrd reads it from whatever tree it sits in and it survives the message going unread.
+
+A shephrd does not run it: closing its pane orphans its sheep. A god does not run it: the user
+loses their window.
 
 A pane already showing a dialog takes neither: `herdr agent prompt` refuses it outright with
 `agent_blocked: agent <pane> is blocked and requires interactive input`.
 
 What reaches it is `herdr agent send-keys <pane> Escape`, which dismisses the dialog. Keys go to
 the terminal rather than through the agent, so the block that stops a prompt does not stop them.
-Measured on 2026-09-23: a pane blocked for over an hour returned `{"type":"ok"}`, moved from
+A pane blocked for over an hour returned `{"type":"ok"}`, moved from
 `blocked` to `done`, and kept its context intact at 9%.
 
 Escape discards whatever the dialog was asking. Read the pane first with `herdr agent read` and
@@ -155,7 +174,7 @@ the work is moving. `references/roles.md` holds why five turns rather than a clo
 
 Text written into the reply under a heading naming the recipient reaches nobody. It renders in a pane
 that nobody is watching and the turn ends with that recipient knowing nothing, while the session has
-every impression of having reported. Measured on 2026-09-23: a session produced a full report
+every impression of having reported. Measured: a session produced a full report
 with sections for done, in flight and blocked, and its transcript carried one `SendMessage` from
 hours earlier.
 
@@ -169,26 +188,62 @@ The hook runs on every turn of every pane, so it answers what a regex answers. W
 reports are any good is a pattern across turns, and `traffic-auditor` reads it from the
 transcripts when someone asks, in its own context rather than the session above's.
 
-A god is not gated, since it reports to nobody.
+A god is not gated, since it reports to nobody. A watcher is gated only on a turn that ran a tool:
+one with no errand is at rest, and a turn that only answered in text ends without a message.
+Measured: the gate forced a watcher at rest to reply after the god had told it not to.
 
 ## Unattended
 
-A sheep is unattended from its first turn. Nothing turns the mode on for it: a non-empty
-`HERDR_REPORTS_TO` is the mode, because a pane that was spawned has nobody watching it and the
-person who would answer a question is sitting in front of the session above. Waiting to be told costs
-the first question, which is the one that stalls the pane before anyone knows it opened.
+Unattended is the default state of a pane, and being watched is what a session opts into. A pane
+runs with nobody in front of it until someone says otherwise: waiting to be told costs the first
+question, which is the one that stalls a pane before anyone knows it opened.
 
-`/unattended` therefore exists for the session above, which is attended by default and is told when the
-user leaves. A god may also run it on itself, and what it means there is the opposite of what
-it means in a sheep.
+`HERDR_REPORTS_TO` does not carry this. It names who a pane reports to and answers nothing about
+whether the pane may ask, which are two facts a single variable was made to hold and could not.
+A shephrd reporting to the god carries the variable and reaches the user through one call; a
+restarted sheep has lost it and may not ask at all. Measured: reading the mode from
+the variable was wrong on both.
 
-| Role | Default | What `/unattended` does |
+What separates them is the recorded role, which `hooks/panes.py` answers.
+
+| Role | May put a question on screen | What `/unattended` does |
 |---|---|---|
-| god, shephrd | attended: the user is there | switches it to advancing alone and batching questions |
-| sheep | unattended from the first turn | nothing; the mode is already on and cannot be turned off |
+| god | yes, and is the window the user watches | switches it to advancing alone and batching questions |
+| shephrd | through one `AskUserQuestion` of up to four, when the user is there | the same |
+| sheep, watcher | no: `hooks/ask-gate.py` denies it where a recipient is recorded | nothing; the pane never had a user in front of it |
+
+`/unattended` therefore exists for a god or a shephrd, which is told when the user leaves.
 
 A sheep does not leave the mode on its own. The user being back is a fact about the session above's pane,
 not about this one, and only the session above or the user says so.
+
+### The denial is a redirection
+
+What `ask-gate.py` returns to a sheep names the shephrd and the tool that reaches it. The
+question is answered, in another pane, by the session that holds the scope it belongs to: the
+sheep is not told to decide alone, and it is not left holding a question with nowhere to go.
+
+The shephrd resolves it, and escalates to the god only for what is genuinely beyond that tree.
+The four categories that reach the god are the same four the shephrd already gates on, so a
+question arriving from a sheep is filtered by the same test as one the shephrd raises itself.
+
+Redirecting is what makes the mode workable rather than a refusal dressed as autonomy. A gate
+that only denied would stop the pane on a question it had no way to route, which is the deadlock
+the mode exists to avoid.
+
+### Opting a pane back into being watched
+
+`attended: true` in `~/.claude/panes/<pane>.json` releases a pane from the redirection, and
+`python3 hooks/panes.py --attended <pane>` writes it. It marks the one case the default is wrong
+about: somebody is sitting in front of that pane and wants the menu rendered where they are.
+
+It lives in the record rather than in an environment variable because `herdr agent start` takes
+no `--env`. A variable would be cleared by the next restart, which is the defect that produced
+this whole design.
+
+`--write` replaces the record and clears the flag, so a respawned pane comes back unattended.
+That is the correct direction: a pane somebody was watching before a respawn is not a pane
+somebody is watching now, and the mark is cheap to set again.
 
 ### A god or shephrd unattended
 
@@ -220,7 +275,7 @@ its own context with work any pane could have done.
 | Question, in order | Answer | Where the finding goes |
 |---|---|---|
 | Was a pane already working on this? | yes | back to that pane |
-| Does the repair take more than a turn? | yes | a new pane, opened with `/spawn-agent` |
+| Does the repair take more than a turn? | yes | a new pane, opened with `/spawn-sheep` |
 | Neither | | the session above does it |
 
 `references/not-stalling.md` carries why the first question outranks the second, and the
@@ -231,7 +286,7 @@ measured case of a god or shephrd that offered itself first.
 
 `AskUserQuestion` is denied by a hook, not by this rule. `hooks/ask-gate.py` returns
 `permissionDecision: "deny"` for any session with a non-empty `HERDR_REPORTS_TO`, because the
-written prohibition was measured failing: on 2026-09-22 a sheep carrying it asked anyway and the
+written prohibition was measured failing:  a sheep carrying it asked anyway and the
 menu sat open in a pane nobody was looking at.
 
 A denial is not the end of the turn. The refusal comes back as a tool result naming the session above and
@@ -296,7 +351,7 @@ acted on.
 
 A message that was sent is not a message that was read. `SendMessage` returning `success` means
 the message was queued, and a session can hold a queue without consuming it: measured on
-2026-09-22, five messages to one pane went unread while the pane reported `idle` throughout, and
+five messages to one pane went unread while the pane reported `idle` throughout, and
 a sixth would have looked exactly as delivered as the first.
 
 This corrects what the Reporting section implies. A message is delivered when the recipient takes
@@ -304,8 +359,10 @@ a turn, and a session that has stopped taking turns is a session whose inbox is 
 Nothing in `herdr agent list` shows this: it reports what the terminal is doing.
 
 So every pane leaves a beat. `hooks/canary.py` runs on `Stop` and writes
-`~/.claude/canary/<session_id>.json` with the time of the last completed turn, the pane, the name
-and the session above. `hooks/canary-read.py` prints them oldest first.
+`~/.claude/canary/<pane>.json`, with the colon of the pane id written as `-`, carrying the time of
+the last completed turn, the `session_id`, the name and the session above. A session outside a
+pane is keyed by its `session_id` instead. `hooks/canary-read.py` prints them oldest first, and
+`-r <session_id>` resumes the session a pane was running.
 
 An old beat is not a fault by itself: a pane nobody asked anything is correctly quiet. It is a
 fault when something was sent and the beat did not move, and that comparison is what the reader
@@ -350,7 +407,9 @@ single pane is cheaper read directly.
   failure it avoids: the two name records, why an exit is not immediate, what `--pane` fixes.
 - **`references/roles.md`** — what reaches a god and what a shephrd resolves instead, what a
   watcher is and how it differs from a sheep.
-- **`references/environment.md`** — every variable a pane carries, which are set by `/spawn-agent`
-  and which herdr supplies on its own.
+- **`references/environment.md`** — every variable a pane carries, which are set by the spawn
+  commands and which herdr supplies on its own.
 - **`references/not-stalling.md`** — what earns a prompt and what is a report, and the command
   shapes that raise a permission prompt where none was needed.
+- **`references/taking-a-tree.md`** — the questions a session answers when it takes the
+  coordinating role, and what a resumed thread already knows.

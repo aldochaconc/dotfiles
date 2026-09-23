@@ -8,7 +8,7 @@ allowed-tools: ["Bash", "Skill", "ListAgents", "SendMessage", "AskUserQuestion"]
 
 Tracking competes with coordinating. A session that counts findings, re-reads pull request
 bodies and remembers who is blocked on whom spends its context on figures it uses once, and that
-context is the one holding the map of every pane. Measured on 2026-09-23: a coordinating session
+context is the one holding the map of every pane. Measured: a coordinating session
 cost $0.426 per request against $0.273 for a pane with a fixed scope over the same number of
 requests, and the difference is accumulated context.
 
@@ -20,7 +20,7 @@ It is a sheep rather than an agent because two of its jobs are writes that outli
 planning produces something later sessions read, and holding the boundaries means writing other
 panes' registry entries. An agent returns a report and dies.
 
-`project-manager` is the name. Load `shephrd-protocol` first: this is `/spawn-agent` with a
+`project-manager` is the name. Load `shephrd-protocol` first: this is `/spawn-sheep` with a
 fixed role, and every step of that command applies.
 
 ## What it owns
@@ -72,7 +72,7 @@ command behind the measured one. Nobody else is looking for that.
 1. **Resolve the role and the tree.** `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py` for this
    session's own identity, and `git -C <tree> rev-parse --show-toplevel` for what it will track.
 
-2. **Open the pane with `/spawn-agent`**, naming it `project-manager` and passing as its scope
+2. **Open the pane with `/spawn-sheep`**, naming it `project-manager` and passing as its scope
    that it tracks and plans, writes the plan file and the registry, and changes no repository.
 
 3. **Hand it the first turn's work**, which is measuring rather than believing: the trees to

@@ -7,7 +7,7 @@ each is avoided.
 ## What earns a prompt
 
 A god has no hook stopping it, so the judgement is the only gate, and a question put on screen
-stops that pane until the user reads it. Measured on 2026-09-22: a coordinating session raised
+stops that pane until the user reads it. Measured: a coordinating session raised
 four options about a defect in a repository it did not own, which another session had already
 reported, and its pane sat blocked until the user found it.
 
@@ -86,14 +86,14 @@ Two questions decide where a finding goes, in this order.
 | Question | Answer | Where it goes |
 |---|---|---|
 | Was a pane already working on this? | yes | back to that pane, as one message |
-| Does the repair take more than a turn? | yes | a new pane opened for it, with `/spawn-agent` |
+| Does the repair take more than a turn? | yes | a new pane opened for it, with `/spawn-sheep` |
 | Neither | | the session above does it |
 
 The first question outranks the second. A pane that was building the thing holds why it is the
 way it is, and a second pane repairing it in parallel produces two versions of one file. Handing
 it back costs one message; discovering the conflict costs both attempts.
 
-Measured on 2026-09-23: a god or shephrd found that one pull request body did not follow the
+Measured: a god or shephrd found that one pull request body did not follow the
 repository's template, offered the user three options, and put itself first. The session that
 wrote the other three bodies correctly had just restarted with fresh context and was not
 offered at all.
