@@ -31,6 +31,32 @@ god and its watchers, so the next start is from nothing. A shephrd running it wo
 its peers and then itself; a sheep cannot close anything. It touches no working tree: sessions
 end, and what they wrote stays written.
 
+## Answering a dialog from the god
+
+A dialog open in any pane is reachable from the god. `herdr agent send-keys <pane> <key>` takes
+`Enter` for the highlighted option, a digit for one by number, arrows to move and `esc` to
+dismiss: measured on 2026-09-23, an `Enter` approved a skill edit in a sheep's pane and moved it
+from `blocked` to `working` in seconds.
+
+That is what keeps the user in one window. Walking to each pane is what the god exists to
+replace, so the god reads the dialog, brings what is the user's here, and sends the key they
+choose.
+
+What the god answers on its own, and what it brings:
+
+| Dialog | Where it is answered |
+|---|---|
+| a sheep asking about its own work | redirected to its shephrd, which owns that decision |
+| a question already answered elsewhere | dismissed with `esc`, saying so |
+| a permission prompt, a skill edit, a destructive command, a commit | the user, through the god |
+
+The line is what the user's own configuration reserves. A gate that asks exists so a human sees
+what passes it, and a god answering on their behalf defeats the gate rather than serving it: the
+god is the window, not a substitute for the person at it.
+
+Read the pane before sending any key. `esc` discards whatever a dialog was asking, and an
+`Enter` lands on whichever option is highlighted rather than on the one that was meant.
+
 ## Watchers
 
 What a god does open is watchers, two by default, and they are its own.
@@ -96,9 +122,16 @@ The test is what the exchange produces. Information moves sideways; a decision m
 
 ## The heartbeat
 
-A shephrd sends the god a heartbeat every five of its own turns, unprompted, and every session
-it holds is inside it. This is separate from the per-turn report a sheep sends its shephrd: the
-sheep reports work, and the shephrd reports movement.
+A shephrd sends the god a heartbeat every five of its own turns, or sooner when a session it
+holds has gone quiet for long enough to be worth naming. Every session it holds is inside it.
+This is separate from the per-turn report a sheep sends its shephrd: the sheep reports work, and
+the shephrd reports movement.
+
+The timeout is what makes silence legible. Five turns of a busy shephrd pass in minutes, and
+five turns of one that is itself waiting may never arrive: a shephrd blocked on a dialog takes
+no turns at all, so a count alone reports nothing exactly when something is wrong. A sheep whose
+canary beat has not moved in fifteen minutes while the shephrd took turns is the case worth
+sending early, and the beat under `~/.claude/canary` is where that is read rather than guessed.
 
 What it carries is what moved, in one line each:
 
