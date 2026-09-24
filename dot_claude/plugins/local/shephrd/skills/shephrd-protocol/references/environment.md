@@ -4,7 +4,7 @@ A pane carries six variables. Two groups, by who writes them.
 
 ## Set by the spawn commands
 
-`/spawn-sheep`, `/spawn-shephrd` and `/spawn-watcher` pass them as `--env` at split time, through
+`/spawn-sheep` and `/spawn-shephrd` pass them as `--env` at split time, through
 `commands/spawning.md`, so the pane holds them before its first turn.
 
 | Variable | Value | Why it cannot be derived later |
@@ -12,7 +12,7 @@ A pane carries six variables. Two groups, by who writes them.
 | `HERDR_AGENT_NAME` | the name passed to `-n` | herdr holds a name per pane and Claude registers its own; a pane reading only one of them can disagree with what peers address |
 | `HERDR_AGENT_ROOT` | the directory the pane was opened for | `cwd` moves as the session works, and the directory it was spawned for does not |
 | `HERDR_REPORTS_TO` | the name of the session that spawned it | nothing in `herdr agent list` records who a pane answers to |
-| `CLAUDE_UNATTENDED` | `1` on a sheep and a watcher, unset on a shephrd and a god | a hook runs outside the session and cannot read the registry's role |
+| `CLAUDE_UNATTENDED` | `1` on a sheep, unset on a shephrd and a god | a hook runs outside the session and cannot read the registry's role |
 
 `herdr agent list` carries a `workspace_id` per pane and no field naming a god or shephrd: measured on
 across six agents in three workspaces. Deriving the session above from the workspace fails on
@@ -45,8 +45,9 @@ hand or predates the registry, which is reported rather than read either way.
 
 ## CLAUDE_UNATTENDED
 
-Read by `~/.claude/hooks/gate-skill-writes.py`, which asks the user before a write to a skill file
-and denies it instead when this variable is non-empty. The denial carries what to do: record the
+Read by an optional user hook, not shipped with this plugin, that asks the user before a write to
+a skill file and denies it instead when this variable is non-empty. Without such a hook the
+variable changes nothing. The denial carries what to do: record the
 line and the surface it targets, and leave it for the human.
 
 That is the route `skill-growth` already requires. Its gate states that a rule entering a skill is
@@ -57,7 +58,7 @@ gate; a sheep raising a prompt in a pane nobody is watching is not.
 So the variable changes the route and not what a sheep may contribute. A rule it finds still
 reaches the skill, through the session above rather than through a menu.
 
-It goes on a sheep and a watcher, which `/spawn-sheep` and `/spawn-watcher` open. A shephrd and a god reach
+It goes on a sheep, which `/spawn-sheep` opens. A shephrd and a god reach
 the user, so a prompt in their pane is answerable and the variable would deny a write the user
 would have approved.
 
@@ -88,7 +89,6 @@ right for a god and wrong for the shephrd in the next row.
 | god | `--write <pane> <name> "" <scope> --role god --god` |
 | shephrd | `--write <pane> <name> <god-name> <scope> --role shephrd` |
 | sheep | `--write <pane> <name> <shephrd-name> <scope> --role sheep` |
-| watcher | `--write <pane> <name> <god-name> <scope> --role watcher` |
 
 A shephrd reports to the god, so its recipient is not empty and the derivation reads it as a
 sheep. Measured: pane `wA:p1` was recorded `shephrd` with the god above it,

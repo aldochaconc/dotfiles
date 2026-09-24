@@ -38,16 +38,18 @@ USAGE = (
     "usage:\n"
     "  panes.py                                          resolve this session's identity\n"
     "  panes.py --write <pane> <name> [reports-to] [scope] [--scope S] [--role R] [--god]\n"
-    "  panes.py --attended <pane>                        render menus in this pane\n"
-    "  panes.py --unattended <pane>                      redirect them to the shephrd\n"
+    "                  [--autoreport true|false]\n"
+    "  panes.py --attended <pane>                        mark the god watched\n"
+    "  panes.py --unattended <pane>                      clear that mark\n"
     "\n"
-    "Scope is the rest of the line after reports-to, or the value of --scope. --role takes god, shephrd, sheep or\n"
-    "watcher and is what the resolver trusts; without it the role is derived from reports-to,\n"
+    "Scope is the rest of the line after reports-to, or the value of --scope. --role takes god, shephrd or sheep\n"
+    "and is what the resolver trusts; without it the role is derived from reports-to,\n"
     "which reads a shephrd reporting to a god as a sheep.\n"
     "\n"
-    "--attended marks a pane somebody is sitting in front of, so ask-gate.py renders its\n"
-    "questions there instead of redirecting them. It edits one field of an existing record;\n"
-    "--write replaces the whole record and clears it."
+    "--attended marks the god's pane as watched, which turns on the per-turn report of the\n"
+    "shephrds under it, read by report-gate.py. ask-gate.py ignores it: a sheep's questions go\n"
+    "to its shephrd whoever typed into the pane. It edits one field\n"
+    "of an existing record; --write replaces the record, clears it and keeps autoreport."
 )
 
 
@@ -73,7 +75,7 @@ def role_of(reports_to, god=False, declared=""):
     existed, where `reports_to` is still the only evidence there is.
     """
     declared = (declared or "").strip().lower()
-    if declared in ("god", "shephrd", "sheep", "watcher"):
+    if declared in ("god", "shephrd", "sheep"):
         return declared
     return _derive_role(reports_to, god)
 
@@ -100,13 +102,22 @@ def _derive_role(reports_to, god=False):
     return "sheep" if (reports_to or "").strip() else "shephrd"
 
 
-def write(pane, name, reports_to, scope=None, god=False, role="", directory=None):
+def write(pane, name, reports_to, scope=None, god=False, role="", directory=None, autoreport=None):
     """Record what a spawn declared for one pane. Returns the path, or None with no pane.
 
     `scope` is what this pane may touch, which a directory does not say: four panes sat on one
     repository  with nothing distinguishing their work. It is free text, since the
     unit varies between a path, a subtree and a branch, and it is for a human or a session to
     read rather than for anything to enforce.
+
+    `autoreport` survives from the previous record when it holds a bool: the user sets it by hand
+    on one pane, and `/shephrd` run again on that pane would otherwise erase the choice.
+    `attended` never survives, since every write starts a session nobody is watching yet. A
+    record that cannot be read counts as absent.
+
+    `autoreport` given as a bool is written and wins over the previous record. `/spawn-sheep` run
+    from the god passes False: a sheep of the god reports only what other sessions have to learn,
+    so the per-turn gate does not apply to it.
     """
     pane = (pane or "").strip()
     if not pane:
@@ -114,15 +125,24 @@ def write(pane, name, reports_to, scope=None, god=False, role="", directory=None
     directory = Path(directory) if directory else DIR
     directory.mkdir(parents=True, exist_ok=True)
     target = directory / key(pane)
-    tmp = target.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps({
+    try:
+        old = json.loads(target.read_text())
+    except (OSError, ValueError):
+        old = {}
+    rec = {
         "pane": pane,
         "name": (name or "").strip(),
         "reports_to": (reports_to or "").strip(),
         "scope": (scope or "").strip(),
         "god": bool(god),
         "role": (role or "").strip().lower(),
-    }))
+    }
+    if isinstance(autoreport, bool):
+        rec["autoreport"] = autoreport
+    elif isinstance(old, dict) and isinstance(old.get("autoreport"), bool):
+        rec["autoreport"] = old["autoreport"]
+    tmp = target.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(rec))
     tmp.replace(target)
     return target
 
@@ -245,7 +265,8 @@ def main(argv=None):
         return 0
     unknown = [a for a in argv
                if a.startswith("-") and a not in ("--write", "--selftest", "--god", "--role",
-                                                  "--scope", "--attended", "--unattended")]
+                                                  "--scope", "--attended", "--unattended",
+                                                  "--autoreport")]
     if unknown:
         print(f"unknown argument: {unknown[0]}\n{USAGE}", file=sys.stderr)
         return 2
@@ -271,6 +292,11 @@ def main(argv=None):
         # scope as a literal: measured, `--write w9Z:p1 tester boss --scope "read-only"` recorded
         # `"--scope read-only"`. Taking it as a flag removes the only wrong form anyone wrote.
         scope_flag, rest = _take(rest, "--scope")
+        auto_flag, rest = _take(rest, "--autoreport")
+        if auto_flag and auto_flag not in ("true", "false"):
+            print(f"--autoreport takes true or false, not {auto_flag!r}\n{USAGE}", file=sys.stderr)
+            return 2
+        autoreport = {"true": True, "false": False}.get(auto_flag)
         if not rest:
             print(USAGE, file=sys.stderr)
             return 2
@@ -278,7 +304,7 @@ def main(argv=None):
         name = rest[1] if len(rest) > 1 else ""
         reports_to = rest[2] if len(rest) > 2 else ""
         scope = scope_flag or (" ".join(rest[3:]) if len(rest) > 3 else "")
-        target = write(pane, name, reports_to, scope, god, role)
+        target = write(pane, name, reports_to, scope, god, role, autoreport=autoreport)
         if target is None:
             print("no pane given", file=sys.stderr)
             return 2
@@ -289,6 +315,7 @@ def main(argv=None):
 
 
 def selftest():
+    """Assert-based self-check, run with --selftest."""
     import tempfile
 
     with tempfile.TemporaryDirectory() as d:
@@ -354,7 +381,6 @@ def selftest():
 
     # A declared role wins over the derivation, which is what a shephrd reporting to a god needs.
     assert role_of("god", declared="shephrd") == "shephrd"
-    assert role_of("", declared="watcher") == "watcher"
     # An unknown or empty declaration falls through to the derivation.
     assert role_of("lead", declared="") == "sheep"
     assert role_of("lead", declared="nonsense") == "sheep"
@@ -407,10 +433,48 @@ def selftest():
         # A pane with no record cannot be marked: there is nothing to edit one field of.
         assert set_attended("w8:pZ", True, d) is None
         assert set_attended("", True, d) is None
-        # `--write` replaces the record, so a mark set earlier is gone after one.
-        set_attended("w8:p1", True, d)
+        # `--write` drops `attended` and carries `autoreport` over from the previous record.
+        base = json.loads(Path(d, key("w8:p1")).read_text())
+        base.update(attended=True, autoreport=False)
+        Path(d, key("w8:p1")).write_text(json.dumps(base))
         write("w8:p1", "worker", "lead", "one path", role="sheep", directory=d)
-        assert json.loads(Path(d, key("w8:p1")).read_text()).get("attended") is None
+        rec = json.loads(Path(d, key("w8:p1")).read_text())
+        assert "attended" not in rec, rec
+        assert rec["autoreport"] is False, rec
+        # A record without either key writes the same six keys as before.
+        write("w8:pN", "n", "lead", "s", role="sheep", directory=d)
+        write("w8:pN", "n", "lead", "s", role="sheep", directory=d)
+        assert set(json.loads(Path(d, key("w8:pN")).read_text())) == {
+            "pane", "name", "reports_to", "scope", "god", "role"}
+        # `--autoreport false` writes the flag and wins over the previous record; true too.
+        base = dict(pane="w8:pQ", name="g-sheep", reports_to="god", role="sheep", autoreport=True)
+        Path(d, key("w8:pQ")).write_text(json.dumps(base))
+        write("w8:pQ", "g-sheep", "god", directory=d, autoreport=False)
+        assert json.loads(Path(d, key("w8:pQ")).read_text())["autoreport"] is False
+        write("w8:pQ", "g-sheep", "god", directory=d, autoreport=True)
+        assert json.loads(Path(d, key("w8:pQ")).read_text())["autoreport"] is True
+        # Through the CLI, with DIR pointed at the temp directory.
+        mod = sys.modules[__name__]
+        saved, mod.DIR = mod.DIR, Path(d)
+        try:
+            import io, contextlib
+            with contextlib.redirect_stdout(io.StringIO()):
+                assert main(["--write", "w8:pR", "g2", "god", "--role", "sheep",
+                             "--autoreport", "false"]) == 0
+            assert json.loads(Path(d, key("w8:pR")).read_text())["autoreport"] is False
+            with contextlib.redirect_stderr(io.StringIO()):
+                assert main(["--write", "w8:pR", "g2", "god", "--autoreport", "no"]) == 2
+        finally:
+            mod.DIR = saved
+
+        # A non-bool `autoreport` is not carried.
+        Path(d, key("w8:pN")).write_text(json.dumps({"autoreport": "false"}))
+        write("w8:pN", "n", "lead", "s", role="sheep", directory=d)
+        assert "autoreport" not in json.loads(Path(d, key("w8:pN")).read_text())
+        # A corrupt record still writes.
+        Path(d, key("w8:pC")).write_text("{not json")
+        assert write("w8:pC", "c", "lead", "s", role="sheep", directory=d) is not None
+        assert json.loads(Path(d, key("w8:pC")).read_text())["name"] == "c"
 
         # The flag is reported, not only written. `ask-gate.py` reads the file directly, so a
         # session asking this module what it is was told its role and not that it had been

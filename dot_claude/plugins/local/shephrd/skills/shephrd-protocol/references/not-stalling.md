@@ -21,6 +21,10 @@ and when the work cannot proceed under any default.
 | something already handled by another session | nowhere; it is closed |
 | a choice with a defensible default | taken, and reported as taken that way |
 
+A prompt that is earned is raised with `AskUserQuestion`, up to four questions in one call, and
+never as options in the reply text. `SKILL.md`, "A god or shephrd unattended", holds the
+measured case.
+
 A report shaped as a question is the common failure, and it reads as diligence. The tell is that
 its options are all about work this session does not own, or that the work continues either way.
 Both mean the answer changes nothing and the prompt only costs the user a context switch.
@@ -42,10 +46,13 @@ matches nothing and prompts on all of it, with the deletion hidden behind the re
 | `rm -rf <dir> && mkdir <dir>` | `mkdir -p <dir>` under a fresh name, so nothing needs deleting |
 | setup `&&` check `&&` effect | three calls |
 
-What stays prompting is what should. `rm -rf` and `sudo` are listed under `ask` because the user
-reserves those, and a sheep inherits that rather than escaping it: a pane running unwatched is a
-reason to write commands that do not need the prompt, never a reason to route around one. A
-command that genuinely needs the decision goes to the session above with the rest.
+What stays prompting is what should, and in a spawned pane that is a hook's `ask`, not a
+settings rule. A pane runs with `--dangerously-skip-permissions`, which skips every permission
+prompt, the `ask` rules for `rm -rf` and `sudo` included; a `PreToolUse` hook runs in every mode
+and still stops the call (`references/herdr-cli.md` holds the measurement). A destructive command
+is gated in a sheep only where a hook covers it. A pane running unwatched is a reason to write
+commands that need no decision, never a reason to route around a hook, and a command that
+genuinely needs the decision goes to the session above with the rest.
 
 At least one message per turn, carrying three things. A turn that also sent a blocking question
 sends the report as well: the question asks for a decision, the report says where the work stands,

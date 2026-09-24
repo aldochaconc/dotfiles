@@ -1,6 +1,6 @@
 # Roles
 
-Four roles, and what separates them is who may reach the user. The skill carries the table;
+Three roles, and what separates them is who may reach the user. The skill carries the table;
 this carries why each boundary is where it is.
 
 ## The god
@@ -10,11 +10,18 @@ outside, and reading that wrong decides whether a question reaches the user at a
 
 It exists for the case where the user is watching one pane and nothing else, from a phone, while
 everything runs unattended. That is also what constrains it: work on a tree goes to a shephrd,
-which the god opens with `/spawn-shephrd`, rather than to a sheep of its own.
+which the god opens with `/spawn-shephrd`.
+
+The god also opens sheep of its own with `/spawn-sheep`, for work it holds itself, and such a
+sheep reports to the god wherever it works. Inside a shephrd's tree it stays the god's: the
+shephrd does not adopt it, the two coordinate by message where their scopes touch, and the owner
+of each file is the pane whose recorded scope names it. Measured on 2026-09-24: `protocol-refine`
+kept reporting to the god while working on the shephrd plugin in `~/dotfiles`, after that tree
+became `os`'s, and the files it wrote were the ones in its recorded scope.
 
 It is named `god`, its pane is labelled `god`, and its herdr workspace is named `shephrd`;
-`/shephrd` sets the three when the user declares it. `god` is the name `/spawn-shephrd` and
-`/spawn-watcher` write into every pane they open. Only a start with `-n god` sets the session
+`/shephrd` sets the three when the user declares it. `god` is the name `/spawn-shephrd`
+writes into every pane it opens. Only a start with `-n god` sets the session
 name, and `/restart-agents` forbids a session restarting itself, so a session declared god after
 starting under another name is restarted by a peer. Measured: a god started without `-n` had to
 be restarted from another pane before peers could reach it.
@@ -34,7 +41,7 @@ what it holds. `hooks/panes.py` answers that for one pane, and the canary's beat
 are still alive.
 
 One command belongs to the god alone. `/flood` closes every shephrd and every sheep, leaving the
-god and its watchers, so the next start is from nothing. A shephrd running it would be closing
+god, so the next start is from nothing. A shephrd running it would be closing
 its peers and then itself; a sheep cannot close anything. It touches no working tree: sessions
 end, and what they wrote stays written.
 
@@ -70,63 +77,31 @@ throughout. Measured: three were needed, and checking `herdr agent list` after t
 first made the key look like it had failed. Read the pane again between keys rather than counting
 them.
 
-## Watchers
+## What reaches the god
 
-Beside shephrds, a god opens watchers, two by default, with `/spawn-watcher`.
+What makes the window usable is what does not arrive. Every shephrd resolves what it can and
+sends the god only what needs it:
 
-A watcher takes no instruction at spawn, only the context and the hierarchy: who the shephrds
-are, what tree each holds, and what is already known. An errand builds on that context, so the
-god does not brief a watcher from nothing each time it sends one.
-
-A watcher with no errand is at rest. It does not investigate, measure or record on its own
-initiative, and a turn at rest runs no tool and sends no message: `report-gate.py` lets a
-watcher end such a turn without a report. Measured: before that exemption the gate forced a
-watcher at rest to reply to the god after the god had told it not to.
-
-An errand is what moves it. The backlog, a note in the vault, a mail that has to go out, a
-decision written down before it is forgotten: the clerical work around the code, which no
-shephrd owns and which the god would otherwise do itself between reports. The watcher reports
-when the errand is done and returns to rest.
-
-Nothing it notices becomes an action of its own. A watcher that sees a stalled pane, a stale
-backlog item or a mail that should go out says so and stops there; the god decides whether it
-acts. Two watchers taking initiative on what they observe produce two versions of the same note
-and two mails, which is the reason this boundary is tighter than a sheep's: a sheep has a scope,
-and a watcher has an errand at a time.
-
-| | sheep | watcher |
-|---|---|---|
-| spawned by | a shephrd | the god |
-| arrives with | a task and a scope | the context and the hierarchy, then one errand at a time |
-| writes | code, within its scope | the backlog, notes, mail; a repository only when an errand assigns it |
-| reports to | its shephrd | the god |
-
-The line that matters is the writes row. Writing to a repository is not a watcher's job by
-default: a watcher writing code on its own is a sheep nobody assigned a scope to, which is the
-overlap `references/not-stalling.md` exists to prevent. An errand that assigns a repository is
-the scope, naming the paths and what stays out as a spawn does for a sheep, and the write ends
-with the errand.
-A finding it makes about a tree goes to the god, which routes it to the shephrd that owns it.
-
-Where it writes: two Obsidian vaults under `~/Documents`, at `notes` and
-at `Obsidian Vault`, with `obsidian-markdown` and `obsidian-bases` holding their syntax. Mail
-arrives through the account's MCP rather than through settings, so a session without it reports
-that rather than failing.
-
-Two is the default because one watcher is a single point of attention and a third has nothing
-distinct left to notice. The number is not a rule: a god running one tree needs fewer, and the
-user says so.
-
-What makes the window usable is what does not arrive. Every shephrd gates before sending, and
-four things pass:
-
-- a decision only the user can take: destructive, irreversible, or outside that tree's scope
+- a decision beyond its tree
+- a decision of the three kinds a sheep holds back: an action reserved to the user (force-push,
+  merge, a write to trunk, a destructive command), a write outside its scope, a choice where
+  every option breaks something the others keep
 - a tree that is blocked, meaning the shephrd itself cannot proceed, not one of its sheep
-- a milestone that landed, in one line
+- its work finished, in one line
 - a command needing elevation, since `pkexec` raises a prompt on a screen only the user has
 
 Everything else is the shephrd's to resolve, including its own sheep's questions. A shephrd
 that forwards each one turns the single window into the noise it was built to replace.
+
+The routine traffic, the per-turn report and the heartbeat, goes to the god only while the god
+is attended. The god marks that with `panes.py --attended <its pane>` and clears it with
+`--unattended`, and `report-gate.py` reads the flag from the god's registry record before
+gating a shephrd's turn. An unattended god is one the user will read later, in one pass, and
+twenty routine reports there bury the one line that needed an answer. The flag is the one
+`ask-gate.py` reads for any pane: somebody is sitting in front of it.
+
+`autoreport: false` in a shephrd's own record still releases that one pane whatever the god's
+state, for the shephrd the user sits in front of directly.
 
 ## Shephrds among themselves
 
@@ -143,8 +118,10 @@ The test is what the exchange produces. Information moves sideways; a decision m
 
 ## The heartbeat
 
-A shephrd sends the god a heartbeat every five of its own turns, or sooner when a session it
-holds has gone quiet for long enough to be worth naming. Every session it holds is inside it.
+While the god is attended, a shephrd sends it a heartbeat every five of its own turns, or sooner
+when a session it holds has gone quiet for long enough to be worth naming. Every session it
+holds is inside it. An unattended god gets no heartbeat: what needs it goes as it happens, and
+the rest waits until the god is marked attended again, when one heartbeat covers the interval.
 This is separate from the per-turn report a sheep sends its shephrd: the sheep reports work, and
 the shephrd reports movement.
 
@@ -175,5 +152,4 @@ taking turns, and `canary-read.py` prints it oldest first. A heartbeat that only
 was alive would duplicate a file that is already written on every turn by every pane. It exists
 for what the canary cannot see: whether the work is moving.
 
-A god does not send one. It is the window rather than a session anything watches, and a watcher
-reports when its errand is done rather than on a count.
+A god does not send one. It is the window rather than a session anything watches.

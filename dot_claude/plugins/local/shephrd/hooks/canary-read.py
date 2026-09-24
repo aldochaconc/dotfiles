@@ -23,6 +23,7 @@ DIR = Path(os.environ.get("HOME", "/tmp")) / ".claude" / "canary"
 
 
 def load(directory=None):
+    """Every beat under the canary directory; an unreadable file is skipped."""
     directory = Path(directory) if directory else DIR
     out = []
     if not directory.is_dir():
@@ -68,6 +69,7 @@ def age_rows(records, now=None, stale=None):
 
 
 def human(seconds):
+    """Render an age in seconds as the shortest readable unit."""
     s = int(seconds)
     if s < 60:
         return f"{s}s"
@@ -77,6 +79,7 @@ def human(seconds):
 
 
 def main():
+    """Print the beats oldest first, optionally only those older than --stale seconds."""
     stale = None
     if "--stale" in sys.argv:
         i = sys.argv.index("--stale")
@@ -105,6 +108,7 @@ def main():
 
 
 def selftest():
+    """Assert-based self-check, run with --selftest."""
     now = 1000.0
     recs = [
         {"session_id": "a", "at": 900.0, "name": "alpha", "pane": "w1:p1", "reports_to": ""},
@@ -151,9 +155,9 @@ def selftest():
     # would push the master off the line and carry the home directory with it.
     loc = age_rows([{
         "session_id": "z", "at": now, "pane": "wB:p2",
-        "repo": "/home/x/Work/taylor", "branch": "bugfix/parser", "worktree": True,
+        "repo": "/home/x/Work/parser", "branch": "bugfix/parser", "worktree": True,
     }], now=now)[0]
-    assert loc["repo"] == "taylor", loc
+    assert loc["repo"] == "parser", loc
     assert loc["branch"] == "bugfix/parser"
     assert loc["worktree"] is True
 

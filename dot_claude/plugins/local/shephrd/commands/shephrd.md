@@ -38,8 +38,13 @@ states its own reach has already answered, and the session reads it instead of a
 ## Continuity
 
 A tree that was worked before has a transcript directory under `~/.claude/projects`, named after
-the absolute path with every `/` replaced by `-`. Its presence is the test, and it is exact.
-Measured: 57 transcripts for one directory, 7 for another.
+the absolute path with every `/` replaced by `-`. Its presence is the test. Measured: 57
+transcripts for one directory, 7 for another.
+
+The flattened name is not unique: `/a-b/c` and `/a/b-c` both become `-a-b-c`. A transcript is
+offered only when the first `"cwd"` field in it equals this tree's absolute path; the field moves
+later in the file when the session changes directory, so the first one is the one that names
+where it started.
 
 | Found | Action |
 |---|---|
@@ -52,14 +57,17 @@ the handoff, or the last exchange of the transcript when there is no handoff, an
 the user's. Starting fresh on a tree that has a transcript is an ordinary answer, not a loss:
 the transcript stays where it is.
 
-The relaunch replaces the session in place: `herdr agent prompt <pane> "/exit"`, wait for the
+The relaunch reads the pane's kind in `ListAgents` first: a session of kind `bg` is not closed by
+`/exit`, which moves it to the background sessions panel (`references/herdr-cli.md`), and it is
+reported rather than relaunched. An interactive one is replaced in place: `herdr agent prompt <pane> "/exit"`, wait for the
 pane to leave `herdr agent list`, then `herdr agent start <temp> --kind claude --pane <pane> --
--r <session_id> -n <name> --dangerously-skip-permissions`. The pane keeps its id and the layout
-does not move.
+-r <session_id> -n <name> --dangerously-skip-permissions`. The kind stays `claude`: this command
+takes the coordinating role, and `commands/spawning.md` keeps that role on Claude Code. The pane
+keeps its id and the layout does not move.
 
 `<session_id>` is the basename of the transcript the user chose, without `.jsonl`. `-c` is not a
 substitute: it resumes the most recent conversation in the working directory, and two sessions
-sharing one directory make that the wrong one. Measured: a god and a watcher both in `~`, where
+sharing one directory make that the wrong one. Measured: two sessions both in `~`, where
 `-c` could pick either and the restart used `-r <session_id>` instead. For a pane restarted
 without a choice, the id of the session it was running is the `session_id` in
 `~/.claude/canary/<pane>.json`, with the colon in the pane id written as `-`. A pane that cannot be replaced, because the exit does not complete, gets the resumed
@@ -137,7 +145,7 @@ separate record:
 | Claude session | `claude -n god`, then `herdr agent rename "$HERDR_PANE_ID" god` | `god` |
 
 The role is recorded with `panes.py --write <pane> god "" <scope> --role god --god`. `god` is
-the name `/spawn-shephrd` and `/spawn-watcher` write into every pane they open, so a god under
+the name `/spawn-shephrd` writes into every pane it opens, so a god under
 any other name leaves those panes reporting to a session that does not exist.
 
 The session name is the one `SendMessage` addresses, and only a start sets it: a session started

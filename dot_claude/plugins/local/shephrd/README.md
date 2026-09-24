@@ -1,7 +1,8 @@
 # shephrd
 
-Coordinate Claude Code sessions running in terminal panes. One session per tree talks to the user
-and decides; the others do mechanical work and report to it.
+Coordinate Claude Code sessions running in terminal panes. A sheep reports to the session that
+opened it, which is a shephrd or the god. A shephrd reports to the god, and only the god reaches
+the user.
 
 ## Requirements
 
@@ -29,8 +30,10 @@ with it.
 | Component | What it is for |
 |---|---|
 | `shephrd-protocol` skill | who may talk to the user, who reports to whom, what unattended means per role |
-| `ask-gate.py` hook | denies `AskUserQuestion` where the registry records a session above the pane |
-| `report-gate.py` hook | holds a turn that a sheep or shephrd would end without reporting, and a watcher's turn that ran a tool |
+| `ask-gate.py` hook | denies `AskUserQuestion` where the registry records a session above the pane, except during a turn the user typed |
+| `typed-mark.py` hook | records on `UserPromptSubmit` whether the prompt came from the keyboard or from a peer |
+| `confirm-gate.py` hook | runs a command marked `# shephrd:confirm` only against a root-owned approval record for that pane and command |
+| `report-gate.py` hook | holds a turn that a sheep would end without reporting, and a shephrd's while its god is attended |
 | `canary.py` hook | writes a liveness beat at the end of every turn, so a stalled pane is visible |
 | `canary-read.py` | prints the beats oldest first |
 | `panes.py` | who a pane answers to, kept outside the process a restart replaces |
@@ -40,12 +43,12 @@ with it.
 | `/shephrd` | take the coordinating role for the tree this session sits in, or name the god |
 | `/spawn-sheep` | open a sheep under this session, carrying its name, root and who it reports to |
 | `/spawn-shephrd` | open a shephrd on a tree, reporting to the god |
-| `/spawn-watcher` | open a watcher for the god, with the context and no task |
 | `/unattended` | tell a god or shephrd the user has stepped away; a sheep is already unattended |
 | `/restart-agents` | restart panes so they pick up new permissions and hooks, keeping their names |
 | `/exit-agents` | close panes after each session writes what it was doing |
 | `/flood` | close every shephrd and its sheep, leaving the god: the god's command |
 | `/agents-budget` | report context and account limits per session |
+| `/resolve` | collect every herd's state and stoppers, put the stoppers to the user in batches, send each answer back |
 
 The commands are typed by a person. The skill loads on its own, which is the point: a spawned pane
 never types a slash command and still has to know it answers to someone.
@@ -67,7 +70,7 @@ itself from the total. The rule is against a number written by hand, not against
 
 ## Hierarchy
 
-`HERDR_REPORTS_TO` names the session a pane answers to, and the three spawn commands set it through `commands/spawning.md`. It answers
+`HERDR_REPORTS_TO` names the session a pane answers to, and the two spawn commands set it through `commands/spawning.md`. It answers
 nothing else: an empty value means the spawn did not set it or a restart cleared it, never that
 the session coordinates itself.
 
@@ -81,12 +84,50 @@ Unattended is the default state of a pane and being watched is what a session op
 pane reports to and answers nothing about whether the pane may ask. `shephrd-protocol` holds the
 mode per role and what releases a pane from it.
 
+## Other agents in panes
+
+`/spawn-sheep --kind <kind>` opens a sheep running another agent that `herdr agent start`
+accepts. A shephrd and a god stay on Claude Code, since they answer through `SendMessage` and
+`ListAgents`. The Agents table in `commands/spawning.md` holds the arguments per kind, which of
+them were verified, and what a missing one does to the procedure. Two kinds are verified there,
+`claude` and `codex`; every other kind is refused rather than started with guessed flags.
+
+A pane running anything but `claude` runs without the three hooks. Its kind is the `agent` field
+of `herdr agent list`, and the protocol treats such a pane as ungated: no beat is written, its
+report is not assumed, and silence from it is not read as a report.
+
 ## Known limits
 
 The end-of-turn reporting rule cannot be delivered by this skill. A skill description is matched
 against an incoming prompt and the end of a turn has none, so the rule is carried by the
 `# Machine` paragraph of `~/.claude/CLAUDE.md`, which is reinjected every turn. Trimming that
 paragraph disables the rule silently.
+
+A new machine adds it to `~/.claude/CLAUDE.md` by hand, as it reads here:
+
+```
+A session running in a pane answers to whoever spawned it. `HERDR_REPORTS_TO` carries that name,
+and `python3 ~/.claude/plugins/local/shephrd/hooks/panes.py` answers it along with the role, from
+the registry when a restart emptied the variable.
+
+A name there means this session reports to it: a sheep of a shephrd at the end of every turn, a
+shephrd under a god at the end of every turn only while the god is attended, and otherwise only
+for a decision beyond its tree or finished work. A sheep the god opened reports to the god only
+what other sessions have to learn: a skill or rule changed, a session closed or restarted, a
+permission or hook changed, anything that widens or cuts what the other agents can do alone. Work
+that stays inside its own scope is not reported. The same holds for a shephrd whose tree no other
+session depends on: `os` changing the bar touches no other session's code or work. A decision with a defensible default is taken and reported as
+taken; only an action the Git section reserves to the user, a write outside the scope, or a
+choice no default covers goes to it, never to the user. Empty means the session coordinates its
+own tree, and a god reaches the user directly: that one is declared with `HERDR_GOD` or in the registry,
+never inferred.
+
+Load `shephrd-protocol` before messaging a peer, before asking the user anything from a pane, and
+whenever the mode is unattended.
+```
+
+The `panes.py` path is the one this marketplace installs to; a plugin installed from another
+marketplace takes its own install path there.
 
 The prohibition on a sheep calling `AskUserQuestion` is enforced by `hooks/ask-gate.py`, a
 `PreToolUse` hook that denies the call where the registry records a session above the pane. The
@@ -97,9 +138,14 @@ sheep addresses the user directly.
 
 Reading `HERDR_REPORTS_TO` instead of the record was wrong in both directions, measured on
 a shephrd reporting to the god carries the variable and was denied, and a restarted
-pane loses it and was not. A pane with nothing recorded above it proceeds, and `attended: true`
-in its record releases it, which `~/.claude/hooks/gate-attended.py` puts to the user rather than
-letting a pane set for itself.
+pane loses it and was not. A pane with nothing recorded above it proceeds. A sheep is released
+only during a turn the user typed, which `hooks/typed-mark.py` marks; `attended: true` in its
+record does not release it.
+
+`confirm-gate.py` depends on a root helper and a polkit policy that the plugin cannot install:
+`/usr/local/lib/shephrd/approve` and `local.shephrd.approve`, whose source lives beside the
+dotfiles that ship this plugin. On a machine without them, every command marked
+`# shephrd:confirm` is denied, and the denial names the missing approval.
 
 Hooks are read once at launch, so a pane started before the plugin was installed does not have
 it.

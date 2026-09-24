@@ -52,7 +52,9 @@ the same staleness and say so, which a bar cannot.
 
 3. **Match to live sessions.** `ListAgents` and `herdr agent list` say which sessions are still
    running. A record whose session has exited is left out; a running session with no record has
-   not redrawn its bar yet and is reported with empty figures.
+   not redrawn its bar yet and is reported with empty figures. When `herdr agent list` fails,
+   `scripts/budget.py` says so on stderr and keeps every record, and the report states that its
+   rows are unfiltered rather than live.
 
 4. **Report.** One table: session name, directory, status, `ctx`, `5h`, `7d`, `cost`, age of the
    reading. Sorted with the closest to a threshold first.

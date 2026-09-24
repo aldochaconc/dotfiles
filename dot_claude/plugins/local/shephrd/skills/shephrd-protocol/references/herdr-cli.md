@@ -25,7 +25,7 @@ Running the rename by itself after a restart leaves the pane reading correct in
 `herdr agent list` while peers still address a generated name.
 
 Without `-n`, Claude builds a name from the basename of the working directory plus a suffix: two
-panes under `~/dotfiles` restarted without it came back as `dotfiles-9e` and `dotfiles-a2`. The
+panes in one repository restarted without it came back as `<basename>-9e` and `<basename>-a2`. The
 generated name never agrees with herdr's record because it never reads it.
 
 Verify a name in `ListAgents`, never in `herdr agent list`.
@@ -33,10 +33,11 @@ Verify a name in `ListAgents`, never in `herdr agent list`.
 ## Starting an agent
 
 ```
-herdr agent start <name> --kind claude --pane <pane> -- -n <name> --dangerously-skip-permissions
+herdr agent start <name> --kind <kind> --pane <pane> -- <start>
 ```
 
-Everything after `--` goes to the `claude` binary.
+Everything after `--` goes to the agent's binary. For `claude`, `<start>` is `-n <name>
+--dangerously-skip-permissions`; the Agents table in `commands/spawning.md` holds it per kind.
 
 The permission mode is set at launch and is not stored in settings. A pane started without the
 flag comes up asking, and what it asks about includes messages from other sessions: a pane in the
@@ -63,9 +64,31 @@ letters, digits, `-` or `_`.
 
 ## Exiting
 
-`herdr agent prompt <pane> "/exit"` closes a session.
+`herdr agent prompt <pane> "/exit"` closes an interactive session. Measured on 2026-09-24: the
+pane left `herdr agent list` four times, on a work shephrd at 14:56, on `os` and
+`protocol-refine` around 15:30, and on the same work shephrd again at 15:41.
 
-`herdr agent send-keys <pane> ctrl+d` does not. The call returns `ok` and the agent stays alive.
+A session of kind `bg`, one that has passed under Claude Code's background sessions service, is
+not closed by it. The one failure that day, at 16:07 on `w1Z:p1`, was on a session `ListAgents`
+already listed as `bg`: the prompt moved it to the background sessions panel ("describe a task
+for a new session", over a list of sessions) and the pane never left `herdr agent list`. Two
+`C-c` sent with `herdr agent send-keys` brought the session back into the pane. The installed
+binary was Claude Code 2.1.281.
+
+So a `/exit` is preceded by reading the pane's kind in `ListAgents`. An interactive session takes
+the `/exit`; a `bg` one is reported and left as it is.
+
+The background service also renames the session after its task. `ListAgents` showed
+`verify-owner-field-migration` of kind `bg` for a session started with `-n <shephrd>`, and the
+`session_id` changed from `8d8e76d6` to `c2cf006a`. `herdr agent prompt <pane> "/rename <name>"`
+repairs the name: `ListAgents` showed it within 1 s, with no restart and the thread kept.
+
+not verified: why the start at 15:41 ended as `bg`, and what ends a `bg` session. Neither is to
+be tested on a pane holding work. `herdr pane close <pane>` removes the pane and the process with
+it, which is a close rather than an exit and leaves no shell to relaunch in.
+
+`herdr agent send-keys <pane> ctrl+d` does not end a session either. The call returns `ok` and
+the agent stays alive.
 
 ## Reaching a blocked pane
 
@@ -92,7 +115,7 @@ the pane disappearing from `herdr agent list`; `agent start` before that fails w
 
 ## Waiting
 
-`herdr agent wait <pane> --until idle --timeout <ms>` blocks until the session settles.
+`herdr agent wait <pane> --until idle --until done --timeout <ms>` blocks until the session settles; a pane whose last turn finished reports `done`.
 
 A message sent to a session reported as `working` is queued and delivered when its turn ends, so
 asking costs nothing but the wait and the turn is never interrupted. An exit sent mid-turn
