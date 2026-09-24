@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""Record the user's approval of one command in one shephrd pane. Runs as root, under pkexec.
+
+    pkexec /usr/local/lib/shephrd/approve <pane> '<command>'
+
+polkit asks for the user's own password before this runs (`local.shephrd.approve`, auth_self,
+no retention), and the dialog shows the command line. The record lands in a root-owned
+directory no session can write, which is what makes it proof: every session runs as the same
+user, so any file a session can write, a peer can forge.
+
+Writes /var/lib/shephrd/approvals/<pane, ':' as '-'>-<sha256>.json, root:root 0644:
+{pane, sha256, command, created, expires, uid}. `hooks/confirm-gate.py` in the shephrd plugin
+reads it once.
+"""
+
+import hashlib
+import json
+import os
+import re
+import sys
+import time
+from pathlib import Path
+
+DIR = Path("/var/lib/shephrd/approvals")
+TTL = 300
+PANE = re.compile(r"^w[0-9A-Za-z]+:p[0-9A-Za-z]+$")
+
+
+def main(argv):
+    """Validate the arguments and write the record; exit non-zero on any refusal."""
+    if os.geteuid() != 0:
+        sys.exit("approve: must run as root, through pkexec")
+    uid = os.environ.get("PKEXEC_UID", "")
+    if not uid.isdigit():
+        sys.exit("approve: PKEXEC_UID missing, run through pkexec")
+    if len(argv) != 3 or not PANE.match(argv[1]) or not argv[2].strip():
+        sys.exit("usage: approve <pane> '<command>'")
+    pane, command = argv[1], argv[2].strip()
+    digest = hashlib.sha256(command.encode()).hexdigest()
+    now = int(time.time())
+    DIR.mkdir(mode=0o755, parents=True, exist_ok=True)
+    path = DIR / f"{pane.replace(':', '-')}-{digest}.json"
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps({"pane": pane, "sha256": digest, "command": command,
+                               "created": now, "expires": now + TTL, "uid": int(uid)}))
+    os.chmod(tmp, 0o644)
+    tmp.replace(path)
+    print(f"approved for {pane} until {time.strftime('%H:%M:%S', time.localtime(now + TTL))}")
+
+
+if __name__ == "__main__":
+    main(sys.argv)
