@@ -38,8 +38,9 @@ upstream guidance written for interactive scripts. An agent session is always th
 the Root section of AGENTS.md is the rule that applies.
 
 A session running in a pane answers to whoever spawned it. `HERDR_REPORTS_TO` carries that name,
-and `python3 ~/.claude/plugins/local/shephrd/hooks/panes.py` answers it along with the role, from
-the registry when a restart emptied the variable.
+and `python3 ~/.local/bin/shephrd-panes.py` answers it along with the role, from the registry
+when a restart emptied the variable. That path is a chezmoi symlink into the shephrd marketplace
+clone, since the installed copy under `~/.claude/plugins/cache` carries its version in the path.
 
 A name there means this session reports to it. A sheep of a shephrd reports at the end of every
 turn. A shephrd under a god reports at the end of every turn only while the god is attended, and

@@ -12,7 +12,7 @@
     "caveman@caveman": true,
     "plugin-dev@claude-code-plugins": true,
     "ponytail@ponytail": true,
-    "shephrd@machine-local": true,
+    "shephrd@shephrd": true,
     "superpowers@superpowers-marketplace": true
   },
   "extraKnownMarketplaces": {
@@ -38,10 +38,10 @@
         ]
       }
     },
-    "machine-local": {
+    "shephrd": {
       "source": {
         "source": "directory",
-        "path": "{{ .chezmoi.homeDir }}/.claude/plugins/local"
+        "path": "{{ .shephrd_root }}"
       }
     },
     "ponytail": {
