@@ -31,5 +31,6 @@ application/x-tar=xarchiver.desktop
 application/gzip=xarchiver.desktop
 application/x-7z-compressed=xarchiver.desktop
 application/vnd.rar=xarchiver.desktop
+x-scheme-handler/mailto=omamail.desktop
 
 [Added Associations]
