@@ -8,10 +8,197 @@
 # only after a failed check, authorised by volume UUID rather than by /dev path.
 https://github.com/Wian47/omarchy-removable-drives.git
 #
-# Plugin Browser: browse the marketplace and audit a plugin in a bwrap sandbox before
-# enabling it. Reviewed at 0.2.2, commit 18ffd2e, the commit the marketplace verified:
-# bounded catalog download, the scanner never executes plugin code. Installed for its two
-# CLI tools, which dot_local/bin symlinks and SUPER+SHIFT+X launches. Its bar widget is
-# disabled: the button passes execDetached an environment holding PATH alone, so the
-# terminal opens with no XDG_RUNTIME_DIR and never reaches the compositor.
-https://github.com/OmarchyFans/omarchy-fans-plugin-browser.git
+# Forecast: weather pill with UV, rain, sunrise and sunset. Replaces omarchy.weather in the
+# bar, which shell.json disables. Reviewed at 1.3.2, commit 530df8e: curl over HTTPS to
+# wttr.in and Open-Meteo as argv arrays, no file writes of its own, no sudo. With no location
+# in ~/.local/state/omarchy/settings/weather.json, wttr.in geolocates the public IP on every
+# refresh (15 minutes).
+https://github.com/paytbidd/omarchy-weather.git
+#
+# Keyboard layout switcher: replaces omarchy.keyboard-layout in the bar. Reviewed at 0.1.0,
+# commit 6c0da7f: reads kb_layout from `hyprctl -j devices` and switches with
+# `hyprctl switchxkblayout`, so it follows us,latam from hypr/input.lua and writes no config.
+# No network, no sudo. Its README suggests CTRL+ALT+SPACE; left unbound, since
+# grp:alt_space_toggle already cycles and the chord would reach xkb as Alt+Space too.
+https://github.com/jesusarchive/omarchy-keyboard-layout-switcher.git
+#
+# Nothing Control: battery, noise control and EQ for Nothing and CMF earbuds over RFCOMM.
+# Reviewed at 0.1.0, commit 0cc7777: no network at runtime, no sudo, no bundled binaries.
+# With no such earbuds paired it starts no process and the widget stays hidden. Upstream
+# bug: `watch()` in helper/nothing_ear.py names an undefined `model`, so with the panel open
+# the helper dies and reconnects every 60 seconds.
+https://github.com/Pinta365/omarchy-nothing-control.git
+#
+# Added 2026-09-24, each read in full at the commit named. Unless an entry says otherwise:
+# argv only, no network, no sudo. Any setting changed from a panel writes shell.json, so
+# re-add it. Installed but disabled, off the bar until wanted with `omarchy plugin enable
+# <id>`: calendar, decent-workspaces, bluetooth-audio, omaspotify, omaplug, omamail,
+# agent-skills-manager, omadoro, desktop-ambience, time-machine, notification-center, webcam,
+# hyprmoncfg, screen-time, qs-bitwarden-cli, omarchy-firewall, omasecurity and
+# dizziee.system-updates. The bar is the one this machine had before these plugins arrived:
+# omarchy.clock, local.workspaces, omarchy.bluetooth and omarchy.indicators. Spotify's tray item reports Status Passive for its whole life, and
+# omarchy.tray skips every Passive item (Tray.qml:172), so pinning spotify-client shows
+# nothing; a clone that let pinned Passive items through did not show it either, and was
+# dropped, and spotify-client is out of the tray's pins. bootstrap.sh adds every
+# URL here with --enable, so a fresh machine shows them all until they are disabled again.
+#
+# Omaland: Hyprland look and feel, replaces patina. Reviewed at 4428149. Writes a fenced block
+# into hypr/looknfeel.lua, and into hyprland.lua for opaque windows, then `hyprctl reload`:
+# both are chezmoi targets, so a change made in the panel is lost at the next apply unless
+# looknfeel.lua is re-added.
+https://github.com/bobby-nicholas/omaland.git
+#
+# Omaplug: plugin manager, replaces the plugin browser. Reviewed at 9da73fc. Installs through
+# `omarchy plugin add`, so omarchy-git-url-check applies. Its update runs
+# `omarchy plugin update --yes`, which skips the diff: never "Update all", update one plugin
+# from a terminal. Shortcuts it offers write a block into bindings.lua; declare them there.
+https://github.com/fross100/omaplug.git
+#
+# Decent Workspaces: per-monitor workspaces with app icons, replaces local.workspaces, whose
+# source stays under dot_config/omarchy/plugins. Reviewed at 926bf52, no writes.
+https://github.com/TheTrueFerret/omarchy-decent-workspaces.git
+#
+# Spotlight: launcher on SUPER + SHIFT + X. Reviewed at 466b704. Its first start binds
+# ALT + SPACE into bindings.lua, the chord grp:alt_space_toggle owns; create_spotlight.json
+# marks that tour done, so it must be applied before the plugin loads. Web suggestions off;
+# currency rates reach api.frankfurter.dev.
+https://github.com/maajix/omarchy-spotlight.git
+#
+# Zen Lock: replaces omarchy.lock. Reviewed at 989d06d: the same WlSessionLock and PAM flow as
+# the stock lock, line for line. Chosen knowing its cost: Restart and Shut Down on the lock
+# screen need no authentication, and as a frozen fork it gets no fix made to omarchy.lock.
+https://github.com/rover-001/zen-lock.git
+#
+# System Updates: replaces omarchy.system-update, adds AUR, Flatpak and mise. Reviewed at
+# a4cb466. Chosen knowing its cost: the Arch button runs pacman -Syu past
+# omarchy-update-pacman-guard, so no snapshot and no migrations; `omarchy update` stays the
+# path for a full update. The command it runs is read from its cache in ~/.cache.
+https://github.com/JJDizz1L/dizziee.system-updates.git
+#
+# Bluetooth Audio: replaces omarchy.bluetooth. Reviewed at 4c8b079. Device names from the scan
+# render as AutoText where the stock panel uses PlainText, so a nearby device can style the list.
+https://github.com/ssupt/omarchy-bluetooth-audio.git
+#
+# Omaspotify: Spotify client, service unit omaspotify.service. Reviewed at 19b6804. The first
+# load downloads its backend from GitHub releases, verified by SHA256SUMS and gh attestation,
+# and falls back to cargo. It uses the stappmus/librespot fork, which was not audited, and
+# keeps the playback credential in plain text under ~/.local/state/omaspotify. Its lyrics
+# button installs stappmus/Omasing with --yes: do not press it before that repo is read.
+https://github.com/jeremylanger/omaspotify.git
+#
+# Omamail: mail client. Reviewed at 3024f02; the marketplace's validated commit is not in the
+# repo. It has no switch for its AI actions: they run `claude -p --permission-mode dontAsk`
+# with no tool limit and untrusted mail in the prompt, only when asked from the compose or
+# prompt UI, and "Suggest calendar events" stays off. Do not use them. It registered itself as
+# the mailto handler in mimeapps.list, a chezmoi target.
+https://github.com/huacnlee/omamail.git
+#
+# Hyprmoncfg: monitor profiles, installed to test. Reviewed at 1ba6b75 (rc). The daemon is
+# hyprmoncfg-bin from the AUR, a prebuilt binary not audited and not installed. `manage`
+# edits hyprland config chezmoi owns and conflicts with monitors.lua.tmpl: not run.
+https://github.com/crmne/omarchy-hyprmoncfg.git
+#
+# Calendar: Google Calendar in the bar. Reviewed at 08f5c01. Needs gws and gcloud and its
+# sync/setup, not run yet. That setup installs a user timer that runs the plugin's own Python
+# every five minutes, so an update changes what it runs.
+https://github.com/tmn73/omarchy-calendar.git
+#
+# Time Machine: restic backups. Reviewed at 94bc1ce. Password in a 0600 key file, passed by
+# file, never argv. `omarchy-time-machine install` writes timers whose ExecStart is the script
+# in the plugin directory: an update changes what the nightly timer runs.
+https://github.com/jankeesvw/omarchy-time-machine.git
+#
+# Notification Center: keeps every notification, bodies included, in plain text under
+# ~/.local/state/omarchy-notification-center, 0600, 30 days. Reviewed at e4c4568.
+https://github.com/jankeesvw/omarchy-notification-center.git
+#
+# Screen Time: per-app usage, kept 365 days in ~/.config/omarchy/screen-time, 0644. Reviewed
+# at 2c7b75a.
+https://github.com/ax1g/quickshell-screentime-plugin.git
+#
+# Webcam: V4L2 controls with a preview. Reviewed at 6772b78. Its IPC `open` turns the camera on
+# for any process of the user; the preview is on screen while it runs.
+https://github.com/kristoferlund/omarchy-webcam.git
+#
+# Omadoro: work and break timer. Reviewed at 9fab31f. A break takes the keyboard exclusively,
+# up to an hour with skipPolicy "never".
+https://github.com/klaudworks/omadoro.git
+#
+# Desktop Ambience: animated desktop layer. Reviewed at 5865670. Dust Motes forks hyprctl
+# eight to sixteen times a second, and the VHS layer repaints every frame on every monitor.
+https://github.com/OldJobobo/desktop-ambience.git
+#
+# Agent Skills Manager: reads ~/.claude, ~/.claude.json and other agents' config, writes only
+# ~/.config/agent-skills. Reviewed at 953df2c. Positional secrets in an MCP command line are
+# not redacted in its list.
+https://github.com/oliwier-xiao/agent-skills-manager.git
+#
+# Navbar Cat: a cat on the bar. Reviewed at 6ddd61a. Polls the Hyprland socket every 100 ms
+# awake.
+https://github.com/tallsam/omarchy-navbar-cat.git
+#
+# Shell Settings: shell, plugin and bar settings panel. Reviewed at 2d6cdf7. Any change
+# rewrites shell.json whole, and its local install copies a folder without validating it.
+https://github.com/AyushKr2003/shell-settings.git
+#
+# Bitwarden: vault in the bar. Reviewed at ebfe90a. Needs `bw`, which comes from mise
+# (`mise use -g npm:@bitwarden/cli`) because the bitwarden-cli package wants nodejs-lts-jod
+# and conflicts with nodejs. rememberSession and sshAgentEnabled are false in its shell.json
+# entry, and quick unlock is left unset: the SSH agent and quick unlock run two prebuilt ELFs
+# whose hashes live in the same repo, so a push can swap binary and hash together. Its
+# settings write the account email into shell.json; check the diff before re-adding it.
+https://github.com/Elevate08/qs-bitwarden-cli.git
+#
+# Firewall: ufw rules from the bar. Pinned to 98a1a43, remote HEAD checked equal before the
+# clone. Every change runs a fixed argv, `pkexec … /usr/bin/ufw`, through the closed grammar
+# of run-action.pl, so an update to that file runs as root once polkit is answered: never
+# update it from omaplug, read the diff first. It allows `disable`.
+https://github.com/illegalstudio/omarchy-firewall.git
+#
+# Omasecurity: posture auditor, installed as a reader only; it changes nothing and copies a
+# fix command to the clipboard. Reviewed at 4507720. Its verdict is not proof: a check that
+# raises counts as passed with 10/10, and a plugin named omasecurity or with its code under
+# tests/ passes the scan. It runs `sudo -n -l` and `sudo -n ufw status` every 15 minutes.
+https://github.com/ucmz851/omasecurity.git
+#
+# Sudo Watch: a critical notification and a sound when a sudo or pkexec prompt waits over 20
+# seconds. Pinned to eec210b, the marketplace's observed commit, checked out detached after
+# the add: never update it. bin/sudo-watch.sh:19 sources ~/.config/sudo-watch/config as shell
+# every cycle, so a value set with `sudo-watchctl` runs as code; the sound stays at its
+# default. It watches processes only, so a polkit request over D-Bus (systemctl, udisks) is
+# never flagged. The notification carries the full command line of the waiting process.
+https://github.com/TaylorBurke/sudo-watch.git
+#
+# Removed 2026-09-24: io.github.modpunk.plugin-browser, replaced by omaplug, and with it the
+# omarchy-plugin-browser and omarchy-plugin-audit links in dot_local/bin. payton.patina,
+# replaced by omaland, through `omarchy-patina unapply --purge`, with patina.toml destroyed
+# and its require and bootstrap step removed. jrmmhm.pocket, the drawer: its
+# `repairMemberOrder` rewrote shell.json on its own, dropped members after each shell restart,
+# and fanning out drew its widgets over the clock.
+#
+# Rejected: meviusisback.keybinds, reviewed at ad8199d. It models the stock default bindings
+# as active, while omarchy_default_bindings is false here. Assigning a chord in use adds
+# hl.unbind and deletes the user's o.bind on it without asking, and its regex reads the
+# `"SUPER + " .. key` loops as the chord `SUPER + plus`, so one edit there drops the workspace
+# bindings. It rewrites bindings.lua through mkstemp, leaving it 0600.
+#
+# Rejected: robertlindomar.omarchy-ptbr.polkit, reviewed at 9e3833e. A clone of omarchy.polkit
+# whose only change is four pt-BR strings. It inherits the `authentication` capability and
+# receives the root password, one plugin update away from its author's HEAD, and adds nothing.
+#
+# Rejected: erijl.lock, reviewed at 0a0c8d8. This machine has no /etc/pam.d/polkit-1; `enable`
+# creates one with pam_unix and without system-auth, which drops pam_faillock from polkit, and
+# `disable` leaves that file behind. With a key that has no PIN, one touch is root in sudo and
+# polkit. It is also a fork of omarchy.lock, which zen.lock already replaces.
+#
+# Rejected: brwsk.vigil, reviewed at 1344ebc. Its first snapshot merges a PreToolUse hook into
+# ~/.claude/settings.json without asking, and writes `{}` plus hooks when that file fails to
+# parse. It answers allow to sudo, push and rm -rf, sends SIGSTOP to every agent while the
+# screen is locked, runs `git checkout --` over paths an agent only read, and sets ~/.claude
+# to 0700. Its "polkit card" is an overlay, not polkit.
+#
+# Rejected: iamcheyan.launcher, reviewed at 0.1.1, commit 73c5e5c. Its manifest declares
+# clonedFrom omarchy.menu, so enabling it replaces the menu, and it never writes the done file
+# omarchy-menu-select waits on: the 14 omarchy scripts that call omarchy-menu-select or
+# omarchy-menu-input would block forever. It also ignores the menu's `when` guards and
+# rewrites shell.json on every settings change.

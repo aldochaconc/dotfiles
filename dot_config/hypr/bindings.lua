@@ -374,10 +374,10 @@ o.bind("SUPER + SHIFT + C", "Calculator", "omacalc")
 o.bind("XF86Calculator", "Calculator", "omacalc")
 o.bind("SUPER + SHIFT + A", "Agent", "omarchy-agent --pick")
 o.bind("SUPER + SHIFT + P", "Transcode", "omarchy-transcode")
--- plugin browser. dot_local/bin symlinks it and omarchy-plugin-audit into PATH, pointing at
--- the checkout plugins.txt installs. The app-id is spelled out because `{ tui = ... }` derives
--- org.omarchy.<basename>, which the float rule in default/hypr/apps/system.lua does not list.
-o.bind("SUPER + SHIFT + X", "Plugin browser", "omarchy-launch-tui --app-id=TUI.float omarchy-plugin-browser")
+-- spotlight. Its setup tour binds ALT + SPACE into a managed block of this file, which
+-- grp:alt_space_toggle in input.lua already owns; create_spotlight.json marks the tour done so
+-- the plugin never writes here, and the chord lives on the slot plugin browser held.
+o.bind("SUPER + SHIFT + X", "Spotlight", "omarchy-shell shell toggle io.github.maajix.spotlight '{}'")
 
 -- vault. Obsidian is single instance: a second launch hands over to the running process and
 -- exits, so a plain launch announces itself and no window appears. launch_sole focuses the

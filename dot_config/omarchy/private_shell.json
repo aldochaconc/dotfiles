@@ -10,7 +10,7 @@
           "verticalFormat": "HH\n—\nmm"
         },
         {
-          "id": "omarchy.weather"
+          "id": "payton.forecast"
         },
         {
           "id": "omarchy.system-update"
@@ -29,6 +29,9 @@
           "hidden": [],
           "id": "omarchy.tray",
           "pinned": []
+        },
+        {
+          "id": "pinta365.nothing-control"
         },
         {
           "id": "omarchy.agents"
@@ -54,7 +57,7 @@
           "showPercentage": false
         },
         {
-          "id": "omarchy.keyboard-layout"
+          "id": "jesusarchive.keyboard-layout-switcher"
         },
         {
           "alwaysShow": true,
@@ -69,6 +72,31 @@
     "lock": 300,
     "screensaver": 150
   },
-  "plugins": [],
-  "version": 1
+  "plugins": [
+    {
+      "id": "bobbynicholas.omaland"
+    },
+    {
+      "id": "io.github.maajix.spotlight"
+    },
+    {
+      "id": "io.github.tallsam.navbar-cat"
+    },
+    {
+      "id": "shell.settings"
+    },
+    {
+      "id": "zen.lock"
+    },
+    {
+      "id": "taylorburke.sudo-watch"
+    }
+  ],
+  "version": 1,
+  "disabledPlugins": [
+    "omarchy.lock"
+  ],
+  "cloneSourceRestores": [
+    "zen.lock"
+  ]
 }

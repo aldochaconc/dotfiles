@@ -3,6 +3,7 @@ claude = "latest"
 codex = "latest"
 go = "latest"
 node = "lts"
+"npm:@bitwarden/cli" = "latest"
 
 [settings.upgrade]
 auto_prune = false
