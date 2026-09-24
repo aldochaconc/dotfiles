@@ -22,6 +22,9 @@ echo "==> AUR build hygiene: no leftover makedepends, no -debug split packages"
 yay -Y --save --removemake >/dev/null
 [[ -f /etc/makepkg.conf.d/no-debug.conf ]] || echo 'OPTIONS+=(!debug)' | sudo tee /etc/makepkg.conf.d/no-debug.conf >/dev/null
 
+echo "==> shephrd approve: root-owned helper, its polkit action and the approvals directory"
+[[ -x /usr/local/lib/shephrd/approve ]] || sudo sh -c 'install -D -o root -g root -m 0755 "$1/system/shephrd/approve" /usr/local/lib/shephrd/approve && install -D -o root -g root -m 0644 "$1/system/shephrd/local.shephrd.approve.policy" /usr/share/polkit-1/actions/local.shephrd.approve.policy && install -d -o root -g root -m 0755 /var/lib/shephrd/approvals' _ "$here"
+
 echo "==> packages: AUR"
 # shellcheck disable=SC2046
 omarchy pkg aur add $(pkgs "$here/packages-aur.txt")
@@ -138,8 +141,12 @@ while read -r url; do
 done < <(grep -vE '^\s*#|^\s*$' "$here/themes.txt")
 
 echo "==> shell plugins from git"
+# `omarchy plugin add` refuses a plugin already installed, which is every one on a re-run.
+# shell.json, applied above, already places each widget, and an enable without a placement
+# leaves it where it is.
 while read -r url; do
-  omarchy plugin add "$url" --enable --yes
+  omarchy plugin add "$url" --enable --yes ||
+    echo "WARN: plugin $url not added; already installed, or see the error above" >&2
 done < <(grep -vE '^\s*#|^\s*$' "$here/plugins.txt")
 
 if chezmoi data | jq -e '.hybrid_gpu' >/dev/null 2>&1 && [[ "$(supergfxctl -g 2>/dev/null)" != "Hybrid" ]]; then
