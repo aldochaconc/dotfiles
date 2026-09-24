@@ -203,7 +203,8 @@ panes and coordinate through the shephrd plugin.
 
 | Piece | Source | Role |
 |---|---|---|
-| global instructions | `dot_claude/CLAUDE.md` | reply register, deciding, writing, machine, shell and git rules for every session |
+| agent rules | `.chezmoitemplates/agents.md` | judgement, reply register, deciding, root and git rules for any coding agent, applied as `~/.claude/AGENTS.md` and `~/.codex/AGENTS.md` |
+| Claude instructions | `dot_claude/CLAUDE.md` | imports `@AGENTS.md`, then adds what only Claude Code has: `AskUserQuestion`, skills, panes, shell tools, `@RTK.md` |
 | settings | `.chezmoitemplates/claude-settings.json` | permissions, hooks, plugins and MCP servers |
 | settings writer | `dot_claude/modify_private_settings.json.tmpl` | renders the template, and keeps the keys Claude Code rewrites itself: model, theme, effort, default mode, additional directories |
 | global hooks | `dot_claude/hooks/` | audit, rtk rewriting, prose register checks, and gates on destructive git, `git add -A`, `rm` on tracked files, uploads and skill writes |
@@ -245,7 +246,7 @@ signed. `shephrd-protocol` holds the full rules.
 | `adr.md` | decisions no other surface owns, each seen twice or structural |
 | `multi-session-workspace.md` | design proposal on hold since 2026-09-22 |
 | `.claude/` | Claude Code settings and the `finding-the-omarchy-command` skill for this repository |
-| `.claude/hooks/guard-private.sh`, `.githooks/pre-commit` | refuse a file that carries the login, the home path or a private term; enable with `git config core.hooksPath .githooks` |
+| `.claude/hooks/guard-private.sh`, `.githooks/pre-commit` | refuse a file that carries the login, the home path or a private term; `bootstrap.sh` sets `core.hooksPath` to `.githooks` |
 | `.github/pull_request_template.md` | pull request skeleton |
 | `system/` | files installed outside `$HOME` by `bootstrap.sh` |
 

@@ -4,6 +4,12 @@ Omarchy customizations applied with chezmoi. This repo is the chezmoi source (`s
 files are copied into `$HOME`, never symlinked. Edited in place → `chezmoi re-add <file>`;
 edited here → `chezmoi diff`, then `chezmoi apply`.
 
+[`README.md`](README.md) is the handbook: how Omarchy loads Hyprland, the shell, themes, hooks
+and the environment, what each source path applies, and the agentic setup. Its "Known gaps"
+section lists the defects still open between the docs and the templates. The global rules every
+agent follows are in `.chezmoitemplates/agents.md`, applied as `~/.claude/AGENTS.md` and
+`~/.codex/AGENTS.md`; `dot_claude/CLAUDE.md` imports it and adds what only Claude Code has.
+
 A lesson from a session is routed by the table in the `skill-growth` skill, which names the
 surface each class of mistake belongs to and is the authority on that question. Decisions no
 surface there owns are logged in [`adr.md`](adr.md), and only after the failure has appeared
@@ -43,8 +49,9 @@ editing all three.
   six files under `~/.claude/commands`, one of them a command whose name had been corrected, and
   both spellings appeared in the session's command list. `chezmoi destroy` the old target after
   the move, or delete the directory when the whole tree moved.
-- No secret enters the repo. `~/.claude/settings.json` renders them from the system keyring
-  (`chezmoi secret keyring get --service claude --user <name>`).
+- No secret enters the repo. The settings template reads them from the environment as
+  `${NAME}`, and `~/.config/uwsm/env.d/secrets`, written by hand and ignored by git, exports
+  them. The keyring entries `bootstrap.sh` stores are read by no template today.
 - Omarchy's own tree (`/usr/share/omarchy`) is read-only; overrides go in `~/.config`.
 - Root goes through `pkexec`, under the Machine section of `~/.claude/CLAUDE.md`, which holds
   the rule for every session on this machine. What belongs here is why the wrapping rule has
@@ -74,7 +81,7 @@ editing all three.
 |---|---|
 | GPU (AMD iGPU + NVIDIA, Hybrid) | `supergfxctl -g`, `nvidia-smi`, `prime-run <app>`, `omarchy toggle hybrid gpu` |
 | Displays | `hyprctl monitors all`, `omarchy hyprland monitor …`, `dot_config/hypr/monitors.lua.tmpl` |
-| Keybindings | `omarchy menu keybindings --print`, `SUPER+SHIFT+K` |
+| Keybindings | `omarchy menu keybindings --print`, `SUPER+SHIFT+SLASH` |
 | Audio | `wpctl`, `pw-cli`, `pw-dump`, `pactl` |
 | Bluetooth | `bluetoothctl` |
 | Power | `powerprofilesctl`, `upower` |
@@ -101,7 +108,7 @@ editing all three.
 | Power, battery, network | `omarchy power present`, `omarchy battery status`, `omarchy powerprofiles list`, `omarchy network status`, `omarchy network band` |
 | Updates and their logs | `omarchy update available`, `omarchy update analyze logs` |
 | A crashed process | `omarchy agent crash <pid>` (uses `coredumpctl`; see the `diagnose-crash` skill) |
-| Diagnostics dump | `omarchy debug --no-sudo --print` (always these two flags: the default asks for sudo interactively) |
+| Diagnostics dump | `omarchy-debug --no-sudo --print` (always these two flags: the default asks for sudo interactively; `omarchy debug` does not route to it) |
 
 **User configuration, no sudo**
 
@@ -148,6 +155,6 @@ otherwise stays at its GNOME default. `hooks/font-set.d/gsettings-sync.hook` re-
 font with `fc-match` and syncs it after every `omarchy font set`; an already-running app needs a
 restart to pick up the new gsetting, since GTK reads it once at startup.
 
-`omarchy nvim {setup,refresh}` and `omarchy reinstall configs` run `xdg-mime default nvim.desktop`
-on 17 text types. After them, `chezmoi apply --force ~/.config/mimeapps.list` restores `code`
+`omarchy-nvim-setup` and `omarchy-nvim-refresh`, which `omarchy reinstall configs` also calls,
+run `xdg-mime default nvim.desktop` on 17 text types. After them, `chezmoi apply --force ~/.config/mimeapps.list` restores `code`
 (`omarchy default editor` never touches MIME).

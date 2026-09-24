@@ -2,13 +2,14 @@
 """SessionStart(startup|resume|clear|compact): inject the Speaking and a banner.
 
 Two jobs:
-  1. Extract the `Speaking` section from ~/.claude/CLAUDE.md and print it, so the
+  1. Extract the `Replying` section from ~/.claude/AGENTS.md and print it, so the
      rules reach context even when the memory file does not load, and again after every
      compaction.
   2. Print an inventory banner and instruct the model to reproduce it, so a failed load
      is visible instead of silent.
 
-The rules are read from CLAUDE.md at runtime and never copied here: one source, no drift.
+The rules are read from AGENTS.md at runtime and never copied here: one source, no drift.
+AGENTS.md is shared with Codex; ~/.claude/CLAUDE.md imports it with `@AGENTS.md`.
 A missing file or section is reported as a failure in the banner.
 
 Self-check: python3 session-register.py --selftest
@@ -36,7 +37,7 @@ def read_json(path, default=None):
 
 def extract_rules(md_path=None):
     """Return (text, line_count, error). error is None on success."""
-    md = md_path or (CFG / "CLAUDE.md")
+    md = md_path or (CFG / "AGENTS.md")
     try:
         text = md.read_text(encoding="utf-8")
     except OSError:
@@ -134,7 +135,7 @@ def build_banner(cwd, rules_lines, rules_error):
     ok = rules_error is None
     lines.append("SESION INICIALIZADA  " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     if ok:
-        lines.append(f"  reglas de habla: OK, {rules_lines} lineas desde ~/.claude/CLAUDE.md")
+        lines.append(f"  reglas de habla: OK, {rules_lines} lineas desde ~/.claude/AGENTS.md")
     else:
         lines.append(f"  reglas de habla: FALLO, {rules_error}")
     lines.append(f"  caveman: {flag('.caveman-active')}   ponytail: {flag('.ponytail-active')}")
