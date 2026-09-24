@@ -1,6 +1,7 @@
 # AUR packages added on top of the Omarchy base.
 # Applied with: omarchy pkg aur add $(grep -v '^#' packages-aur.txt)
 graphite-cli
+hyprmoncfg-bin
 lingot
 oh-my-zsh-git
 ryzenadj
