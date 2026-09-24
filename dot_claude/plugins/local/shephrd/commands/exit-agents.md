@@ -128,7 +128,9 @@ two sessions were each asked to write a handoff and then exit, both wrote the fi
    `herdr agent send-keys <pane> ctrl+d` does not close it: the call returns `ok` and the agent
    stays alive.
 
-7. **Confirm.** `herdr agent list` until the `pane_id` is gone. The exit is not immediate, and
+7. **Confirm.** `herdr agent list` until the `pane_id` is gone. A `bg` pane left in place at
+   step 6 is skipped here and reported as left running, since it never leaves the list and the
+   wait would not end. The exit is not immediate, and
    `herdr agent read` in that interval returns the shell prompt with Claude's status bar still
    drawn, so a pane that has already exited reads as alive.
 

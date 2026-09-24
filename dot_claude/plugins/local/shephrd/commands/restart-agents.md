@@ -51,7 +51,9 @@ Per pane, in order. The target of each command is the pane id, which never chang
    `herdr agent list` (`references/herdr-cli.md`). A `bg` pane is reported and left as it is,
    and two `C-c` with `herdr agent send-keys` bring a session back from the panel.
 
-5. **Wait for the pane to free.** `herdr agent list` until the `pane_id` is gone from it.
+5. **Wait for the pane to free.** `herdr agent list` until the `pane_id` is gone from it. A `bg`
+   pane left in place at step 4 skips this step and the ones after it, and is reported as not
+   restarted: it never leaves the list, so the wait would not end.
 
 6. **Start with the thread, the name and the permission mode.**
    `herdr agent start <temp> --kind <kind> --pane <pane> -- <resume>`, with `<kind>` the pane's

@@ -196,7 +196,7 @@ def selftest():
 
     env = {
         "HERDR_PANE_ID": "wA:p8",
-        "HERDR_WORKSPACE_ID": "w1R",
+        "HERDR_WORKSPACE_ID": "wX",
         "HERDR_AGENT_NAME": "worker-a",
         "HERDR_REPORTS_TO": "lead",
     }

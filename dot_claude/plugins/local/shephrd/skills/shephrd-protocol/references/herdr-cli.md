@@ -65,11 +65,11 @@ letters, digits, `-` or `_`.
 ## Exiting
 
 `herdr agent prompt <pane> "/exit"` closes an interactive session. Measured on 2026-09-24: the
-pane left `herdr agent list` four times, on a work shephrd at 14:56, on `os` and
-`protocol-refine` around 15:30, and on the same work shephrd again at 15:41.
+pane left `herdr agent list` four times, twice on a work shephrd and twice on two other
+sessions.
 
 A session of kind `bg`, one that has passed under Claude Code's background sessions service, is
-not closed by it. The one failure that day, at 16:07 on `w1Z:p1`, was on a session `ListAgents`
+not closed by it. The one failure that day, on `<pane>`, was on a session `ListAgents`
 already listed as `bg`: the prompt moved it to the background sessions panel ("describe a task
 for a new session", over a list of sessions) and the pane never left `herdr agent list`. Two
 `C-c` sent with `herdr agent send-keys` brought the session back into the pane. The installed
@@ -79,11 +79,11 @@ So a `/exit` is preceded by reading the pane's kind in `ListAgents`. An interact
 the `/exit`; a `bg` one is reported and left as it is.
 
 The background service also renames the session after its task. `ListAgents` showed
-`verify-owner-field-migration` of kind `bg` for a session started with `-n <shephrd>`, and the
-`session_id` changed from `8d8e76d6` to `c2cf006a`. `herdr agent prompt <pane> "/rename <name>"`
+`<task-name>` of kind `bg` for a session started with `-n <shephrd>`, and the
+`session_id` changed from `<old-id>` to `<new-id>`. `herdr agent prompt <pane> "/rename <name>"`
 repairs the name: `ListAgents` showed it within 1 s, with no restart and the thread kept.
 
-not verified: why the start at 15:41 ended as `bg`, and what ends a `bg` session. Neither is to
+not verified: why the last of those starts ended as `bg`, and what ends a `bg` session. Neither is to
 be tested on a pane holding work. `herdr pane close <pane>` removes the pane and the process with
 it, which is a close rather than an exit and leaves no shell to relaunch in.
 

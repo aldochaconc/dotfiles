@@ -289,7 +289,7 @@ def main(argv=None):
         rest = [a for a in argv[argv.index("--write") + 1:] if a != "--god"]
         role, rest = _take(rest, "--role")
         # `--scope` is the spelling callers reach for. It was once joined into the positional
-        # scope as a literal: measured, `--write w9Z:p1 tester boss --scope "read-only"` recorded
+        # scope as a literal: measured, `--write wX:pT tester boss --scope "read-only"` recorded
         # `"--scope read-only"`. Taking it as a flag removes the only wrong form anyone wrote.
         scope_flag, rest = _take(rest, "--scope")
         auto_flag, rest = _take(rest, "--autoreport")

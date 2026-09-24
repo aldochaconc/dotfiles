@@ -379,7 +379,7 @@ whether the command is routine for its task. The session above judges whether th
 belongs in the settings allowlist, in a skill's `allowed-tools`, or in a hook's exception, and it
 reaches the user as a stopper in the next `/resolve`. Nothing is added before the user answers.
 Measured on 2026-09-24: `block-versioning` blocked `git apply --check` twice in
-`rec1198-stack`.
+one sheep of a work stack.
 
 ### A sheep unattended
 
@@ -451,6 +451,16 @@ peer can forge. Measured on 2026-09-23 and 2026-09-24: eight relayed authorizati
 for a commit, a force-push, a push and submitting reviews, and once the relay
 said the user had typed it in the sheep's pane when the question had been asked in the
 shephrd's.
+
+The route has two prerequisites, and a sheep checks both before relying on it:
+
+- the machine has the root helper `/usr/local/lib/shephrd/approve` and the polkit action
+  `local.shephrd.approve` installed, which the plugin does not ship (`test -x` on the helper and
+  `test -f /usr/share/polkit-1/actions/local.shephrd.approve.policy`); without them every marked
+  command is denied, and the reserved action waits for a user-supervised session
+- the sheep runs Claude Code: `confirm-gate.py` is a Claude Code hook, and a sheep of another
+  kind has no gate for the marker to reach, so it never runs a reserved action and leaves it to a
+  user-supervised session
 
 The route, in order:
 
