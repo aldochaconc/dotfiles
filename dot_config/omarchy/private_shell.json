@@ -1,27 +1,21 @@
 {
   "bar": {
-    "centerAnchor": "omarchy.clock",
+    "centerAnchor": "omarchy.active-window",
     "layout": {
-      "center": [
-        {
-          "format": "dddd HH:mm",
-          "formatAlt": "d MMMM 'W'ww yyyy",
-          "id": "omarchy.clock",
-          "verticalFormat": "HH\n—\nmm"
-        },
-        {
-          "id": "payton.forecast"
-        },
-        {
-          "id": "omarchy.system-update"
-        }
-      ],
       "left": [
         {
           "id": "omarchy.menu"
         },
         {
           "id": "local.workspaces"
+        },
+        {
+          "id": "omarchy.indicators"
+        }
+      ],
+      "center": [
+        {
+          "id": "omarchy.active-window"
         }
       ],
       "right": [
@@ -31,37 +25,45 @@
           "pinned": []
         },
         {
+          "id": "ucmz851.omasecurity"
+        },
+        {
           "id": "pinta365.nothing-control"
         },
         {
           "id": "omarchy.agents"
         },
         {
-          "id": "omarchy.bluetooth"
-        },
-        {
-          "id": "omarchy.network"
-        },
-        {
-          "id": "omarchy.audio"
-        },
-        {
-          "id": "omarchy.monitor"
+          "id": "dizziee.system-updates"
         },
         {
           "alwaysShow": true,
           "id": "wian47.removable-drives"
         },
         {
+          "id": "crmne.hyprmoncfg"
+        },
+        {
+          "id": "omarchy.audio"
+        },
+        {
+          "id": "ssupt.bluetooth-audio"
+        },
+        {
+          "id": "omarchy.network"
+        },
+        {
           "id": "omarchy.power",
           "showPercentage": false
         },
         {
-          "id": "jesusarchive.keyboard-layout-switcher"
+          "id": "jankeesvw.notification-center"
         },
         {
-          "alwaysShow": true,
-          "id": "omarchy.indicators"
+          "format": "ddd d MMM  h:mm AP",
+          "formatAlt": "d MMMM 'W'ww yyyy",
+          "id": "omarchy.clock",
+          "verticalFormat": "h\n—\nmm"
         }
       ]
     },
