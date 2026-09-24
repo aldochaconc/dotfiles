@@ -42,18 +42,32 @@ except ImportError:
 # patching there each closed one case and left the family open.
 SEGMENT = r"(?:^|[;&|\"']|\$\(|\n)\s*"
 
+# Options git takes before the subcommand. `git -C <dir> reset --hard` discards exactly what the
+# bare form does, and the patterns once required the subcommand right after `git`, so every
+# `-C` form passed unexamined: measured on 2026-09-23, a session resolving a merge in a worktree
+# ran `git -C <worktree> checkout ...` and nothing here read it.
+GIT = (r"git(?:\s+(?:-[Cc]\s+(?:\"[^\"]*\"|'[^']*'|\S+)"
+       r"|--(?:git-dir|work-tree|namespace)=\S+|--no-pager|--no-optional-locks))*\s+")
+
+# `checkout --theirs` and `--ours` resolve a conflict: they write one side's stage into the
+# working tree while the index keeps both, so `git checkout -m -- <path>` recreates the conflict.
+# Outside a conflict git refuses them, since the path has no such stage. Neither discards work.
+SIDES = r"(?![^|;&\n]*\s--(?:theirs|ours)\b)"
+
 PATTERNS = [
-    (re.compile(SEGMENT + r"git\s+reset\b[^|;&\n]*--hard\b"), "git reset --hard"),
-    (re.compile(SEGMENT + r"git\s+checkout\b[^|;&\n]*\s(--\s|\.\s*$|\.$)"), "git checkout over a path"),
-    (re.compile(SEGMENT + r"git\s+clean\b[^|;&\n]*-\w*f\w*"), "git clean -f"),
-    (re.compile(SEGMENT + r"git\s+stash\s+(drop|clear)\b"), "git stash drop/clear"),
+    (re.compile(SEGMENT + GIT + r"reset\b[^|;&\n]*--hard\b"), "git reset --hard"),
+    (re.compile(SEGMENT + GIT + r"checkout\b" + SIDES + r"[^|;&\n]*\s(--\s|\.\s*$|\.$)"),
+     "git checkout over a path"),
+    (re.compile(SEGMENT + GIT + r"clean\b[^|;&\n]*-\w*f\w*"), "git clean -f"),
+    (re.compile(SEGMENT + GIT + r"stash\s+(drop|clear)\b"), "git stash drop/clear"),
     # `git restore` is `git checkout -- <path>` in the newer syntax and overwrites the file with
     # no undo. `--staged` alone only unstages, leaving the working tree intact, so it is the
     # `git reset HEAD` of that syntax and is not gated. Everything else is: the bare form
     # defaults to `--worktree`, and `--staged --worktree` together do discard.
-    (re.compile(SEGMENT + r"git\s+restore\b(?![^|;&\n]*--staged(?![^|;&\n]*--worktree))"),
+    (re.compile(SEGMENT + GIT + r"restore\b(?![^|;&\n]*--staged(?![^|;&\n]*--worktree))"),
      "git restore over a path"),
-    (re.compile(SEGMENT + r"git\s+push\b[^|;&\n]*(--force\b|--force-with-lease\b|\s-f\b)"), "git push --force"),
+    (re.compile(SEGMENT + GIT + r"push\b[^|;&\n]*(--force\b|--force-with-lease\b|\s-f\b)"),
+     "git push --force"),
 ]
 
 # No alternative is named for a force push. `gt submit` force-pushes too, so offering it as the
@@ -156,6 +170,14 @@ def selftest():
         # before it, and separating these two needs a shell parser.
         "echo 'git reset --hard' > notes.txt",
         "grep -rn 'git push --force' docs/",
+        # Options before the subcommand change nothing about what it discards.
+        "git -C /tmp/wt reset --hard",
+        "git -C /tmp/wt checkout -- docs/a.md",
+        "git -C '/tmp/a b' checkout .",
+        "git -c core.pager=cat -C /tmp/wt clean -fd",
+        "git --no-pager -C /tmp/wt restore src/app.ts",
+        "git --git-dir=/x/.git --work-tree=/x push --force",
+        "git -C /tmp/wt stash drop",
     ]
     clean = [
         "git reset HEAD~1",
@@ -170,9 +192,15 @@ def selftest():
         # --staged alone unstages and leaves the working tree, so it destroys nothing.
         "git restore --staged -- src/app.ts",
         "git restore --staged .",
+        # A conflict side keeps both stages in the index, so `checkout -m` undoes it.
+        "git checkout --theirs -- docs/specs/architecture.md",
+        "git -C /tmp/wt checkout --theirs -- docs/specs/architecture.md",
+        "git -C /tmp/wt checkout --ours .",
+        "git -C /tmp/wt status",
+        "git -C /tmp/wt push origin main",
         # Prose that names a command instead of running one. The hook blocked all of these
         # before the anchor, including an instruction against the command it flagged.
-        'herdr agent prompt w1R:p8 "no uses git push --force aqui"',
+        'herdr agent prompt wA:p8 "no uses git push --force aqui"',
         'gh pr comment 938 --body "avoid git push --force"',
         'echo "never run git reset --hard"',
     ]

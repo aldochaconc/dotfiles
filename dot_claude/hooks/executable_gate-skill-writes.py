@@ -35,10 +35,18 @@ What closes it is the incentive. `Write` and `Edit` are allowed under the work p
 correct tool now costs no confirmation where it used to cost two, and the Shell section of
 CLAUDE.md says prose is written with them. The cheap path and the right path are the same one.
 
+The shephrd plugin is exempt, in its source and in its applied copy. Measured on 2026-09-23: 32 of
+the day's 55 asks were writes to `shephrd-protocol`, and the user released that plugin from the
+gate so that protocol rounds stop at review rather than at every write. Skills in repositories
+under ~/Work are exempt too, since the pull request is where the user reviews them: measured on
+2026-09-24, four fixes in one repository's skills were denied to its sheep. Every other skill
+still asks.
+
 Self-check: python3 gate-skill-writes.py --selftest
 """
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -65,9 +73,39 @@ UNATTENDED_NOTE = (
 )
 
 
+EXEMPT = ("/plugins/local/shephrd/",)
+# A skill inside a work repository reaches anyone else only through a pull request the user
+# reviews, so the review is the gate there. Skills under ~/dotfiles and ~/.claude apply to every
+# session on this machine with no review, and stay gated.
+EXEMPT_ROOTS = (os.path.expanduser("~/Work/"),)
+
+
+def in_work_repo(path):
+    """Whether `path` belongs to a repository whose main checkout sits under ~/Work.
+
+    A worktree can live anywhere, and measured on 2026-09-24 a sheep's worktree under /tmp kept
+    its skill writes gated although the repository was under ~/Work. The shared git directory
+    names the repository whatever the checkout's path.
+    """
+    d = os.path.dirname(os.path.abspath(path))
+    while d and not os.path.isdir(d):
+        d = os.path.dirname(d)
+    try:
+        common = subprocess.run(
+            ["git", "-C", d, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            capture_output=True, text=True, timeout=5).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return bool(common) and common.startswith(EXEMPT_ROOTS)
+
+
 def is_skill(path):
     """A SKILL.md anywhere, plus its sibling reference files under the same skill."""
     p = str(path)
+    if any(e in p for e in EXEMPT) or p.startswith(EXEMPT_ROOTS):
+        return False
+    if (p.endswith("SKILL.md") or "/skills/" in p) and in_work_repo(p):
+        return False
     return p.endswith("SKILL.md") or ("/skills/" in p and p.endswith(".md"))
 
 
@@ -81,10 +119,31 @@ def skill_name(path):
     return Path(path).parent.name
 
 
-def decision(reason, env=None):
-    """(verdict, text). Unattended runs deny, because a prompt nobody answers is a deadlock."""
+def typed_turn(env, session_id):
+    """Whether shephrd's `typed-mark.py` marked this session's current turn as typed.
+
+    ponytail: W is not an authorization boundary. `herdr agent prompt` enters as a typed turn and
+    `send-keys` can answer the ask, so a peer can open this window; it only turns a deny into an
+    ask a person still has to answer. C, the pkexec-signed record, is what authorizes.
+    """
+    pane = (env.get("HERDR_PANE_ID") or "").strip()
+    if not pane or not session_id:
+        return False
+    mark_file = Path(env.get("HOME", "/tmp")) / ".claude" / "typed" / (pane.replace(":", "-") + ".json")
+    try:
+        mark = json.loads(mark_file.read_text())
+    except (OSError, ValueError):
+        return False
+    return mark.get("session_id") == session_id and mark.get("typed") is True
+
+
+def decision(reason, env=None, session_id=""):
+    """(verdict, text). Unattended runs deny, because a prompt nobody answers is a deadlock,
+    except in a turn the user typed into the pane, where somebody is there to answer."""
     env = env if env is not None else os.environ
     if (env.get("CLAUDE_UNATTENDED") or "").strip():
+        if typed_turn(env, session_id):
+            return "ask", reason
         return "deny", reason + UNATTENDED_NOTE
     return "ask", reason
 
@@ -113,7 +172,8 @@ def main(event=None, env=None):
 
     what = (" This creates the file, so every rule in it is new."
             if not Path(path).exists() else "")
-    verdict, text = decision(ASK_EDIT.format(where=skill_name(path), what=what), env)
+    verdict, text = decision(ASK_EDIT.format(where=skill_name(path), what=what), env,
+                             event.get("session_id") or "")
     record("gate-skill-writes", verdict, f"{tool} {path}")
     emit(verdict, text)
     return 0
@@ -133,8 +193,20 @@ def selftest():
               "/x/dot_claude/skills/skill-growth/SKILL.md"]:
         assert is_skill(p), p
     for p in ["/x/src/index.ts", "/x/README.md", "/x/CLAUDE.md",
-              "/x/.claude/skills/a/notes.txt"]:
+              "/x/.claude/skills/a/notes.txt",
+              "/x/dot_claude/plugins/local/shephrd/skills/shephrd-protocol/SKILL.md",
+              "/x/.claude/plugins/local/shephrd/skills/shephrd-protocol/references/roles.md",
+              os.path.expanduser("~/Work/repo/.claude/skills/board/SKILL.md")]:
         assert not is_skill(p), p
+    # Outside ~/Work a skill stays gated, including one whose path merely contains "Work".
+    assert is_skill(os.path.expanduser("~/dotfiles/dot_claude/skills/writing/SKILL.md"))
+    assert is_skill("/x/Work/repo/.claude/skills/a/SKILL.md")
+    # A repository outside ~/Work stays gated, and so does a directory that is no repository.
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        assert is_skill(os.path.join(d, ".claude/skills/a/SKILL.md"))
+        subprocess.run(["git", "init", "-q", d], check=True)
+        assert is_skill(os.path.join(d, ".claude/skills/a/SKILL.md"))
 
     assert skill_name("/x/.claude/skills/writing/SKILL.md") == "writing"
     assert skill_name("/x/.claude/skills/writing/references/log.md") == "writing"
@@ -180,7 +252,21 @@ def selftest():
     assert decision("R", {"CLAUDE_UNATTENDED": "  "})[0] == "ask"
     assert edit("/x/.claude/skills/a/SKILL.md") == "ask"
 
-    print("selftest ok: 7 path + 2 name + 7 tool + 6 shell + 3 verdict")
+    # W: a typed turn of this session reopens the ask; anything else keeps the deny.
+    with tempfile.TemporaryDirectory() as home:
+        typed_dir = Path(home) / ".claude" / "typed"
+        typed_dir.mkdir(parents=True)
+        env = {"CLAUDE_UNATTENDED": "1", "HERDR_PANE_ID": "w1:p2", "HOME": home}
+        assert decision("R", env, "s1")[0] == "deny", "missing mark"
+        mark = typed_dir / "w1-p2.json"
+        mark.write_text(json.dumps({"session_id": "s1", "typed": True}))
+        assert decision("R", env, "s1")[0] == "ask", "typed mark of this session"
+        assert decision("R", env, "s2")[0] == "deny", "mark of another session"
+        assert decision("R", env, "")[0] == "deny", "no session id"
+        mark.write_text(json.dumps({"session_id": "s1", "typed": False}))
+        assert decision("R", env, "s1")[0] == "deny", "peer message turn"
+
+    print("selftest ok: 12 path + 2 name + 7 tool + 6 shell + 3 verdict + 5 typed")
     return 0
 
 

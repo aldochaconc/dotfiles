@@ -145,7 +145,6 @@
       "Bash(playerctl:*)"
     ],
     "ask": [
-      "Bash(curl:*)",
       "Bash(docker:*)",
       "Bash(git clean:*)",
       "Bash(git push:*)",
