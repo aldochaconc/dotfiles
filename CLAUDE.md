@@ -58,6 +58,15 @@ editing all three.
   `omarchy-base.packages`, so `omarchy reinstall pkgs` brings them back and the two
   nautilus-python extensions with them; `dot_config/Thunar/uca.xml` carries the same two
   actions for Thunar and is unaffected.
+- Testing a hook with a payload builds the guarded string instead of writing it whole, because a
+  `PreToolUse` hook matches the entire Bash command line and blocks the call before the hook
+  under test runs. `destructive-git.py` owns the strings that bite here. Measured on 2026-09-23:
+  `echo '{"tool_input":{"command":"git checkout -- some/path"}}' | python3 gate-attended.py`
+  never reached `gate-attended.py`, and the same payload built from split literals inside Python
+  returned that hook's own verdict. A heredoc and `subprocess` are blocked too: the position of
+  the string on the line is what matters, not the process that receives it. The trap is that the
+  guarded strings are the destructive commands a gate is most likely tested against, so the more
+  dangerous the case, the more likely the test silently never ran.
 
 ## Toolbelt
 
