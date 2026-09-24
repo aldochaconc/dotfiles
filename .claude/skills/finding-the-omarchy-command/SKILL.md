@@ -18,8 +18,10 @@ step of it.
    `omarchy commands --all | grep -i <topic>` (json: `omarchy commands --json`).
 2. Read the wrapper, not just its summary: `cat "$(which omarchy-<route-with-dashes>)"`.
    Note `omarchy:requires-sudo`, `gum confirm` prompts, and every path it writes.
-3. Run the wrapper. If it prompts for sudo or confirmation, hand the command to the
-   user with `!` instead of running it.
+3. Run the wrapper. One that needs root runs as `pkexec <wrapper>` once the user agrees, per
+   the Root section of AGENTS.md. One that waits on `gum confirm` or another terminal prompt
+   goes to the user with `!`: with no tty the prompt hangs, as `pkexec omarchy update` did at
+   "Continue with update?" on 2026-09-24.
 4. No wrapper for the change? Identify the owner of the file first:
    `pacman -Qo <file>`. Package-owned (`omarchy`, `omarchy-settings`, anything under
    `/usr/share/omarchy`): do not edit, it is restored on update; find the user override
@@ -29,8 +31,8 @@ step of it.
 
 ## Plugin the machine does not have yet
 
-`/usr/share/omarchy/shell/plugins/` holds what Omarchy ships plus what is already
-installed, and `omarchy plugin list` shows both. Neither covers the community
+`/usr/share/omarchy/shell/plugins/` holds what Omarchy ships, `~/.config/omarchy/plugins/`
+holds what is already installed, and `omarchy plugin list` shows both. Neither covers the community
 marketplace, so a bar widget absent from the local tree is not a widget that does not
 exist. Answering from the local tree alone is how a search for removable-drive mounting
 concluded that Omarchy had nothing, while three approved plugins for it were listed.
@@ -80,4 +82,4 @@ This repository records that review per entry in `plugins.txt`.
 |---|---|
 | "The daemon's CLI is the correct way (D-Bus)" | Correct for the daemon, blind to Omarchy's hooks around it. |
 | "No time for a wrapper hunt, we have a call in five" | `omarchy commands --all \| grep -i gpu` takes one second. |
-| "The wrapper is just a thin alias" | Read it. `omarchy-toggle-hybrid-gpu` is 100 lines and removes two files the tool never touches. |
+| "The wrapper is just a thin alias" | Read it. `omarchy-toggle-hybrid-gpu` is 119 lines and removes two files the tool never touches. |

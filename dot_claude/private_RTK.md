@@ -1,11 +1,12 @@
 # RTK
 
-Token-optimized CLI proxy. A `PreToolUse` hook on `Bash` rewrites a covered command to its
-`rtk` form; 60-90% savings on dev operations.
+rtk filters command output before it reaches the context. A `PreToolUse` hook on `Bash` rewrites
+a covered command to its `rtk` form, and `rtk gain` reports the measured savings. Codex has no
+such hook: `rtk hook` covers Claude Code and not Codex.
 
 ## Meta commands
 
-The hook never generates these. They are the whole set worth knowing by name.
+The hook never generates these commands.
 
 ```bash
 rtk gain              # Token savings summary

@@ -47,6 +47,9 @@ done
 echo "==> dotfiles via chezmoi (asks the per-machine questions once)"
 chezmoi init --source "$here" --apply
 
+echo "==> git hooks: guard-private runs on every commit in this repository"
+git -C "$here" config core.hooksPath .githooks
+
 echo "==> rtk: Claude Code output filter, static musl build from GitHub Releases"
 if ! command -v rtk >/dev/null; then
   tmp=$(mktemp -d)
