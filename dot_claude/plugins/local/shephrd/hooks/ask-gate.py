@@ -39,8 +39,8 @@ import os
 import sys
 from pathlib import Path
 
-GATED = ("sheep", "watcher")
-ROLES = ("god", "shephrd", "sheep", "watcher")
+GATED = ("sheep",)
+ROLES = ("god", "shephrd", "sheep")
 
 
 def _registry(env, registry_dir=None):
@@ -96,10 +96,25 @@ REASON = (
 )
 
 
-def decision(env=None, registry_dir=None):
+def _typed(session_id, pane, typed_dir=None):
+    """True when `typed-mark.py` marked this turn as typed by the user in this pane.
+
+    Read directly rather than imported, for the reason `_registry` gives.
+    """
+    if not session_id or not pane:
+        return False
+    d = Path(typed_dir) if typed_dir else Path(os.environ.get("HOME", "/tmp")) / ".claude" / "typed"
+    try:
+        mark = json.loads((d / (pane.replace(":", "-") + ".json")).read_text())
+    except (OSError, ValueError):
+        return False
+    return mark.get("session_id") == session_id and mark.get("typed") is True
+
+
+def decision(env=None, registry_dir=None, session_id="", typed_dir=None):
     """Return (permissionDecision, reason) for the current environment.
 
-    A sheep and a watcher are gated. A shephrd and a god are not: `shephrd-protocol` requires a
+    A sheep is gated. A shephrd and a god are not: `shephrd-protocol` requires a
     shephrd running unattended to batch up to four questions into one `AskUserQuestion`, so
     denying it forbids the mechanism the protocol mandates.
 
@@ -115,18 +130,22 @@ def decision(env=None, registry_dir=None):
     unwatched pane and an unanswered one both hold the pane, and permitting is the one that keeps
     it moving. Gating is opted into by a recorded recipient, never assumed.
 
-    `attended: true` in the record releases the pane. Unattended is the default state of every
-    pane and a denial here is a redirection rather than a refusal, so the flag is for the one
-    case the redirection does not fit: somebody is sitting in front of this pane and wants the
-    menu rendered where they are. It lives in the record rather than in a variable because
-    `herdr agent start` takes no `--env`, which is the defect that produced this whole fix.
+    `attended` does not release a sheep. A user typing into a sheep's pane gives it an
+    instruction, and the sheep carries it out and reports it; the user is not there for the next
+    question. Releasing the menu on that flag is what left a question open in a pane the user had
+    already walked away from, so a sheep's questions go to its shephrd whoever typed last.
+
+    The one window is the turn the user's own prompt opened. `typed-mark.py` records on
+    `UserPromptSubmit` whether that prompt came from the keyboard, keyed to the session, and the
+    next prompt overwrites it. Measured on 2026-09-24: the user typed "ask user questions" into a
+    sheep's pane and was denied, and the sheep had to relay four questions through the god.
     """
     env = env if env is not None else os.environ
     rec = _registry(env, registry_dir)
-    if bool(rec.get("attended")):
-        return None, ""
     role = role_of(env, registry_dir)
     if role and role not in GATED:
+        return None, ""
+    if _typed(session_id, (env.get("HERDR_PANE_ID") or "").strip(), typed_dir):
         return None, ""
 
     master = (env.get("HERDR_REPORTS_TO") or "").strip() or (rec.get("reports_to") or "").strip()
@@ -136,15 +155,18 @@ def decision(env=None, registry_dir=None):
 
 
 def main():
-    # The payload is read and discarded: the verdict depends on which pane this is, never on what
-    # the question says. A hook that read the question would be deciding whether it is a good
-    # question, which is the master's job and not this one's.
+    # Only the session id is read from the payload: the verdict depends on which pane and turn
+    # this is, never on what the question says. A hook that read the question would be deciding
+    # whether it is a good question, which is the master's job and not this one's.
+    """Hook entry point: read the payload on stdin and print the verdict."""
+    session_id = ""
     try:
-        sys.stdin.read()
+        raw = sys.stdin.read()
+        session_id = (json.loads(raw) if raw.strip() else {}).get("session_id") or ""
     except Exception:
         pass
 
-    verdict, reason = decision()
+    verdict, reason = decision(session_id=session_id)
     if verdict is None:
         sys.exit(0)
 
@@ -159,6 +181,7 @@ def main():
 
 
 def selftest():
+    """Assert-based self-check, run with --selftest."""
     import tempfile
 
     v, r = decision({"HERDR_REPORTS_TO": "god"})
@@ -177,15 +200,15 @@ def selftest():
     assert v == "deny"
     assert "'tess'" in r, r
 
-    # The four roles, from the registry. The variable is set to whatever the role implies, so a
+    # The three roles, from the registry. The variable is set to whatever the role implies, so a
     # gate reading it instead of the record would score every row the same and pass.
     with tempfile.TemporaryDirectory() as d:
         def record(pane, **fields):
+            """Write a registry record for the test pane."""
             Path(d, pane.replace(":", "-") + ".json").write_text(json.dumps(fields))
 
         record("w2:p1", name="tree-a", reports_to="god", role="shephrd")
         record("w2:p2", name="worker", reports_to="lead", role="sheep")
-        record("w2:p3", name="notes", reports_to="god", role="watcher")
         record("w2:p4", name="god", reports_to="", god=True, role="god")
 
         # A shephrd reporting to the god is not gated. Denying it forbids the batched
@@ -200,8 +223,6 @@ def selftest():
         v, r = decision({"HERDR_PANE_ID": "w2:p2"}, d)
         assert v == "deny", v
         assert "lead" in r, r
-        # A watcher has someone above it and is gated like a sheep.
-        assert decision({"HERDR_PANE_ID": "w2:p3"}, d)[0] == "deny"
         # A god is never denied: its questions are the ones that reach the user.
         assert decision({"HERDR_PANE_ID": "w2:p4"}, d)[0] is None
 
@@ -234,14 +255,20 @@ def selftest():
         assert decision({"HERDR_PANE_ID": "w2:pA"}, d)[0] is None
         assert decision({"HERDR_PANE_ID": "w2:pZ", "HERDR_GOD": "1"}, d)[0] is None
 
-        # `attended` releases a pane somebody is sitting in front of, whatever its role and
-        # whatever the variable says. It is the one opt-in out of the redirection.
+        # `attended` does not release a sheep: the user typing into it gave an instruction, and
+        # the next question still goes to the shephrd.
         record("w2:pC", name="watched", reports_to="lead", role="sheep", attended=True)
-        assert decision({"HERDR_PANE_ID": "w2:pC"}, d)[0] is None
-        assert decision({"HERDR_PANE_ID": "w2:pC", "HERDR_REPORTS_TO": "lead"}, d)[0] is None
-        # A falsy value is not an opt-in, so a field written as `false` still gates.
-        record("w2:pD", name="unwatched", reports_to="lead", role="sheep", attended=False)
-        assert decision({"HERDR_PANE_ID": "w2:pD"}, d)[0] == "deny"
+        assert decision({"HERDR_PANE_ID": "w2:pC"}, d)[0] == "deny"
+        assert decision({"HERDR_PANE_ID": "w2:pC", "HERDR_REPORTS_TO": "lead"}, d)[0] == "deny"
+
+        # A turn the user typed opens the window for that session only; a peer prompt closes it.
+        t = Path(d, "typed"); t.mkdir()
+        (t / "w2-p2.json").write_text(json.dumps({"session_id": "s1", "typed": True, "at": 0}))
+        assert decision({"HERDR_PANE_ID": "w2:p2"}, d, "s1", t)[0] is None
+        assert decision({"HERDR_PANE_ID": "w2:p2"}, d, "s2", t)[0] == "deny"
+        assert decision({"HERDR_PANE_ID": "w2:p2"}, d, "", t)[0] == "deny"
+        (t / "w2-p2.json").write_text(json.dumps({"session_id": "s1", "typed": False, "at": 0}))
+        assert decision({"HERDR_PANE_ID": "w2:p2"}, d, "s1", t)[0] == "deny"
 
         # The redirection names the shephrd, and says the escalation to the god is the
         # shephrd's call rather than the sheep's.

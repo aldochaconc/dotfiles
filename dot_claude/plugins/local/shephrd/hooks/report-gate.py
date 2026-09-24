@@ -11,10 +11,11 @@ Prose cannot fix this, because the failure is the session believing it already c
 turn does not end. `Stop` with exit 2 returns the reason to the model and the turn continues,
 which is the one moment a missing report can still be sent.
 
-Only a god is ungated, because it reports to nobody. A sheep and a shephrd under a god report
-upward every turn. A watcher reports when a turn did work: one with no errand is at rest, and a
-turn that ran no tool has nothing to report. Measured: the gate forced a watcher at rest to reply
-to the god after the god had told it not to.
+A god is ungated, because it reports to nobody. A sheep reports to its shephrd every turn. A
+shephrd under a god is gated only while the god's registry record carries `attended: true`: the
+god reads a routine report only when the user is in front of it, and an unattended god holding
+twenty of them has buried the one that needed it. What needs the god is sent regardless, and no
+regex can tell which turn that is, so the gate stays off rather than forcing the routine one.
 
 Who that is comes from the registry before the variable. `HERDR_REPORTS_TO` does not survive a
 restart, since `herdr agent start` takes no `--env`: Measured: a restarted sheep
@@ -93,7 +94,6 @@ SEND = re.compile(r'"name"\s*:\s*"SendMessage"')
 # absence of that string is what separates them.
 USER_TURN = re.compile(r'"type"\s*:\s*"user"')
 TOOL_RESULT = re.compile(r'"type"\s*:\s*"tool_result"')
-TOOL_USE = re.compile(r'"type"\s*:\s*"tool_use"')
 
 
 def starts_turn(line):
@@ -173,13 +173,38 @@ def sent_this_turn(transcript_path):
     return in_this_turn(transcript_path, SEND)
 
 
-def worked_this_turn(transcript_path):
-    """Whether any tool ran this turn.
+def god_attended(master, registry_dir=None, env=None):
+    """Whether `master` is a god whose registry record carries `attended: true`.
 
-    It separates a watcher at rest from one on an errand. A turn that only answered in text did
-    no work, and gating it forces a message the god may have asked not to receive.
+    `panes.py --attended <god-pane>` writes the flag, the same one `ask-gate.py` reads for any
+    pane. Several records can carry the god's name, since a god from an earlier workspace leaves
+    its file behind; the most recently written one is the live god. No record, or one without the
+    flag, reads as unattended, which is the registry's default for every pane.
+
+    Returns None when no record names `master` as a god, so the caller can tell a shephrd under
+    another shephrd from one under a god.
     """
-    return in_this_turn(transcript_path, TOOL_USE)
+    env = env if env is not None else os.environ
+    d = Path(registry_dir) if registry_dir else Path(
+        env.get("HOME", "/tmp")) / ".claude" / "panes"
+    found = []
+    try:
+        files = list(d.glob("*.json"))
+    except OSError:
+        files = []
+    for f in files:
+        try:
+            rec = json.loads(f.read_text())
+            mtime = f.stat().st_mtime
+        except (OSError, ValueError):
+            continue
+        if not isinstance(rec, dict) or (rec.get("name") or "").strip() != master:
+            continue
+        if (rec.get("role") or "").strip().lower() == "god" or rec.get("god") is True:
+            found.append((mtime, rec))
+    if not found:
+        return None
+    return max(found, key=lambda x: x[0])[1].get("attended") is True
 
 
 def verdict(event, env=None, registry_dir=None):
@@ -209,13 +234,24 @@ def verdict(event, env=None, registry_dir=None):
     path = event.get("transcript_path") or ""
     if sent_this_turn(path):
         return False, ""
-    role = (_registry(env, registry_dir).get("role") or "").strip().lower()
-    if role == "watcher" and not worked_this_turn(path):
+    rec = _registry(env, registry_dir)
+    # `autoreport: false` releases one pane from the every-turn report, leaving it to send when
+    # asked. It is per pane and written by hand, so the default stays on: a pane that reports
+    # only on demand is indistinguishable from a dead one until somebody asks, which is the cost
+    # the user accepts for the pane they are sitting in front of. The canary beat still answers
+    # whether it takes turns.
+    if rec.get("autoreport") is False:
+        return False, ""
+    role = (rec.get("role") or "").strip().lower()
+    # A shephrd under a god sends the routine report only while the god is attended. A sheep is
+    # untouched: its shephrd is a session, never the user, and reads every report.
+    if role == "shephrd" and god_attended(master, registry_dir, env) is False:
         return False, ""
     return True, REASON.format(master=master)
 
 
 def main():
+    """Hook entry point: exit 2 with the reason when the turn ends without a report."""
     try:
         event = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError, EOFError):
@@ -228,6 +264,7 @@ def main():
 
 
 def selftest():
+    """Assert-based self-check, run with --selftest."""
     import tempfile
     from pathlib import Path
 
@@ -330,6 +367,7 @@ def selftest():
     # pane from the gate. Every row here has the variable empty, which is what a restart leaves.
     with tempfile.TemporaryDirectory() as d:
         def record(pane, **fields):
+            """Write a registry record for the test pane."""
             Path(d, pane.replace(":", "-") + ".json").write_text(json.dumps(fields))
 
         quiet = Path(d) / "quiet.jsonl"
@@ -346,22 +384,34 @@ def selftest():
         assert block is True
         assert "lead" in reason
 
-        # A shephrd under a god reports to the god every turn and is gated like anyone else.
+        # A shephrd under a god is gated only while the god is attended.
         record("w3:p2", name="tree-a", reports_to="god", role="shephrd")
+        record("w3:pG", name="god", reports_to="", god=True, role="god")
+        assert god_attended("god", d) is False
+        assert verdict(event, {"HERDR_PANE_ID": "w3:p2"}, d)[0] is False
+        record("w3:pG", name="god", reports_to="", god=True, role="god", attended=True)
+        assert god_attended("god", d) is True
         assert verdict(event, {"HERDR_PANE_ID": "w3:p2"}, d)[0] is True
-        # A watcher on an errand too: the turn ran a tool.
-        record("w3:p3", name="notes", reports_to="god", role="watcher")
+        # A sheep is gated whatever the god's state: its shephrd reads every report.
+        record("w3:p3", name="helper", reports_to="tree-a", role="sheep")
         assert verdict(event, {"HERDR_PANE_ID": "w3:p3"}, d)[0] is True
-        # A watcher at rest answered in text and ran nothing, so the turn ends without a send.
-        rest = Path(d) / "rest.jsonl"
-        rest.write_text(
-            '{"type":"user","message":{"content":"no reply needed"}}\n'
-            '{"type":"assistant","message":{"content":[{"type":"text","text":"ok"}]}}\n'
-        )
-        assert worked_this_turn(str(rest)) is False
-        assert verdict({"transcript_path": str(rest)}, {"HERDR_PANE_ID": "w3:p3"}, d)[0] is False
-        # The exemption is the watcher's alone: a sheep at the same turn still reports.
-        assert verdict({"transcript_path": str(rest)}, {"HERDR_PANE_ID": "w3:p1"}, d)[0] is True
+        # A shephrd under a recipient that is not a god stays gated.
+        record("w3:pS", name="sub", reports_to="tree-a", role="shephrd")
+        assert god_attended("tree-a", d) is None
+        assert verdict(event, {"HERDR_PANE_ID": "w3:pS"}, d)[0] is True
+        # A stale god record under the same name loses to the newer one.
+        record("w3:pO", name="god", reports_to="", god=True, role="god", attended=False)
+        os.utime(Path(d, "w3-pO.json"), (1, 1))
+        assert god_attended("god", d) is True
+
+        # `autoreport: false` releases a pane that would otherwise be gated, and only that pane.
+        record("w3:p8", name="hands-on", reports_to="god", role="shephrd", autoreport=False)
+        assert verdict(event, {"HERDR_PANE_ID": "w3:p8"}, d)[0] is False
+        # Absent, true, or any other value leaves the gate on: the release is opted into.
+        record("w3:p9", name="normal", reports_to="god", role="shephrd", autoreport=True)
+        assert verdict(event, {"HERDR_PANE_ID": "w3:p9"}, d)[0] is True
+        record("w3:pA", name="typo", reports_to="god", role="shephrd", autoreport="false")
+        assert verdict(event, {"HERDR_PANE_ID": "w3:pA"}, d)[0] is True
 
         # A god reports to nobody, by the recorded role and by the flag alike.
         record("w3:p4", name="god", reports_to="", god=True, role="god")

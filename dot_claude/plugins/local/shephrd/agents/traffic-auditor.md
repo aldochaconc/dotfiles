@@ -46,9 +46,13 @@ kept for is exactly what the next run does again from disk.
 ## What the protocol requires
 
 Read `shephrd-protocol` before auditing, since it is the standard this measures against. In
-short: every session reports upward at the end of every turn, a sheep sends its blocking
-questions to the session above rather than to the user, and a god or shephrd answers what it can rather than
-relaying everything.
+short: a sheep reports upward at the end of every turn; a shephrd under a god does so only while
+the god's record carries `attended: true`, and otherwise only for a decision beyond its tree or
+finished work; a god reports to nobody; a pane with `autoreport: false` in its record, or running
+a kind other than `claude`, is not gated. A sheep sends its blocking questions to the session
+above rather than to the user, and a god or shephrd answers what it can rather than relaying
+everything. Read each pane's role, its god's `attended` flag and its own record before counting
+a missing send as a finding.
 
 ## What to read
 
@@ -69,7 +73,7 @@ any of the text.
 ## What to check
 
 1. **Whether a report was worth sending.** `report-gate.py` already guarantees a message left
-   the pane, so counting sends measures the hook rather than the traffic. What it cannot read is
+   every gated pane, so counting sends measures the hook rather than the traffic. What it cannot read is
    the content, and that is this audit's first question.
 
    | Report | Finding |

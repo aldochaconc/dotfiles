@@ -36,10 +36,17 @@ Load `shephrd-protocol` before acting. It holds what the mode means in each role
    defensible default, batch what does not into one `AskUserQuestion` of up to four questions,
    and break the batch only for an irreversible decision or a blocked sheep.
 
-4. **Report at the end of every turn**, which the protocol requires in every mode and is not
-   relaxed here. Unattended means the user is not asked, not that nobody is told.
+4. **In a god, clear the attended mark.** `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py
+   --unattended $HERDR_PANE_ID`. The shephrds under it read that flag and stop sending the
+   routine per-turn report and the heartbeat; what needs the god still arrives.
+
+5. **Report as the protocol requires for the role.** A shephrd under a god sends what needs the
+   god whenever it arises. Unattended means the user is not asked, not that nobody is told.
 
 ## Leaving the mode
 
 The mode lasts until the user says so, and the user says it to the session above. A sheep never leaves
 it: the pane the user came back to is not this one.
+
+A god leaving it runs `panes.py --attended $HERDR_PANE_ID`, and its shephrds resume the routine
+report from their next turn.

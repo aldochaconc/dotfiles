@@ -1,5 +1,5 @@
 {
-  "description": "Deny AskUserQuestion in a spawned pane, hold a turn that reports nothing to its master, and leave a liveness beat at the end of every turn.",
+  "description": "Deny AskUserQuestion to a sheep outside a turn the user typed, run a command marked `# shephrd:confirm` only on a root-owned approval, hold a turn that reports nothing to its master, and leave a liveness beat at the end of every turn.",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,6 +8,16 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/ask-gate.py",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/confirm-gate.py",
             "timeout": 5
           }
         ]
@@ -37,6 +47,17 @@
           {
             "type": "command",
             "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/canary.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${CLAUDE_PLUGIN_ROOT}/hooks/typed-mark.py",
             "timeout": 5
           }
         ]

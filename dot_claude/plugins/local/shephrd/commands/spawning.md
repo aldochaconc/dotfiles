@@ -1,17 +1,17 @@
 ---
-description: Shared procedure read by /spawn-sheep, /spawn-shephrd and /spawn-watcher; not invoked alone, since it carries no role
+description: Shared procedure read by /spawn-sheep and /spawn-shephrd; not invoked alone, since it carries no role
 disable-model-invocation: true
 ---
 
 # Spawning a pane
 
-`/spawn-sheep`, `/spawn-shephrd` and `/spawn-watcher` open a pane by one procedure and differ
+`/spawn-sheep` and `/spawn-shephrd` open a pane by one procedure and differ
 only in what they record. The procedure lives here once, and each command names its row of the
 table below and sends its first prompt.
 
 It sits in `commands/`, so Claude Code registers it as `/shephrd:spawning`. Run alone it has no
 row to apply and would open a pane with no role, which is why the model never invokes it and a
-person reaches for one of the three commands instead.
+person reaches for one of the two commands instead.
 
 A pane opened by hand has to be told what it is afterwards, and a session restarted later comes
 back under a generated name. Both are identity written after the fact instead of carried from
@@ -25,7 +25,6 @@ first turn.
 |---|---|---|---|---|---|
 | `/spawn-sheep` | `sheep` | the argument | this session's name | `1` | the task and the scope |
 | `/spawn-shephrd` | `shephrd` | the bare name of the tree | the god's name | unset | the tree, the work and who it reports to |
-| `/spawn-watcher` | `watcher` | the argument | the god's name | `1` | the context and the hierarchy, and no task |
 
 This session's name comes from `HERDR_AGENT_NAME`, and from this session's entry in `ListAgents`
 when that is empty, which is the case for any pane opened by hand. The god's name is `god`, which
@@ -34,6 +33,18 @@ split. A spawn that resolves no recipient stops rather than opening a pane answe
 
 A shephrd takes the bare name of its tree, the name `/shephrd` would give it, so peers address a
 shephrd by its tree whichever way it was opened.
+
+The first prompt opens with the skills the pane loads before anything else:
+
+| Skill | Loaded by |
+|---|---|
+| `shephrd:shephrd-protocol` | every pane: it is how the pane learns who it answers to |
+| `skill-growth` | every pane: its trigger is a human correction, which in a pane is the user typing into it |
+| `writing` | a pane whose task writes a doc, a skill, a commit or pull request body, or a tracker item |
+| the skills the task names | the spawner lists them by name |
+
+Nothing else is loaded up front. A skill that might apply triggers from its own description when
+it does, and a pane that loads every candidate spends its context before the task starts.
 
 `CLAUDE_UNATTENDED` stays off a shephrd because a shephrd reaches the user and a prompt in its
 pane is answerable. `skills/shephrd-protocol/references/environment.md` holds what the variable
@@ -81,8 +92,14 @@ pane about three fifths of the width.
    Without `--cwd` the new pane inherits the current working directory, which is right when the
    pane works the same repository and wrong otherwise. A shephrd's `--cwd` is its tree.
 
-3. **Start Claude with its name.** `herdr agent start <name> --kind claude --pane <pane> --
-   -n <name> --dangerously-skip-permissions`.
+3. **Start the agent with its name.** `herdr agent start <name> --kind <kind> --pane <pane> --
+   <start>`, with `<start>` from the Agents table below. `<kind>` is `claude` unless
+   `/spawn-sheep` names another; a shephrd is always `claude`, since it answers through
+   `SendMessage` and `ListAgents`, which only a Claude Code session has.
+
+   A start that fails leaves the pane from step 2 empty. It is closed with `herdr pane close
+   <pane>` and the spawn reports the kind as failed, since the launch path of every kind but
+   `claude` is not verified.
 
    The permission mode is set at launch and is not stored in settings, so a pane started without
    the flag comes up asking. What it asks about includes messages from other sessions: a pane in
@@ -119,13 +136,13 @@ pane about three fifths of the width.
    Reviewing and building the same files is the ordinary case, and it works because one of them
    is read-only.
 
-   A shephrd's scope is its tree. A watcher's scope names where it writes, the vaults and the
-   backlog, and names no repository unless an errand assigns one;
-   `skills/shephrd-protocol/references/roles.md` holds why.
+   A shephrd's scope is its tree.
 
 5. **Record the identity outside the process.**
    `python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py --write <pane> <name> <reports-to> <scope>
-   --role <role>`, with the role from the table above.
+   --role <role>`, with the role from the table above. A sheep opened by the god adds
+   `--autoreport false`: it reports only what other sessions have to learn, so `report-gate.py`
+   does not hold its turns (`shephrd-protocol`, Reporting).
 
    The `--env` of step 2 lives in the pane's process, and a restart replaces that process:
    `herdr agent start` takes no `--env` and creates no pane. Measured: two panes restarted with
@@ -153,7 +170,9 @@ pane about three fifths of the width.
 
 7. **Name the tab if it has none.** `herdr tab list` shows a `label` per tab, and a tab whose
    label is its own number was never named. `herdr tab rename <tab> <name>` takes the tree the
-   workspace works on, which is the name the user reads in the sidebar.
+   workspace works on, which is the name the user reads in the sidebar. The god's workspace
+   holds no tree, and its tab takes `god`: named after a tree, it came out as `machine` on
+   2026-09-23.
 
    Only when it has none. A tab already named belongs to the workspace rather than to this
    spawn, and renaming it on every spawn would rename it after whichever pane opened last.
@@ -164,13 +183,39 @@ pane about three fifths of the width.
 9. **Send the first prompt** from the table above, with `SendMessage` to the name verified in
    step 8.
 
+## Agents
+
+`herdr agent start` passes everything after `--` to the agent's binary, and each kind takes its
+own arguments there. A running pane's kind is the `agent` field of `herdr agent list`, which is
+where `/restart-agents` reads it.
+
+| Kind | Start | Resume | Name the session | Skip permissions | Hooks of this plugin |
+|---|---|---|---|---|---|
+| `claude` | `-n <name> --dangerously-skip-permissions` | `-r <session_id> -n <name> --dangerously-skip-permissions` | `-n <name>` | `--dangerously-skip-permissions` | loaded |
+| `codex` | `--dangerously-bypass-approvals-and-sandbox` | none | none | `--dangerously-bypass-approvals-and-sandbox` | none |
+| any other kind `herdr` accepts | not verified | not verified | not verified | not verified | none |
+
+The `claude` row comes from `claude --help`, and the `codex` flags from `codex --help` on
+codex-cli 0.156.1. `codex resume <SESSION_ID>` exists, but a Codex pane writes no beat to read
+the id from, so its resume cell is empty. not verified: a pane started with `--kind codex`
+through `herdr agent start`.
+
+A missing cell changes the procedure rather than the command:
+
+| Missing | What happens |
+|---|---|
+| start | the kind is not spawned: the command stops and names it, since an invented flag fails in a pane nobody watches |
+| name | the pane is reached with `herdr agent prompt` and `herdr agent read`; step 9 sends the first prompt that way, and step 8 checks `herdr agent list` |
+| resume | a restart starts the pane fresh, and the report says so |
+| hooks | the pane is ungated: `ask-gate.py`, `report-gate.py` and `canary.py` do not run in it, no beat is written, and silence from it is not read as a report |
+
 ## Environment
 
 Set at split time with one `--env` each, so the pane carries them before its first turn:
 `HERDR_AGENT_NAME`, `HERDR_AGENT_ROOT`, `HERDR_REPORTS_TO`, and `CLAUDE_UNATTENDED` where the
 table above sets it.
 
-Setting `HERDR_REPORTS_TO` puts a sheep or a watcher in unattended mode with no command sent to
+Setting `HERDR_REPORTS_TO` puts a sheep in unattended mode with no command sent to
 it: the pane asks the session above rather than the user from its first turn.
 
 `skills/shephrd-protocol/references/environment.md` holds what each variable means and the

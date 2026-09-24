@@ -9,13 +9,19 @@ The order is fixed and each step is what makes the next survivable: the report, 
 close. A pane that closes first has nothing left to say it, and the work it was holding becomes
 a tree nobody claims.
 
-Run this when the work this pane was opened for is finished. A sheep that still has a task does
-not run it, and a shephrd or a god never does: closing a shephrd's pane orphans its sheep, and
-closing the god's leaves the user with no window.
+Run this on the order of the shephrd or the user, never because the work looks finished from
+inside the pane. A sheep whose work is done reports, writes its handoff and stays open, so its
+context serves the follow-up and its screen still shows what it did. Measured on 2026-09-23: two
+sheep that closed themselves on finishing left the user nothing to read, and each follow-up
+became a new sheep reloading from a handoff. The shephrd orders the close when the next task
+fails the reuse test in `shephrd-protocol`.
+
+A shephrd or a god never runs it: closing a shephrd's pane orphans its sheep, and closing the
+god's leaves the user with no window.
 
 ## 1. Read what this pane is
 
-    python3 ~/.claude/plugins/local/shephrd/hooks/panes.py
+    python3 ${CLAUDE_PLUGIN_ROOT}/hooks/panes.py
 
 The `role` decides whether this command applies and the `reports_to` names where the report
 goes. A `role` of `shephrd`, `god` or an empty string stops here: say so and run nothing.
@@ -53,7 +59,8 @@ discovering it later, from a pane that no longer exists.
 
     ~/.claude/handoff/<name>-<date>.md
 
-`<name>` is this pane's registered name and `<date>` is `YYYY-MM-DD`. The directory is global, so
+`<name>` is this pane's registered name and `<date>` is `YYYY-MM-DD`. A handoff written when the
+work finished is updated rather than written again. The directory is global, so
 the shephrd reads it from whatever tree it sits in, and it survives the message going unread.
 
 What it holds is what the report holds, at the length the report could not carry: the decisions

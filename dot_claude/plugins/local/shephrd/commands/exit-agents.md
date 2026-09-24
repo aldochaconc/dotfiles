@@ -61,8 +61,8 @@ Per pane, in order. A pane that fails a check is reported and left running.
 
    | Answer | What happens |
    |---|---|
-   | let it finish | `herdr agent wait <pane> --until idle`, no timeout. The turn runs to its end whatever it costs |
-   | close now | the exit is sent mid-turn and whatever the turn was producing is lost |
+   | let it finish | `herdr agent wait <pane> --until idle --until done`, no timeout. The turn runs to its end whatever it costs |
+   | close now | no wait: step 4 runs, step 5 is skipped and the report says the handoff is missing, and step 6 sends the exit mid-turn, losing whatever the turn was producing |
 
    The wait is deliberately unbounded, because a timeout here would decide the same question by
    expiry that the user just answered. A session reported as `idle` needs no question and no
@@ -109,6 +109,11 @@ Per pane, in order. A pane that fails a check is reported and left running.
    applies before the exit.
 
 6. **Exit.** `herdr agent prompt <pane> "/exit"`, run from this session against that pane.
+
+   Read the pane's kind in `ListAgents` first. The `/exit` closes an interactive session; a
+   session of kind `bg` it moves to the background sessions panel instead, and the pane stays in
+   `herdr agent list` (`references/herdr-cli.md`). A `bg` pane is reported and left as it is,
+   and two `C-c` with `herdr agent send-keys` bring a session back from the panel.
 
    A session cannot close itself, and asking it to is the mistake this step exists to prevent.
    `/exit` is a command the terminal interprets, not a tool a session can call: measured on

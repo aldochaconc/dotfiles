@@ -70,7 +70,7 @@ def _identity(env, registry_dir=None):
     god = (env.get("HERDR_GOD") or "").strip().lower() not in ("", "0", "false", "no")
     god = god or bool(rec.get("god"))
     role = (rec.get("role") or "").strip().lower()
-    if role not in ("god", "shephrd", "sheep", "watcher"):
+    if role not in ("god", "shephrd", "sheep"):
         role = "god" if god else ("sheep" if reports_to else "shephrd")
     return name, reports_to, role
 
@@ -177,6 +177,7 @@ def write(record, directory=None):
 
 
 def main():
+    """Hook entry point: write this turn's beat from the Stop payload, never failing the turn."""
     try:
         raw = sys.stdin.read()
         payload = json.loads(raw) if raw.strip() else {}
@@ -190,6 +191,7 @@ def main():
 
 
 def selftest():
+    """Assert-based self-check, run with --selftest."""
     import tempfile
 
     env = {
@@ -275,10 +277,6 @@ def selftest():
         # The variables being present changes nothing: the role has no variable to win with.
         assert _identity({"HERDR_PANE_ID": "w2:p1", "HERDR_AGENT_NAME": "tree-a",
                           "HERDR_REPORTS_TO": "god"}, d)[2] == "shephrd"
-        # A watcher has someone above it and is not a sheep.
-        Path(d, "w2-p2.json").write_text(json.dumps(
-            {"name": "notes", "reports_to": "god", "role": "watcher"}))
-        assert _identity({"HERDR_PANE_ID": "w2:p2"}, d)[2] == "watcher"
         # A god is recorded as one even with nothing in the flag.
         Path(d, "w2-p3.json").write_text(json.dumps(
             {"name": "god", "reports_to": "", "god": False, "role": "god"}))

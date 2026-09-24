@@ -1,13 +1,13 @@
 ---
-description: Close every shephrd and its sheep, leaving the god and its watchers, so the next start is from nothing
+description: Close every shephrd and its sheep, leaving the god, so the next start is from nothing
 argument-hint: none; empty floods every shephrd, or name the ones to spare
 allowed-tools: ["Bash", "Skill", "ListAgents", "SendMessage", "AskUserQuestion"]
 ---
 
 # Flood
 
-Start the shephrds over. Every one of them closes, and every sheep with them, leaving the god and
-its watchers standing.
+Start the shephrds over. Every one of them closes, and every sheep with them, leaving the god
+standing.
 
 This is destructive and it is the god's alone. A shephrd running it would be closing its peers
 and then itself, and no session can close itself. Resolve the role with
@@ -21,7 +21,7 @@ itself applies unchanged.
 
 | Survives | Does not |
 |---|---|
-| the god, and its watchers | every shephrd |
+| the god | every shephrd |
 | the registry at `~/.claude/panes` | every sheep of every shephrd |
 | the handoffs under `~/.claude/handoff` | the context in each closed session |
 | the beats under `~/.claude/canary` | |
@@ -75,6 +75,10 @@ The registry survives on purpose. What each pane held is what makes reopening ch
    shephrd, then wait for each `pane_id` to leave `herdr agent list`. A shephrd closed while its
    sheep still run leaves them reporting to a name that no longer answers, which is the orphan
    state the protocol has a rule for.
+
+   Each shephrd's kind is read in `ListAgents` before its `/exit`. A session of kind `bg` is not
+   closed by it and moves to the background sessions panel instead, so it is reported and left
+   as it is (`references/herdr-cli.md`).
 
    A shephrd that reports its sheep still running is closed last or not at all, and the reason
    is reported: closing it strands them.
