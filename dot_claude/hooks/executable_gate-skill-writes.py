@@ -73,7 +73,9 @@ UNATTENDED_NOTE = (
 )
 
 
-EXEMPT = ("/plugins/local/shephrd/",)
+# The shephrd plugin is exempt wherever its source lives: its marketplace clone keeps it under
+# plugins/shephrd/, and the old machine-local copy sat under plugins/local/shephrd/.
+EXEMPT = ("/plugins/shephrd/", "/plugins/local/shephrd/")
 # A skill inside a work repository reaches anyone else only through a pull request the user
 # reviews, so the review is the gate there. Skills under ~/dotfiles and ~/.claude apply to every
 # session on this machine with no review, and stay gated.
@@ -196,6 +198,7 @@ def selftest():
               "/x/.claude/skills/a/notes.txt",
               "/x/dot_claude/plugins/local/shephrd/skills/shephrd-protocol/SKILL.md",
               "/x/.claude/plugins/local/shephrd/skills/shephrd-protocol/references/roles.md",
+              "/x/clone/plugins/shephrd/skills/shephrd-protocol/SKILL.md",
               os.path.expanduser("~/Work/repo/.claude/skills/board/SKILL.md")]:
         assert not is_skill(p), p
     # Outside ~/Work a skill stays gated, including one whose path merely contains "Work".

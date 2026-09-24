@@ -3,6 +3,7 @@
 {{- $panel_144hz := promptBoolOnce . "panel_144hz" "Laptop panel eDP-1 pinned to 1920x1080@144" -}}
 {{- $hdmi_100hz := promptBoolOnce . "hdmi_100hz" "External HDMI-A-1 pinned to 1920x1080@100" -}}
 {{- $gdrive := promptStringOnce . "gdrive_mcp_path" "Path to the Google Drive MCP build (index.js), empty if none" -}}
+{{- $shephrd := promptStringOnce . "shephrd_root" "Absolute path to the shephrd marketplace clone (holds .claude-plugin/marketplace.json)" -}}
 
 sourceDir = {{ .chezmoi.sourceDir | quote }}
 
@@ -11,6 +12,8 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
   panel_144hz = {{ $panel_144hz }}
   hdmi_100hz = {{ $hdmi_100hz }}
   gdrive_mcp_path = {{ $gdrive | quote }}
+  # Local clone of the shephrd marketplace; the plugin installs from it as shephrd@shephrd.
+  shephrd_root = {{ $shephrd | quote }}
   # Extra project roots Claude Code may read. Edited by hand in this file, never in git;
   # carried over unchanged when chezmoi regenerates the config.
   claude_additional_dirs = {{ if hasKey . "claude_additional_dirs" }}{{ .claude_additional_dirs | toJson }}{{ else }}[]{{ end }}

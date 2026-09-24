@@ -32,7 +32,7 @@ steps, in order:
 11. User tmpfiles, VS Code extensions and the WhatsApp web app.
 12. The themes in `themes.txt` and the shell plugins in `plugins.txt`.
 
-`chezmoi init` asks four questions once per machine and stores the answers in
+`chezmoi init` asks five questions once per machine and stores the answers in
 `~/.config/chezmoi/chezmoi.toml`. Without a TTY, answer them on the command line.
 `--promptBool` is keyed by the prompt text:
 
@@ -41,7 +41,8 @@ chezmoi init --source ~/dotfiles \
   --promptBool "Hybrid AMD+NVIDIA laptop (supergfxd Hybrid, AQ_DRM_DEVICES for Hyprland)=true" \
   --promptBool "Laptop panel eDP-1 pinned to 1920x1080@144=true" \
   --promptBool "External HDMI-A-1 pinned to 1920x1080@100=true" \
-  --promptString "Path to the Google Drive MCP build (index.js), empty if none="
+  --promptString "Path to the Google Drive MCP build (index.js), empty if none=" \
+  --promptString "Absolute path to the shephrd marketplace clone (holds .claude-plugin/marketplace.json)=<path>"
 ```
 
 The boot and login screen is one manual step per machine, and it needs sudo. It shows tux on
@@ -192,6 +193,7 @@ Scripts in `dot_local/bin`:
 | `hypr-app-here`, `hypr-app-scratchpad` | bring a single-instance app to the focused workspace or the scratchpad |
 | `thunar-cwd` | opens Thunar in the focused terminal's directory |
 | `cc` | starts Claude Code under a name other sessions can address |
+| `shephrd-panes.py` | symlink to `panes.py` in the shephrd clone: the pane's name, role, scope and recipient |
 | `battery-brownout-logger` | one fsynced battery sample per second, so the last line survives a power cut |
 | `theme-preview-shot` | composes a theme's `preview.png` |
 | `fototeca-flatten`, `fototeca-move-drive-zips` | photo library maintenance, dry run unless `--apply` |
@@ -210,7 +212,7 @@ panes and coordinate through the shephrd plugin.
 | global hooks | `dot_claude/hooks/` | audit, rtk rewriting, prose register checks, and gates on destructive git, `git add -A`, `rm` on tracked files, uploads and skill writes |
 | skills | `dot_claude/skills/` | `writing`, `skill-growth`, `grill-me`, the Obsidian pair, and links to Omarchy's own skills |
 | status line | `dot_claude/statusline-command.sh` | model, context and usage limits, and a copy of each payload for `/agents-budget` |
-| local marketplace | `dot_claude/plugins/local/` | `machine-local`, which carries shephrd |
+| shephrd | chezmoi data `shephrd_root` | local clone of the shephrd marketplace, installed as `shephrd@shephrd`; this repository holds no copy |
 | approve helper | `system/shephrd/` | root-owned helper and polkit action, installed by `bootstrap.sh` |
 
 The plugin set is declared in three files that change together: `enabledPlugins` and

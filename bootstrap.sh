@@ -99,6 +99,16 @@ while read -r source sparse; do
     echo "WARN: marketplace $source failed; the settings template still declares it" >&2
 done < <(grep -vE '^\s*#|^\s*$' "$here/claude-marketplaces.txt")
 
+# shephrd comes from a local clone of its marketplace, whose path the chezmoi answers hold.
+# The clone has to exist before this step; without it shephrd@shephrd fails below and warns.
+shephrd_root=$(chezmoi data | jq -r '.shephrd_root // empty')
+if [[ -n $shephrd_root && -d $shephrd_root ]]; then
+  claude plugin marketplace add "$shephrd_root" ||
+    echo "WARN: marketplace $shephrd_root failed; the settings template still declares it" >&2
+else
+  echo "WARN: no shephrd clone at '$shephrd_root'; clone it and re-run for shephrd@shephrd" >&2
+fi
+
 while read -r plugin; do
   claude plugin install "$plugin" --scope user -y ||
     echo "WARN: plugin $plugin failed; the settings template still declares it" >&2

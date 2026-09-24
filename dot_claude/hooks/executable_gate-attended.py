@@ -80,9 +80,10 @@ def main():
 
 def selftest():
     flagged = [
-        "python3 ~/.claude/plugins/local/shephrd/hooks/panes.py --attended w1:p2",
+        "python3 ~/.local/bin/shephrd-panes.py --attended w1:p2",
         "python3 panes.py --attended w1:p2",
-        "~/.claude/plugins/local/shephrd/hooks/panes.py --attended w1:p2",
+        "~/.local/bin/shephrd-panes.py --attended w1:p2",
+        "python3 ~/.claude/plugins/cache/shephrd/shephrd/0.23.4/hooks/panes.py --attended w1:p2",
         "cd /x && python3 panes.py --attended w1:p2",
         "python panes.py --attended w1:p2",
         'bash -c "python3 panes.py --attended w1:p2"',
@@ -90,7 +91,7 @@ def selftest():
     clean = [
         # Putting a pane back under the gate is free.
         "python3 panes.py --unattended w1:p2",
-        "python3 ~/.claude/plugins/local/shephrd/hooks/panes.py --unattended w1:p2",
+        "python3 ~/.local/bin/shephrd-panes.py --unattended w1:p2",
         # Every other use of the script.
         "python3 panes.py",
         "python3 panes.py --selftest",
