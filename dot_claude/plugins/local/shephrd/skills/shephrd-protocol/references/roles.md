@@ -97,11 +97,19 @@ The routine traffic, the per-turn report and the heartbeat, goes to the god only
 is attended. The god marks that with `panes.py --attended <its pane>` and clears it with
 `--unattended`, and `report-gate.py` reads the flag from the god's registry record before
 gating a shephrd's turn. An unattended god is one the user will read later, in one pass, and
-twenty routine reports there bury the one line that needed an answer. The flag is the one
-`ask-gate.py` reads for any pane: somebody is sitting in front of it.
+twenty routine reports there bury the one line that needed an answer. `ask-gate.py` does not
+read the flag: a sheep asks the user only during a turn the user typed.
 
 `autoreport: false` in a shephrd's own record still releases that one pane whatever the god's
 state, for the shephrd the user sits in front of directly.
+
+A sheep the god opened, and a shephrd whose tree no other session depends on, send the god a
+narrower set, since their work touches no other session: a skill or a rule that changed, a
+session that closed or restarted, a permission or a hook that changed, and anything that widens
+or cuts what the other agents can do alone. Work inside their own scope stays out of the window.
+The case the user named on 2026-09-24: `os`, the shephrd of `~/dotfiles`, changing the bar
+touches no other session's code or work. `/spawn-sheep` from the god records such a sheep with
+`autoreport: false`.
 
 ## Shephrds among themselves
 

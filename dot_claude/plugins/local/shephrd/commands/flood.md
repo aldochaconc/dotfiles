@@ -77,8 +77,9 @@ The registry survives on purpose. What each pane held is what makes reopening ch
    state the protocol has a rule for.
 
    Each shephrd's kind is read in `ListAgents` before its `/exit`. A session of kind `bg` is not
-   closed by it and moves to the background sessions panel instead, so it is reported and left
-   as it is (`references/herdr-cli.md`).
+   closed by it and moves to the background sessions panel instead, so it gets no `/exit` and no
+   wait, since it never leaves `herdr agent list`, and it is reported and left as it is
+   (`references/herdr-cli.md`).
 
    A shephrd that reports its sheep still running is closed last or not at all, and the reason
    is reported: closing it strands them.
@@ -88,7 +89,7 @@ The registry survives on purpose. What each pane held is what makes reopening ch
    sent.
 
 7. **Report what is left.** The panes at their shell prompt, ready for `/shephrd`, and any pane
-   still running with the reason. A flood that closed nine of ten is reported as that.
+   still running with the reason, `bg` panes included. A flood that closed nine of ten is reported as that.
 
 ## Afterwards
 

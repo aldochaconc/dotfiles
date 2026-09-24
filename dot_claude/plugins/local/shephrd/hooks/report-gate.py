@@ -108,7 +108,7 @@ def starts_turn(line):
 # writes the skill's text as a `"type":"user"` line with `isMeta` and no `tool_result`, so a
 # session that sent its report and then loaded a skill read as a new turn with nothing sent.
 # Measured in this plugin's own transcripts: two skill loads sat inside one turn as user lines,
-# and a pane reported duplicates twice (msg_ids c64b9bfa then ff2abb50, 87137ea8 then ff60ed4f).
+# and a pane reported duplicates twice (two pairs of msg_ids, each a different id for one report).
 #
 # What every user line of one turn shares is its `promptId`: the prompt, its tool results and a
 # skill load alike. A peer message arriving mid-turn is written as an `attachment`, not as a user
