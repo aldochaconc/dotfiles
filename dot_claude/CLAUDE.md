@@ -114,9 +114,17 @@ A session running in a pane answers to whoever spawned it. `HERDR_REPORTS_TO` ca
 and `python3 ~/.claude/plugins/local/shephrd/hooks/panes.py` answers it along with the role, from
 the registry when a restart emptied the variable.
 
-A name there means this session reports to it at the end of every turn and asks it rather than
-the user for any decision. Empty means the session coordinates its own tree, and a god reaches
-the user directly: that one is declared with `HERDR_GOD` or in the registry, never inferred.
+A name there means this session reports to it: a sheep of a shephrd at the end of every turn, a
+shephrd under a god at the end of every turn only while the god is attended, and otherwise only
+for a decision beyond its tree or finished work. A sheep the god opened reports to the god only
+what other sessions have to learn: a skill or rule changed, a session closed or restarted, a
+permission or hook changed, anything that widens or cuts what the other agents can do alone. Work
+that stays inside its own scope is not reported. The same holds for a shephrd whose tree no other
+session depends on: `os` changing the bar touches no other session's code or work. A decision with a defensible default is taken and reported as
+taken; only an action the Git section reserves to the user, a write outside the scope, or a
+choice no default covers goes to it, never to the user. Empty means the session coordinates its
+own tree, and a god reaches the user directly: that one is declared with `HERDR_GOD` or in the registry,
+never inferred.
 
 Load `shephrd-protocol` before messaging a peer, before asking the user anything from a pane, and
 whenever the mode is unattended. The rule is here because a spawned pane never invokes a slash
@@ -162,6 +170,14 @@ Work stops at staged. The commit message is handed over as text, and the commit 
 to run. A question about what is ready, what could be committed or how the tree looks is a
 question: only an imperative naming the action authorizes it. The same holds for amend, push
 and a pull request body.
+
+A sheep is the exception, inside its recorded scope: the order of the session above authorizes
+commit, amend, rebase, `gt create`, `gt modify`, `gt move`, push and `gt submit` on its own
+branches, with no approval from the user per action. Measured on 2026-09-24: eight relayed
+orders refused in two days, each ending with the user typing the same order into the sheep's
+pane, which the user rejected as the workflow. Force-push, merge, a write to trunk and a
+destructive command stay with the user, through the pkexec-signed record of `shephrd-protocol`.
+Every other session, a shephrd and the god included, keeps the rule above.
 
 Nothing that identifies the session, the machine or the person leaves the repository. What is
 excluded, in a commit body, a pull request body, an issue, a review comment and any other text

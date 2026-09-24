@@ -137,6 +137,24 @@
       {
         "hooks": [
           {
+            "command": "python3 ~/.claude/hooks/block-uploads.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
+            "command": "python3 ~/.claude/hooks/gate-attended.py",
+            "type": "command"
+          }
+        ],
+        "matcher": "Bash"
+      },
+      {
+        "hooks": [
+          {
             "command": "python3 ~/.claude/hooks/gate-skill-writes.py",
             "statusMessage": "Checking a skill write\u2026",
             "type": "command"
@@ -299,7 +317,25 @@
       "Bash(git commit:*)",
       "Bash(git mv:*)",
       "Bash(git stash push:*)",
-      "Bash(git restore --staged:*)"
+      "Bash(git restore --staged:*)",
+      "Bash(git -C * checkout *)",
+      "Bash(git -C * rm *)",
+      "Bash(git -C * status *)",
+      "Bash(git -C * diff *)",
+      "Bash(git -C * log *)",
+      "Bash(git -C * show *)",
+      "Bash(git -C * branch *)",
+      "Bash(git -C * ls-files *)",
+      "Bash(git -C * rev-parse *)",
+      "Bash(git -C * blame *)",
+      "Bash(git -C * remote *)",
+      "Bash(git -C * stash list *)",
+      "Bash(git -C * add *)",
+      "Bash(git -C * reset *)",
+      "Bash(git -C * commit *)",
+      "Bash(git -C * mv *)",
+      "Bash(git -C * stash push *)",
+      "Bash(git -C * restore --staged *)"
     ],
     "ask": [
       "Bash(rm -rf:*)",
@@ -307,6 +343,9 @@
     ],
     "defaultMode": "auto",
     "deny": [
+      "Bash(git -C * -c *)",
+      "Bash(git -C * --exec-path*)",
+      "Bash(git -C * --config-env*)",
       "Bash(wget:*)",
       "Edit(**/*.key)",
       "Edit(**/*.pem)",
