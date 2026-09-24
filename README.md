@@ -265,6 +265,3 @@ signed. `shephrd-protocol` holds the full rules.
 - `hdmi_100hz`: the prompt names HDMI-A-1 and the rule it guards sets DP-1.
 - `claude_additional_dirs`: set in `.chezmoi.toml.tmpl` and read by no template. The settings
   writer keeps the live value instead.
-- `~/.config/mimeapps.list`: omamail registered itself as the `mailto` handler, and the source
-  has no such line.
-- `~/.config/systemd/user`: mode 0700 in `$HOME` and 0755 in the source.
