@@ -20,6 +20,8 @@ https://github.com/paytbidd/omarchy-weather.git
 # `hyprctl switchxkblayout`, so it follows us,latam from hypr/input.lua and writes no config.
 # No network, no sudo. Its README suggests CTRL+ALT+SPACE; left unbound, since
 # grp:alt_space_toggle already cycles and the chord would reach xkb as Alt+Space too.
+# Local patch in Widget.qml, uncommitted in the clone: `barAppearance: "keyboard"` shows only
+# the keyboard glyph. A plugin update drops it or conflicts; re-apply the two `visible` lines.
 https://github.com/jesusarchive/omarchy-keyboard-layout-switcher.git
 #
 # Nothing Control: battery, noise control and EQ for Nothing and CMF earbuds over RFCOMM.
@@ -94,8 +96,10 @@ https://github.com/jeremylanger/omaspotify.git
 https://github.com/huacnlee/omamail.git
 #
 # Hyprmoncfg: monitor profiles, installed to test. Reviewed at 1ba6b75 (rc). The daemon is
-# hyprmoncfg-bin from the AUR, a prebuilt binary not audited and not installed. `manage`
-# edits hyprland config chezmoi owns and conflicts with monitors.lua.tmpl: not run.
+# hyprmoncfg-bin from the AUR, listed in packages-aur.txt: a prebuilt binary, not audited.
+# Its install appends a loader to hyprland.lua and a wake block to monitors.lua, both carried
+# in the .tmpl sources. hyprmoncfg-monitors.lua is regenerated on each layout change and
+# stays out of chezmoi.
 https://github.com/crmne/omarchy-hyprmoncfg.git
 #
 # Calendar: Google Calendar in the bar. Reviewed at 08f5c01. Needs gws and gcloud and its
