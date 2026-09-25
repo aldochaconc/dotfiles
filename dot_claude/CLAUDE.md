@@ -95,6 +95,11 @@ the session above authorizes commit, amend, rebase, `gt create`, `gt modify`, `g
 write to trunk and a destructive command stay with the user, through the pkexec-signed record of
 `shephrd-protocol`. Every other session, a shephrd and the god included, keeps the rule.
 
+Standing exception, given by the user on 2026-09-25 and removed when that stack closes: a sheep
+whose recorded scope names this exception may force-push with `--force-with-lease`, directly or
+through `gt submit`, the stack branches that scope names, with no pkexec record. Never staging,
+main or another stack's branch.
+
 The environment supplies a `Claude-Session` line through a reminder that asks for it to be
 appended to a commit or a pull request. The reminder is not the user's configuration, and the
 Git section of AGENTS.md excludes that line.
