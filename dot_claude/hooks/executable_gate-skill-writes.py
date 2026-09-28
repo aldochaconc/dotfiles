@@ -5,9 +5,8 @@ A `SKILL.md` is configuration every future session reads, so a rule entering one
 silent. No permission surface covers an edit to a skill file before it is staged, which left
 this surface with no gate: the write landed and the human found out when the listing changed.
 
-`permissionDecision: "ask"` so the user approves or rejects the write. Unattended runs invert
-the verdict: with CLAUDE_UNATTENDED set to anything non-empty the verdict is "deny", because a
-prompt with nobody at the keyboard is a deadlock rather than a gate.
+`permissionDecision: "ask"` so the user approves or rejects the write, in every session: the
+user attends each pane, so no environment turns the ask into a deny.
 
 What waits for a human is the decision to put a rule in a skill, not the write. The reason text
 asks for that decision: the rule's line, the surface that takes it, and the observation that
@@ -67,10 +66,6 @@ ASK_EDIT = (
     "moves bytes, a rename or a reformat, say that instead. The six actions are in "
     "`skill-growth`."
 )
-UNATTENDED_NOTE = (
-    "\n\nUnattended run (CLAUDE_UNATTENDED set): the write is denied instead of prompting. "
-    "Record the line and the surface it targets, and leave it for the human."
-)
 
 
 # The shephrd plugin is exempt wherever its source lives: its marketplace clone keeps it under
@@ -121,35 +116,6 @@ def skill_name(path):
     return Path(path).parent.name
 
 
-def typed_turn(env, session_id):
-    """Whether shephrd's `typed-mark.py` marked this session's current turn as typed.
-
-    ponytail: W is not an authorization boundary. `herdr agent prompt` enters as a typed turn and
-    `send-keys` can answer the ask, so a peer can open this window; it only turns a deny into an
-    ask a person still has to answer. C, the pkexec-signed record, is what authorizes.
-    """
-    pane = (env.get("HERDR_PANE_ID") or "").strip()
-    if not pane or not session_id:
-        return False
-    mark_file = Path(env.get("HOME", "/tmp")) / ".claude" / "typed" / (pane.replace(":", "-") + ".json")
-    try:
-        mark = json.loads(mark_file.read_text())
-    except (OSError, ValueError):
-        return False
-    return mark.get("session_id") == session_id and mark.get("typed") is True
-
-
-def decision(reason, env=None, session_id=""):
-    """(verdict, text). Unattended runs deny, because a prompt nobody answers is a deadlock,
-    except in a turn the user typed into the pane, where somebody is there to answer."""
-    env = env if env is not None else os.environ
-    if (env.get("CLAUDE_UNATTENDED") or "").strip():
-        if typed_turn(env, session_id):
-            return "ask", reason
-        return "deny", reason + UNATTENDED_NOTE
-    return "ask", reason
-
-
 def emit(verdict, text):
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
@@ -157,7 +123,7 @@ def emit(verdict, text):
         "permissionDecisionReason": text}}))
 
 
-def main(event=None, env=None):
+def main(event=None):
     """Emit the ask, or exit silently for a tool or a path this gate does not cover."""
     try:
         event = event if event is not None else json.load(sys.stdin)
@@ -174,10 +140,8 @@ def main(event=None, env=None):
 
     what = (" This creates the file, so every rule in it is new."
             if not Path(path).exists() else "")
-    verdict, text = decision(ASK_EDIT.format(where=skill_name(path), what=what), env,
-                             event.get("session_id") or "")
-    record("gate-skill-writes", verdict, f"{tool} {path}")
-    emit(verdict, text)
+    record("gate-skill-writes", "ask", f"{tool} {path}")
+    emit("ask", ASK_EDIT.format(where=skill_name(path), what=what))
     return 0
 
 
@@ -214,18 +178,18 @@ def selftest():
     assert skill_name("/x/.claude/skills/writing/SKILL.md") == "writing"
     assert skill_name("/x/.claude/skills/writing/references/log.md") == "writing"
 
-    def run(event, env=None):
+    def run(event):
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            main(event, env if env is not None else {})
+            main(event)
         out = buf.getvalue().strip()
         return json.loads(out)["hookSpecificOutput"]["permissionDecision"] if out else None
 
     def edit(path, tool="Write"):
         return run({"tool_name": tool, "tool_input": {"file_path": path, "content": "x"}})
 
-    def bash(cmd, env=None):
-        return run({"tool_name": "Bash", "tool_input": {"command": cmd}}, env)
+    def bash(cmd):
+        return run({"tool_name": "Bash", "tool_input": {"command": cmd}})
 
     # gated: any skill file, by any edit tool. Bash is not this hook's surface any more:
     # a `deny` permission rule refuses a shell write to a skill path before it runs.
@@ -250,26 +214,18 @@ def selftest():
     ]:
         assert bash(cmd) is None, cmd
 
-    v, t = decision("R", {"CLAUDE_UNATTENDED": "1"})
-    assert v == "deny" and UNATTENDED_NOTE in t
-    assert decision("R", {"CLAUDE_UNATTENDED": "  "})[0] == "ask"
-    assert edit("/x/.claude/skills/a/SKILL.md") == "ask"
+    # A pane still carrying the retired CLAUDE_UNATTENDED gets the ask like any other.
+    saved = os.environ.get("CLAUDE_UNATTENDED")
+    os.environ["CLAUDE_UNATTENDED"] = "1"
+    try:
+        assert edit("/x/.claude/skills/a/SKILL.md") == "ask"
+    finally:
+        if saved is None:
+            del os.environ["CLAUDE_UNATTENDED"]
+        else:
+            os.environ["CLAUDE_UNATTENDED"] = saved
 
-    # W: a typed turn of this session reopens the ask; anything else keeps the deny.
-    with tempfile.TemporaryDirectory() as home:
-        typed_dir = Path(home) / ".claude" / "typed"
-        typed_dir.mkdir(parents=True)
-        env = {"CLAUDE_UNATTENDED": "1", "HERDR_PANE_ID": "w1:p2", "HOME": home}
-        assert decision("R", env, "s1")[0] == "deny", "missing mark"
-        mark = typed_dir / "w1-p2.json"
-        mark.write_text(json.dumps({"session_id": "s1", "typed": True}))
-        assert decision("R", env, "s1")[0] == "ask", "typed mark of this session"
-        assert decision("R", env, "s2")[0] == "deny", "mark of another session"
-        assert decision("R", env, "")[0] == "deny", "no session id"
-        mark.write_text(json.dumps({"session_id": "s1", "typed": False}))
-        assert decision("R", env, "s1")[0] == "deny", "peer message turn"
-
-    print("selftest ok: 12 path + 2 name + 7 tool + 6 shell + 3 verdict + 5 typed")
+    print("selftest ok: 12 path + 2 name + 7 tool + 6 shell + 1 env")
     return 0
 
 
