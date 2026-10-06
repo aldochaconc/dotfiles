@@ -3,6 +3,7 @@ claude = "latest"
 codex = "latest"
 go = "latest"
 node = "lts"
+uv = "latest"
 
 [settings.upgrade]
 auto_prune = false
