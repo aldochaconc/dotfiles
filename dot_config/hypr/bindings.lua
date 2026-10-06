@@ -132,11 +132,9 @@ o.bind("SUPER + ALT + RIGHT", "Move window to group on right", hl.dsp.window.mov
 o.bind("SUPER + ALT + UP", "Move window to group on top", hl.dsp.window.move({ into_group = "u" }))
 o.bind("SUPER + ALT + DOWN", "Move window to group on bottom", hl.dsp.window.move({ into_group = "d" }))
 
--- cycle within the group, by key. Omarchy cycles groups on SUPER + ALT + TAB; this pair
--- duplicated it on a key Omarchy gives to "Former workspace", and the wheel and
--- SUPER + ALT + 1..5 below cover the same dispatchers. Freed for the layout toggle.
--- o.bind("SUPER + CTRL + TAB", "Next window in group", hl.dsp.group.next())
--- o.bind("SUPER + CTRL + SHIFT + TAB", "Previous window in group", hl.dsp.group.prev())
+-- cycle within the group, by key. SUPER + CTRL + TAB goes forward only: its SHIFT form
+-- cycles the workspace layout, and SUPER + ALT + SHIFT + TAB goes back.
+o.bind("SUPER + CTRL + TAB", "Next window in group", hl.dsp.group.next())
 o.bind("SUPER + ALT + TAB", "Next window in group", hl.dsp.group.next())
 o.bind("SUPER + ALT + SHIFT + TAB", "Previous window in group", hl.dsp.group.prev())
 
@@ -196,7 +194,7 @@ o.bind("SUPER + Next", "Previous workspace", rotate .. " prev")
 -- here, would be left on the first press with no key to return to it.
 --
 -- Omarchy binds this to SUPER + L, which is focus-right here.
-o.bind("SUPER + CTRL + TAB", "Cycle workspace layout", os.getenv("HOME") .. "/.local/bin/hypr-workspace-layout-cycle")
+o.bind("SUPER + CTRL + SHIFT + TAB", "Cycle workspace layout", os.getenv("HOME") .. "/.local/bin/hypr-workspace-layout-cycle")
 
 -- Monitors ------------------------------------------------------------------
 
