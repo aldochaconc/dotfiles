@@ -13,7 +13,13 @@
     "plugin-dev@claude-code-plugins": true,
     "ponytail@ponytail": true,
     "shephrd@shephrd": true,
-    "superpowers@superpowers-marketplace": true
+    "superpowers@superpowers-marketplace": true,
+    "versioning@shephrd": false,
+    "writing@shephrd": false,
+    "engineering@shephrd": false,
+    "linear@shephrd": false,
+    "diagrams@shephrd": false,
+    "guardrails@shephrd": false
   },
   "extraKnownMarketplaces": {
     "anthropic-agent-skills": {
@@ -211,6 +217,7 @@
     }
   },
   "model": "opus",
+  "crossSessionInbound": "accept",
   "modelSettings": {
     "claude-fable-5-1": {
       "effortLevel": "xhigh"
@@ -317,35 +324,13 @@
       "Bash(git commit:*)",
       "Bash(git mv:*)",
       "Bash(git stash push:*)",
-      "Bash(git restore --staged:*)",
-      "Bash(git -C * checkout *)",
-      "Bash(git -C * rm *)",
-      "Bash(git -C * status *)",
-      "Bash(git -C * diff *)",
-      "Bash(git -C * log *)",
-      "Bash(git -C * show *)",
-      "Bash(git -C * branch *)",
-      "Bash(git -C * ls-files *)",
-      "Bash(git -C * rev-parse *)",
-      "Bash(git -C * blame *)",
-      "Bash(git -C * remote *)",
-      "Bash(git -C * stash list *)",
-      "Bash(git -C * add *)",
-      "Bash(git -C * reset *)",
-      "Bash(git -C * commit *)",
-      "Bash(git -C * mv *)",
-      "Bash(git -C * stash push *)",
-      "Bash(git -C * restore --staged *)"
+      "Bash(git restore --staged:*)"
     ],
     "ask": [
-      "Bash(rm -rf:*)",
       "Bash(sudo:*)"
     ],
     "defaultMode": "auto",
     "deny": [
-      "Bash(git -C * -c *)",
-      "Bash(git -C * --exec-path*)",
-      "Bash(git -C * --config-env*)",
       "Bash(wget:*)",
       "Edit(**/*.key)",
       "Edit(**/*.pem)",
