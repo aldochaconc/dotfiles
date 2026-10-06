@@ -43,8 +43,9 @@ when a restart emptied the variable. That path is a chezmoi symlink into the she
 clone, since the installed copy under `~/.claude/plugins/cache` carries its version in the path.
 
 A name there means this session reports to it. A sheep of a shephrd reports at the end of every
-turn. A shephrd under a god reports at the end of every turn only while the god is attended, and
-otherwise only for a decision beyond its tree or for finished work.
+turn. A shephrd under a god reports a decision beyond its tree, one of the three kinds below, a
+blocked tree and finished work, each when it arises, and sends the god a heartbeat every five of
+its own turns, which `report-gate.py` holds.
 
 A sheep the god opened reports to the god only what other sessions have to learn:
 
@@ -53,7 +54,7 @@ A sheep the god opened reports to the god only what other sessions have to learn
 - anything that widens or cuts what the other agents can do alone
 
 Work that stays inside its own scope is not reported. The same holds for a shephrd whose tree no
-other session depends on.
+other session depends on, once its registry record carries `autoreport: false`.
 
 A decision with a defensible default is taken and reported as taken. Only three kinds go to the
 session above, never to the user:
@@ -81,11 +82,12 @@ one-line substitution, and wrong for a `.md`, a `SKILL.md` or a docblock. The sh
 the bytes go and not what they say, so a loop redirecting into five skill files reaches the user
 as one confirmation with the writes hidden behind a `printf`.
 
-`tracked-rm.py` blocks `rm` on a tracked file and prints the `git rm` equivalent.
+`tracked-rm.py` decides `rm` per target, the strictest target deciding the call, and its
+docstring holds the table:
 
-`rm` on an untracked file runs without a prompt only under `~/Work`, `~/dotfiles` and
-`/tmp/claude-`. A permission rule matches the literal command line, not the path the shell
-resolves from the current directory.
+- a tracked path is blocked, with its `git rm` equivalent
+- a path under `/tmp`, or one git ignores, runs without a prompt
+- any other path asks, a path the parser cannot resolve included
 
 # Git
 

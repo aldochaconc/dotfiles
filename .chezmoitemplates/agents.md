@@ -103,8 +103,8 @@ while `pkexec pacman -S <pkg>` bypasses Omarchy.
 
 Work stops at staged. The commit message is handed over as text, and the commit is the user's
 to run. A question about what is ready, what could be committed or how the tree looks is a
-question: only an imperative naming the action authorizes it. The same holds for amend, push
-and a pull request body.
+question: only an imperative naming the action authorizes it, typed in this pane or quoted by
+god from the user's answer in its pane. The same holds for amend, push and a pull request body.
 
 Deleting a tracked file: `git rm <path>`, never `rm`. It records the deletion in the index, where
 a bare `rm` leaves it for a later `git add -A` to catch.
