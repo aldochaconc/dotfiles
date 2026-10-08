@@ -19,7 +19,7 @@
     "engineering@shephrd": false,
     "linear@shephrd": false,
     "diagrams@shephrd": false,
-    "guardrails@shephrd": false
+    "guardrails@shephrd": true
   },
   "extraKnownMarketplaces": {
     "anthropic-agent-skills": {
@@ -89,15 +89,6 @@
       {
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/file-protection.py",
-            "type": "command"
-          }
-        ],
-        "matcher": "Edit|Write"
-      },
-      {
-        "hooks": [
-          {
             "command": "rtk hook claude",
             "type": "command"
           }
@@ -116,42 +107,6 @@
       {
         "hooks": [
           {
-            "command": "python3 ~/.claude/hooks/destructive-git.py",
-            "type": "command"
-          }
-        ],
-        "matcher": "Bash"
-      },
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/hooks/no-add-all.py"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "command": "python3 ~/.claude/hooks/tracked-rm.py",
-            "type": "command"
-          }
-        ],
-        "matcher": "Bash"
-      },
-      {
-        "hooks": [
-          {
-            "command": "python3 ~/.claude/hooks/block-uploads.py",
-            "type": "command"
-          }
-        ],
-        "matcher": "Bash"
-      },
-      {
-        "hooks": [
-          {
             "command": "python3 ~/.claude/hooks/gate-attended.py",
             "type": "command"
           }
@@ -162,7 +117,7 @@
         "hooks": [
           {
             "command": "python3 ~/.claude/hooks/gate-skill-writes.py",
-            "statusMessage": "Checking a skill write\u2026",
+            "statusMessage": "Checking a skill write…",
             "type": "command"
           }
         ],
@@ -183,7 +138,7 @@
         "hooks": [
           {
             "command": "python3 ~/.claude/hooks/session-register.py",
-            "statusMessage": "Loading the speaking rules\u2026",
+            "statusMessage": "Loading the speaking rules…",
             "timeout": 10,
             "type": "command"
           }
