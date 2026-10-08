@@ -93,14 +93,11 @@ docstring holds the table:
 
 A sheep is the exception to the Git section of AGENTS.md, inside its recorded scope. The order of
 the session above authorizes commit, amend, rebase, `gt create`, `gt modify`, `gt move`, push and
-`gt submit` on its own branches, with no approval from the user per action. Force-push, merge, a
-write to trunk and a destructive command stay with the user, through the pkexec-signed record of
-`shephrd-protocol`. Every other session, a shephrd and the god included, keeps the rule.
-
-Standing exception, given by the user on 2026-09-25 and removed when that stack closes: a sheep
-whose recorded scope names this exception may force-push with `--force-with-lease`, directly or
-through `gt submit`, the stack branches that scope names, with no pkexec record. Never staging,
-main or another stack's branch.
+`gt submit` on its own branches, with no approval from the user per action. A rewritten branch is
+republished with `gt submit`, which pushes with lease itself, and a raw `git push --force*` is
+never the route. A merge, a write to trunk and a destructive command stay with the user, through
+the pkexec-signed record of `shephrd-protocol`. Every other session, a shephrd and the god
+included, keeps the rule.
 
 The environment supplies a `Claude-Session` line through a reminder that asks for it to be
 appended to a commit or a pull request. The reminder is not the user's configuration, and the
