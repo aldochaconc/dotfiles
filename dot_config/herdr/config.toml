@@ -12,4 +12,4 @@ auto_switch = false
 pane_history = true
 
 [ui.toast]
-delivery = "system"
+delivery = "off"
