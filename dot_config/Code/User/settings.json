@@ -66,5 +66,6 @@
   "python-envs.terminal.autoActivationType": "off",
   "editor.fontFamily": "'JetBrainsMono Nerd Font', monospace",
   "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font', monospace",
-  "workbench.iconTheme": "material-icon-theme"
+  "workbench.iconTheme": "material-icon-theme",
+  "claudeCode.preferredLocation": "panel"
 }

@@ -53,6 +53,10 @@ editing all three.
   `${NAME}`, and `~/.config/uwsm/env.d/secrets`, written by hand and ignored by git, exports
   them. The keyring entries `bootstrap.sh` stores are read by no template today.
 - Omarchy's own tree (`/usr/share/omarchy`) is read-only; overrides go in `~/.config`.
+- Every app runs as a native Wayland client: never `--ozone-platform=x11`, `GDK_BACKEND=x11`,
+  `QT_QPA_PLATFORM=xcb`, nor a `.desktop` override that adds them, because under XWayland
+  Chromium gives every web app the class `Chromium` and the window rules keyed on
+  `chrome-<url>-Default` stop matching.
 - Root goes through `pkexec`, under the Machine section of `~/.claude/CLAUDE.md`, which holds
   the rule for every session on this machine. What belongs here is why the wrapping rule has
   the shape it has: `omarchy pkg add` calls `sudo pacman` internally and takes the `pacman`

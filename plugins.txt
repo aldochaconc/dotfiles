@@ -2,16 +2,53 @@
 # Community plugins run unsandboxed and marketplace approval is not a security audit:
 # read a plugin's source before adding it here.
 #
-# Removable drives in the bar: mount, open and eject USB sticks, SD cards and external
-# disks. Reviewed at 1.8.0: udisksctl, lsblk, busctl, gio and udevadm only, no network,
-# no sudo or pkexec, no mkfs or dd. Filesystem repair goes through UDisks2 and is offered
-# only after a failed check, authorised by volume UUID rather than by /dev path.
-https://github.com/Wian47/omarchy-removable-drives.git
+# Spotlight: launcher on SUPER + ALT + SPACE. Reviewed at 466b704. Its first start binds
+# ALT + SPACE into bindings.lua, the chord grp:alt_space_toggle owns; create_spotlight.json
+# marks that tour done, so it must be applied before the plugin loads. Web suggestions off;
+# currency rates reach api.frankfurter.dev.
+https://github.com/maajix/omarchy-spotlight.git
 #
-# Plugin Browser: browse the marketplace and audit a plugin in a bwrap sandbox before
-# enabling it. Reviewed at 0.2.2, commit 18ffd2e, the commit the marketplace verified:
-# bounded catalog download, the scanner never executes plugin code. Installed for its two
-# CLI tools, which dot_local/bin symlinks and SUPER+SHIFT+X launches. Its bar widget is
-# disabled: the button passes execDetached an environment holding PATH alone, so the
-# terminal opens with no XDG_RUNTIME_DIR and never reaches the compositor.
-https://github.com/OmarchyFans/omarchy-fans-plugin-browser.git
+# Notification Center: keeps every notification, bodies included, in plain text under
+# ~/.local/state/omarchy-notification-center, 0600, 30 days. Reviewed at e4c4568.
+https://github.com/jankeesvw/omarchy-notification-center.git
+#
+# Removed 2026-10-08, with the bar back to Omarchy's stock layout: removable-drives, forecast,
+# keyboard-layout-switcher, nothing-control, omaland, omaplug, decent-workspaces, zen.lock,
+# dizziee.system-updates, bluetooth-audio, omaspotify, omamail, hyprmoncfg, calendar,
+# time-machine, screen-time, webcam, omadoro, desktop-ambience, agent-skills-manager,
+# navbar-cat, shell.settings, qs-bitwarden-cli, omarchy-firewall, omasecurity, sudo-watch,
+# moon and local.workspaces.
+#
+# Removed 2026-09-24: io.github.modpunk.plugin-browser, and with it the omarchy-plugin-browser
+# and omarchy-plugin-audit links in dot_local/bin. payton.patina, through
+# `omarchy-patina unapply --purge`, with patina.toml destroyed and its require and bootstrap
+# step removed. jrmmhm.pocket, the drawer: its `repairMemberOrder` rewrote shell.json on its
+# own, dropped members after each shell restart, and fanning out drew its widgets over the
+# clock.
+#
+# Rejected: meviusisback.keybinds, reviewed at ad8199d. It models the stock default bindings
+# as active, while omarchy_default_bindings is false here. Assigning a chord in use adds
+# hl.unbind and deletes the user's o.bind on it without asking, and its regex reads the
+# `"SUPER + " .. key` loops as the chord `SUPER + plus`, so one edit there drops the workspace
+# bindings. It rewrites bindings.lua through mkstemp, leaving it 0600.
+#
+# Rejected: robertlindomar.omarchy-ptbr.polkit, reviewed at 9e3833e. A clone of omarchy.polkit
+# whose only change is four pt-BR strings. It inherits the `authentication` capability and
+# receives the root password, one plugin update away from its author's HEAD, and adds nothing.
+#
+# Rejected: erijl.lock, reviewed at 0a0c8d8. This machine has no /etc/pam.d/polkit-1; `enable`
+# creates one with pam_unix and without system-auth, which drops pam_faillock from polkit, and
+# `disable` leaves that file behind. With a key that has no PIN, one touch is root in sudo and
+# polkit. It is also a fork of omarchy.lock.
+#
+# Rejected: brwsk.vigil, reviewed at 1344ebc. Its first snapshot merges a PreToolUse hook into
+# ~/.claude/settings.json without asking, and writes `{}` plus hooks when that file fails to
+# parse. It answers allow to sudo, push and rm -rf, sends SIGSTOP to every agent while the
+# screen is locked, runs `git checkout --` over paths an agent only read, and sets ~/.claude
+# to 0700. Its "polkit card" is an overlay, not polkit.
+#
+# Rejected: iamcheyan.launcher, reviewed at 0.1.1, commit 73c5e5c. Its manifest declares
+# clonedFrom omarchy.menu, so enabling it replaces the menu, and it never writes the done file
+# omarchy-menu-select waits on: the 14 omarchy scripts that call omarchy-menu-select or
+# omarchy-menu-input would block forever. It also ignores the menu's `when` guards and
+# rewrites shell.json on every settings change.

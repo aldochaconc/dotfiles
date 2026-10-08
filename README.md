@@ -167,17 +167,17 @@ prompt, and under `pkexec` the AUR and mise steps run as root and fail.
 |---|---|---|
 | `dot_config/hypr/` | `~/.config/hypr/` | `bindings.lua` with every binding on the machine; `hyprland.lua` with the load order and window rules; `input.lua` with `us,latam` switched by ALT+SPACE; `looknfeel.lua` with the master layout; `monitors.lua` from the chezmoi answers |
 | `dot_config/omarchy/private_shell.json` | `~/.config/omarchy/shell.json` | bar layout and enabled plugins |
-| `dot_config/omarchy/private_shell.toml` | `~/.config/omarchy/shell.toml` | shell font size |
 | `dot_config/omarchy/hooks/` | `~/.config/omarchy/hooks/` | the hooks in the table above |
 | `dot_config/omarchy/branding/` | `~/.config/omarchy/branding/` | about and screensaver text, the boot logo |
 | `dot_config/omarchy/themes/private_moon/` | `~/.config/omarchy/themes/moon/` | theme generated with aether from the moon wallpapers |
-| `dot_config/omarchy/plugins/private_local.workspaces/` | `~/.config/omarchy/plugins/local.workspaces/` | workspaces widget cloned from `omarchy.workspaces` |
 | `dot_config/omarchy/create_spotlight.json` | `~/.config/omarchy/spotlight.json` | written once, so Spotlight never binds ALT+SPACE |
 | `dot_config/uwsm/` | `~/.config/uwsm/` | the environment rows above |
 | `dot_config/systemd/user/` | `~/.config/systemd/user/` | `battery-brownout-logger.service` |
 | `dot_config/user-tmpfiles.d/` | `~/.config/user-tmpfiles.d/` | 90-day expiry on build caches, 7 days on screenshots |
-| `dot_config/mise/` | `~/.config/mise/` | node, go, claude, codex, and `bw` from npm |
-| `dot_config/foot/`, `git/`, `go/`, `btop/`, `Code/`, `Thunar/`, `xfce4/`, `aether/`, `rtk/`, `herdr/` | `~/.config/…` | per-application settings |
+| `dot_config/mise/` | `~/.config/mise/` | node, go, claude, codex and uv |
+| `dot_config/foot/modify_private_foot.ini` | `~/.config/foot/foot.ini` | everything but the `font=` line, which `omarchy font set` rewrites and the machine keeps |
+| `dot_config/xfce4/…/modify_thunar.xml` | `~/.config/xfce4/…/thunar.xml` | Thunar's preferences only; the window state it rewrites on every use stays the machine's |
+| `dot_config/git/`, `go/`, `btop/`, `Code/`, `Thunar/`, `aether/`, `rtk/`, `herdr/` | `~/.config/…` | per-application settings |
 | `dot_config/mimeapps.list` | `~/.config/mimeapps.list` | default applications; restore it with `chezmoi apply --force` after `omarchy nvim setup` |
 | `dot_local/bin/` | `~/.local/bin/` | the scripts below |
 | `dot_claude/` | `~/.claude/` | the agentic setup below |

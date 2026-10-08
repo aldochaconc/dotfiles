@@ -1,0 +1,23 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /* Thunar rewrites its window state on every use. Only these preferences are managed;
+       the rest of the channel stays as the machine has it. */ -}}
+{{- $out := .chezmoi.stdin | default "<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n\n<channel name=\"thunar\" version=\"1.0\">\n</channel>\n" -}}
+{{- $prefs := list
+      (list "last-image-preview-visible" "bool" "true")
+      (list "last-menubar-visible" "bool" "false")
+      (list "last-toolbar-items" "string" "menu:1,back:1,forward:1,open-parent:1,open-home:1,new-tab:0,new-window:0,toggle-split-view:1,undo:0,redo:0,zoom-out:0,zoom-in:0,zoom-reset:1,view-as-icons:0,view-as-detailed-list:0,view-as-compact-list:0,view-switcher:1,location-bar:1,reload:0,search:1,uca-action-omarchy-localsend:0")
+      (list "misc-single-click" "bool" "false")
+      (list "misc-transfer-verify-file" "string" "THUNAR_VERIFY_FILE_MODE_NEVER")
+      (list "misc-use-csd" "bool" "false")
+      (list "misc-expandable-folders" "bool" "true")
+      (list "misc-folders-first" "bool" "true") -}}
+{{- range $prefs -}}
+{{-   $name := index . 0 -}}
+{{-   $line := printf "<property name=%q type=%q value=%q/>" $name (index . 1) (index . 2) -}}
+{{-   if regexMatch (printf "<property name=%q " $name) $out -}}
+{{-     $out = regexReplaceAll (printf "<property name=%q [^>]*/>" $name) $out $line -}}
+{{-   else -}}
+{{-     $out = replace "</channel>" (printf "  %s\n</channel>" $line) $out -}}
+{{-   end -}}
+{{- end -}}
+{{- $out -}}

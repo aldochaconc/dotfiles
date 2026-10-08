@@ -216,7 +216,9 @@ o.bind("switch:off:Lid Switch", nil, "omarchy-hyprland-monitor-clamshell", { loc
 o.bind("SUPER + SPACE", "Omarchy menu", "omarchy-menu toggle")
 o.bind("SUPER + SHIFT + code:201", "Omarchy menu", "omarchy-menu toggle root")
 o.bind("SUPER + SEMICOLON", "Apps menu", "omarchy-menu toggle apps")
-o.bind("SUPER + ALT + SPACE", "Apps menu", "omarchy-menu toggle apps")
+-- Spotlight launches apps too. Its tour would bind ALT + SPACE, which grp:alt_space_toggle in
+-- input.lua owns; create_spotlight.json marks the tour done so the plugin never writes here.
+o.bind("SUPER + ALT + SPACE", "Spotlight", "omarchy-shell shell toggle io.github.maajix.spotlight '{}'")
 
 -- system and power
 o.bind("SUPER + ESCAPE", "System menu", "omarchy-menu toggle system")
@@ -372,10 +374,6 @@ o.bind("SUPER + SHIFT + C", "Calculator", "omacalc")
 o.bind("XF86Calculator", "Calculator", "omacalc")
 o.bind("SUPER + SHIFT + A", "Agent", "omarchy-agent --pick")
 o.bind("SUPER + SHIFT + P", "Transcode", "omarchy-transcode")
--- plugin browser. dot_local/bin symlinks it and omarchy-plugin-audit into PATH, pointing at
--- the checkout plugins.txt installs. The app-id is spelled out because `{ tui = ... }` derives
--- org.omarchy.<basename>, which the float rule in default/hypr/apps/system.lua does not list.
-o.bind("SUPER + SHIFT + X", "Plugin browser", "omarchy-launch-tui --app-id=TUI.float omarchy-plugin-browser")
 
 -- vault. Obsidian is single instance: a second launch hands over to the running process and
 -- exits, so a plain launch announces itself and no window appears. launch_sole focuses the

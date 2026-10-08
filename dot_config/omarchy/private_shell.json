@@ -1,13 +1,34 @@
 {
+  "version": 1,
+  "idle": {
+    "screensaver": 150,
+    "lock": 300
+  },
   "bar": {
+    "position": "top",
+    "transparent": true,
     "centerAnchor": "omarchy.clock",
     "layout": {
+      "left": [
+        {
+          "id": "omarchy.menu"
+        },
+        {
+          "id": "omarchy.workspaces"
+        }
+      ],
       "center": [
         {
-          "format": "dddd HH:mm",
-          "formatAlt": "d MMMM 'W'ww yyyy",
+          "id": "omarchy.indicators"
+        },
+        {
           "id": "omarchy.clock",
-          "verticalFormat": "HH\n—\nmm"
+          "format": "ddd d MMM  h:mm AP",
+          "formatAlt": "d MMMM 'W'ww yyyy",
+          "verticalFormat": "h\n—\nmm"
+        },
+        {
+          "id": "omarchy.keyboard-layout"
         },
         {
           "id": "omarchy.weather"
@@ -16,19 +37,9 @@
           "id": "omarchy.system-update"
         }
       ],
-      "left": [
-        {
-          "id": "omarchy.menu"
-        },
-        {
-          "id": "local.workspaces"
-        }
-      ],
       "right": [
         {
-          "hidden": [],
-          "id": "omarchy.tray",
-          "pinned": []
+          "id": "omarchy.tray"
         },
         {
           "id": "omarchy.agents"
@@ -46,29 +57,17 @@
           "id": "omarchy.monitor"
         },
         {
-          "alwaysShow": true,
-          "id": "wian47.removable-drives"
+          "id": "omarchy.power"
         },
         {
-          "id": "omarchy.power",
-          "showPercentage": false
-        },
-        {
-          "id": "omarchy.keyboard-layout"
-        },
-        {
-          "alwaysShow": true,
-          "id": "omarchy.indicators"
+          "id": "jankeesvw.notification-center"
         }
       ]
-    },
-    "position": "top",
-    "transparent": false
+    }
   },
-  "idle": {
-    "lock": 300,
-    "screensaver": 150
-  },
-  "plugins": [],
-  "version": 1
+  "plugins": [
+    {
+      "id": "io.github.maajix.spotlight"
+    }
+  ]
 }
